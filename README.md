@@ -86,7 +86,7 @@ This notebook offers a streamlined way to experience the core functionality of O
 
 ### Clone the repository and switch to the correct directory 
    
-    git clone -b opendataqna git@github.com:GoogleCloudPlatform/applied-ai-engineering-samples.git
+    git clone git@github.com:googlestaging/open_data_qna.git
     cd applied-ai-engineering-samples
 
 __________
