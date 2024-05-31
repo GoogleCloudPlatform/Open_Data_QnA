@@ -10,6 +10,13 @@
 </p>
 <h1 align="center">Open Data QnA - Chat with your SQL Database</h1> 
 
+_______________
+<div align="center"">
+  <strong>🚨 Version 1.2.0 is now live. Refer to the <a href="docs/changelog.md">Release Notes</a> for detailed information on updates and fixes. 🚨</strong>
+</div>
+
+_______________
+
 ✨ Overview
 -------------
 The **Open Data QnA** python library enables you to chat with your databases by leveraging LLM Agents on Google Cloud.
@@ -51,7 +58,7 @@ It is built on a modular design and currently supports the following components:
 📏 Architecture
 -------------
 <p align="center">
-    <a href="utilities/imgs/Open Data QnA Solution Architecture.png">
+    <a href="utilities/imgs/OpenDataQnA Solution Architecture - v1.png">
         <img src="utilities/imgs/OpenDataQnA Solution Architecture - v1.png" alt="aaie image">
     </a>
 </p>
@@ -216,6 +223,30 @@ If you are looking to deploy backend apis for the solution, refer to the README.
 -------------
 If you are looking to deploy the frontend for the solution, refer to the README.md under [`/frontend`](/frontend/).
 
+
+🧹 CleanUp Resources 
+-------------
+To clean up the resources provisioned in this solution, use commands below to remove them using gcloud/bq: 
+
+For cloudsql-pgvector as vector store : [Delete SQL Instance](<https://cloud.google.com/sql/docs/mysql/delete-instance#delete-cloud-sql-instance>)
+
+```
+gcloud sql instances delete <CloudSQL Instance Name> -q
+```
+
+Delete BigQuery Dataset Created for Logs and Vector Store : [Remove BQ Dataset](<https://cloud.google.com/bigquery/docs/reference/bq-cli-reference#bq_rm>)
+
+```
+bq rm -r -f -d <BigQuery Dataset Name for OpenDataQnA>
+```
+
+(For Backend APIs)Remove the Cloud Run service : [Delete Service](<https://cloud.google.com/run/docs/managing/services#delete>)
+
+```
+gcloud run services delete <Cloud Run Service Name>
+```
+
+For frontend, based on firebase: [Remove the firebase app](<https://support.google.com/firebase/answer/7047853?sjid=6757651181596811904-AP#how-to-remove>)
 
 
 📄 Documentation

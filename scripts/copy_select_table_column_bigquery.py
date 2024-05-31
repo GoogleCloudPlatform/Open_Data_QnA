@@ -114,9 +114,9 @@ if __name__ == "__main__":
 
    # --- BigQuery setup ---
    client = bigquery.Client()
-   project_id = "premi0537540-gitgbide" 
-   source_dataset = "ds_sales_poc"
-   destination_dataset = "google_demo" 
+   project_id = "" 
+   source_dataset = ""
+   destination_dataset = "" 
 
    # # Copy Tables
    # copy_tables(project_id, source_dataset, 

@@ -85,10 +85,10 @@ async def embedSql():
     envelope = str(request.data.decode('utf-8'))
     envelope=json.loads(envelope)
     user_database=envelope.get('user_database')
-    final_sql = envelope.get('generated_sql')
+    generated_sql = envelope.get('generated_sql')
     user_question = envelope.get('user_question')
 
-    embedded, invalid_response=await embed_sql(user_database,user_question,generate_sql)
+    embedded, invalid_response=await embed_sql(user_database,user_question,generated_sql)
 
     if not invalid_response:
         responseDict = { 
@@ -115,9 +115,9 @@ def getSQLResult():
     envelope=json.loads(envelope)
 
     user_database = envelope.get('user_database')
-    final_sql = envelope.get('generated_sql')
+    generated_sql = envelope.get('generated_sql')
 
-    result_df,invalid_response=get_results(user_database,final_sql)
+    result_df,invalid_response=get_results(user_database,generated_sql)
     if not invalid_response:
         responseDict = { 
                 "ResponseCode" : 200, 
@@ -150,14 +150,14 @@ def getKnownSQL():
     if not invalid_response:
         responseDict = { 
                 "ResponseCode" : 200, 
-                "KnownDB" : result,
+                "KnownSQL" : result,
                 "Error":""
                 }
 
     else:
         responseDict = { 
                 "ResponseCode" : 500, 
-                "KnownDB" : "",
+                "KnownSQL" : "",
                 "Error":result
                 } 
     return jsonify(responseDict)
@@ -173,7 +173,7 @@ async def generateSQL():
 
     user_question = envelope.get('user_question')
     user_database = envelope.get('user_database')
-    final_sql,invalid_response = await generate_sql(user_question,
+    generated_sql,invalid_response = await generate_sql(user_question,
                 user_database,  
                 RUN_DEBUGGER,
                 DEBUGGING_ROUNDS, 
@@ -192,14 +192,14 @@ async def generateSQL():
     if not invalid_response:
         responseDict = { 
                         "ResponseCode" : 200, 
-                        "GeneratedSQL" : final_sql,
+                        "GeneratedSQL" : generated_sql,
                         "Error":""
                         }
     else:
         responseDict = { 
                         "ResponseCode" : 500, 
                         "GeneratedSQL" : "",
-                        "Error":final_sql
+                        "Error":generated_sql
                         }          
 
     return jsonify(responseDict)
@@ -272,7 +272,7 @@ async def getNaturalResponse():
    user_question = envelope.get('user_question')
    user_database = envelope.get('user_database')
    
-   final_sql,invalid_response = await generate_sql(user_question,
+   generated_sql,invalid_response = await generate_sql(user_question,
                 user_database,  
                 RUN_DEBUGGER,
                 DEBUGGING_ROUNDS, 
@@ -290,7 +290,7 @@ async def getNaturalResponse():
    
    if not invalid_response:
 
-        result_df,invalid_response=get_results(user_database,final_sql)
+        result_df,invalid_response=get_results(user_database,generated_sql)
         
         if not invalid_response:
             result,invalid_response=get_response(user_question,result_df.to_json(orient='records'))
@@ -321,7 +321,7 @@ async def getNaturalResponse():
         responseDict = { 
                         "ResponseCode" : 500, 
                         "GeneratedSQL" : "",
-                        "Error":final_sql
+                        "Error":generated_sql
                         }
 
    return jsonify(responseDict)         
