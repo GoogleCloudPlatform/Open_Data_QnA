@@ -152,7 +152,7 @@
     cd frontend
     ```
     ```
-    gcloud builds submit . --config frontend.yaml --substitutions _FIREBASE_PROJECT_ID=<Enter Project Id of the firebase> --project_id=$PROJECT_ID
+    gcloud builds submit . --config frontend.yaml --substitutions _FIREBASE_PROJECT_ID=$PROJECT_ID --project=$PROJECT_ID
 
     ```
     

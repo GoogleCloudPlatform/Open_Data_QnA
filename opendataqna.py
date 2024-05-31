@@ -16,12 +16,13 @@
 import asyncio
 import argparse
 
-from agents import EmbedderAgent, BuildSQLAgent, DebugSQLAgent, ValidateSQLAgent, ResponseAgent
+from agents import EmbedderAgent, BuildSQLAgent, DebugSQLAgent, ValidateSQLAgent, ResponseAgent,VisualizeAgent
 from utilities import (PROJECT_ID, PG_REGION, BQ_REGION, EXAMPLES, LOGGING, VECTOR_STORE,
                        BQ_OPENDATAQNA_DATASET_NAME)
 from dbconnectors import bqconnector, pgconnector
 from embeddings.store_embeddings import add_sql_embedding
 
+Visualize=VisualizeAgent()
 
 
 #Based on VECTOR STORE in config.ini initialize vector connector and region

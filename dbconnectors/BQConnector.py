@@ -375,7 +375,10 @@ class BQConnector(DBConnector, ABC):
         if table_names:
             # Extract individual table names from the input string
             #table_names = [name.strip() for name in table_names[1:-1].split(",")]  # Handle the string as a list
-            formatted_table_names = [f"'{name}'" for name in table_names]
+            # formatted_table_names = [f"'{name}'" for name in table_names]
+            # table_filter_clause = f"""AND TABLE_NAME IN ({', '.join(formatted_table_names)})"""
+            table_names = [name.strip() for name in table_names[1:-1].split(",")]
+            formatted_table_names = list(table_names)
             table_filter_clause = f"""AND TABLE_NAME IN ({', '.join(formatted_table_names)})"""
 
 
@@ -432,7 +435,10 @@ class BQConnector(DBConnector, ABC):
         table_filter_clause = ""
         if table_names:
             # table_names = [name.strip() for name in table_names[1:-1].split(",")]  # Handle the string as a list
-            formatted_table_names = [f"'{name}'" for name in table_names]
+            # formatted_table_names = [f"'{name}'" for name in table_names]
+            # table_filter_clause = f"""AND C.TABLE_NAME IN ({', '.join(formatted_table_names)})"""
+            table_names = [name.strip() for name in table_names[1:-1].split(",")]
+            formatted_table_names = list(table_names)
             table_filter_clause = f"""AND C.TABLE_NAME IN ({', '.join(formatted_table_names)})"""
 
         column_schema_sql = f"""

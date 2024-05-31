@@ -59,7 +59,7 @@ export DEPLOY_REGION=us-central1 #change the cloud run deployment region if need
  cd applied-ai-engineering-samples
  git checkout opendataqna
 
- gcloud beta run deploy $SERVICE_NAME --region $DEPLOY_REGION --source . --service-account=opendataqna@$PROJECT_ID.iam.gserviceaccount.com --service-min-instances=1  --allow-unauthenticated --project=$PROJECT_ID 
+ gcloud beta run deploy $SERVICE_NAME --region $DEPLOY_REGION --source . --service-account=opendataqna@$PROJECT_ID.iam.gserviceaccount.com --service-min-instances=1 --min-instances=1 --allow-unauthenticated --project=$PROJECT_ID 
  
  #if you are deploying cloud run application for the first time in the project you will be prompted for a couple of settings. Go ahead and type Yes.
 
