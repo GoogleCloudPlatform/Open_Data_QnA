@@ -93,8 +93,8 @@ This notebook offers a streamlined way to experience the core functionality of O
 
 ### Clone the repository and switch to the correct directory 
    
-    git clone -b opendataqna git@github.com:GoogleCloudPlatform/applied-ai-engineering-samples.git
-    cd applied-ai-engineering-samples
+    git clone git@github.com:GoogleCloudPlatform/Open_Data_QnA.git
+    cd Open_Data_QnA
 
 __________
 
@@ -283,4 +283,4 @@ It also contains code derived from the following third-party packages:
 🙋 Getting Help
 ----------
 
-If you have any questions or if you found any problems with this repository, please report through GitHub issues.
+If you have any questions or if you found any problems with this repository, please report through Hub issues.
