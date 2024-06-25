@@ -324,7 +324,60 @@ async def getNaturalResponse():
                         "Error":generated_sql
                         }
 
-   return jsonify(responseDict)         
+   return jsonify(responseDict)   
+
+
+@app.route("/get_results", methods=["POST"])
+async def getResultsResponse():
+   envelope = str(request.data.decode('utf-8'))
+   #print("Here is the request payload " + envelope)
+   envelope=json.loads(envelope)
+   
+   user_question = envelope.get('user_question')
+   user_database = envelope.get('user_database')
+   
+   generated_sql,invalid_response = await generate_sql(user_question,
+                user_database,  
+                RUN_DEBUGGER,
+                DEBUGGING_ROUNDS, 
+                LLM_VALIDATION,
+                Embedder_model,
+                SQLBuilder_model,
+                SQLChecker_model,
+                SQLDebugger_model,
+                num_table_matches,
+                num_column_matches,
+                table_similarity_threshold,
+                column_similarity_threshold,
+                example_similarity_threshold,
+                num_sql_matches)
+   
+   if not invalid_response:
+
+        result_df,invalid_response=get_results(user_database,generated_sql)
+        
+        if not invalid_response:
+            responseDict = { 
+                            "ResponseCode" : 200, 
+                            "summary_response" : result_df.to_json(orient='records'),
+                            "Error":""
+                            } 
+
+        else:
+            responseDict = { 
+                    "ResponseCode" : 500, 
+                    "KnownDB" : "",
+                    "Error":result_df
+                    } 
+
+   else:
+        responseDict = { 
+                        "ResponseCode" : 500, 
+                        "GeneratedSQL" : "",
+                        "Error":generated_sql
+                        }
+
+   return jsonify(responseDict)  
    
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
