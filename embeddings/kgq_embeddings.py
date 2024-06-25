@@ -47,7 +47,7 @@ async def setup_kgq_table( project_id,
         client=bigquery.Client(project=project_id)
 
         # Delete an old table
-        client.query_and_wait(f'''DROP TABLE IF EXISTS `{project_id}.{schema}.example_prompt_sql_embeddings`''')
+        # client.query_and_wait(f'''DROP TABLE IF EXISTS `{project_id}.{schema}.example_prompt_sql_embeddings''')
         # Create a new emptry table
         client.query_and_wait(f'''CREATE TABLE IF NOT EXISTS `{project_id}.{schema}.example_prompt_sql_embeddings` (
                               table_schema string NOT NULL, example_user_question string NOT NULL, example_generated_sql string NOT NULL,
@@ -68,7 +68,7 @@ async def setup_kgq_table( project_id,
             )
 
             # Drop on old table
-            await conn.execute("DROP TABLE IF EXISTS example_prompt_sql_embeddings")
+            # await conn.execute("DROP TABLE IF EXISTS example_prompt_sql_embeddings")
             # Create a new emptry table
             await conn.execute(
             """CREATE TABLE IF NOT EXISTS example_prompt_sql_embeddings(
@@ -121,7 +121,7 @@ async def store_kgq_embeddings(df_kgq,
                             WHERE table_schema= '{row["example_database_name"]}' and example_user_question= '{row["example_user_question"]}' '''
                                 )
                     # embedding=np.array(row["embedding"])
-                cleaned_sql = row["example_generated_sql"].replace("\n", "")
+                cleaned_sql = row["example_generated_sql"].replace("\n", " ")
                 client.query_and_wait(f'''INSERT INTO `{project_id}.{schema}.example_prompt_sql_embeddings` 
                     VALUES ("{row["example_database_name"]}","{row["example_user_question"]}" , 
                     "{cleaned_sql}",{row["embedding"]} )''')
@@ -163,7 +163,7 @@ async def store_kgq_embeddings(df_kgq,
                         "DELETE FROM example_prompt_sql_embeddings WHERE table_schema= $1 and example_user_question=$2",
                         row["example_database_name"],
                         row["example_user_question"])
-                cleaned_sql = row["example_generated_sql"].replace("\n", "")
+                cleaned_sql = row["example_generated_sql"].replace("\n", " ")
                 await conn.execute(
                     "INSERT INTO example_prompt_sql_embeddings (table_schema, example_user_question, example_generated_sql, embedding) VALUES ($1, $2, $3, $4)",
                     row["example_database_name"],

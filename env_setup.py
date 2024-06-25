@@ -263,7 +263,7 @@ async def store_embeddings(table_schema_embeddings, col_schema_embeddings):
 
 
 
-async def create_kgq_table():
+async def create_kgq_sql_table():
     """
     Creates a table for storing Known Good Query (KGQ) embeddings in the vector store.
 
@@ -284,7 +284,7 @@ async def create_kgq_table():
     Returns:
         None
     """
-    if EXAMPLES == 'yes':
+    if EXAMPLES:
         print("Creating kgq table in vector store.")
         # Delete any old tables and create a new table to KGQ embeddings
         if VECTOR_STORE=='bigquery-vector':
@@ -316,7 +316,7 @@ async def create_kgq_table():
 
 
 
-async def store_kgq_embeddings():
+async def store_kgq_sql_embeddings():
     """
     Stores known good query (KGQ) embeddings into the specified vector store.
 
@@ -339,7 +339,7 @@ async def store_kgq_embeddings():
     Returns:
         None
     """
-    if EXAMPLES == 'yes':
+    if EXAMPLES:
         print("Reading contents of known_good_sql.csv")
         # Load the contents of the known_good_sql.csv file into a dataframe
         df_kgq = load_kgq_df()
@@ -393,8 +393,8 @@ if __name__ == '__main__':
     asyncio.run(store_embeddings(table_schema_embeddings, col_schema_embeddings)) 
 
     # Create table for known good queries (if enabled)
-    asyncio.run(create_kgq_table()) 
+    asyncio.run(create_kgq_sql_table()) 
 
     # Store known good query embeddings (if enabled)
-    asyncio.run(store_kgq_embeddings())  
+    asyncio.run(store_kgq_sql_embeddings())  
 

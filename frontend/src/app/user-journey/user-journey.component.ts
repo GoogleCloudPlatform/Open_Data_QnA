@@ -77,7 +77,7 @@ export class UserJourneyComponent {
         }
       })
     }
-    if (userTitle === 'Opertaional User') {
+    if (userTitle === 'Operational User') {
       this.homeService.checkuserType = 'Operational';
       this._router.navigate(['home']);
 
