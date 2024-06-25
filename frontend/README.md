@@ -179,3 +179,188 @@
     </p>
 
 
+
+**API Details**
+
+   All the payloads are in JSON format
+
+1. List Databases : Get the available databases in the vector store that solution can run against
+
+    URI: {Service URL}/available_databases 
+    Complete URL Sample : https://OpenDataQnA-aeiouAEI-uc.a.run.app/available_databases
+
+    Method: GET
+
+    Request Payload : NONE
+
+    Request response:
+    ```
+    {
+    "Error": "",
+    "KnownDB": "[{\"table_schema\":\"imdb-postgres\"},{\"table_schema\":\"retail-postgres\"}]",
+    "ResponseCode": 200
+    }
+    ```
+
+2. Known SQL : Get suggestive questions (previously asked/examples added) for selected database
+
+    URI: /get_known_sql
+    Complete URL Sample : https://OpenDataQnA-aeiouAEI-uc.a.run.app/get_known_sql   
+
+    Method: POST
+
+    Request Payload :
+
+    ```
+    {
+    "user_database":"retail"
+    }
+    ```
+
+    Request response:
+
+    ```
+    {
+    "Error": "",
+    "KnownSQL": "[{\"example_user_question\":\"Which city had maximum number of sales and what was the count?\",\"example_generated_sql\":\"select st.city_id, count(st.city_id) as city_sales_count from retail.sales as s join retail.stores as st on s.id_store = st.id_store group by st.city_id order by city_sales_count desc limit 1;\"}]",
+    "ResponseCode": 200
+    }
+    ```
+
+
+3. SQL Generation : Generate the SQL for the input question asked aganist a database
+
+    URI: /generate_sql
+
+
+    Method: POST
+
+    Complete URL Sample : https://OpenDataQnA-aeiouAEI-uc.a.run.app/get_known_sql
+
+
+    Request payload:
+
+    ```
+    {
+    "user_question":"Which city had maximum number of sales?",
+    "user_database":"retail"
+    }
+    ```
+
+
+    Request response:
+    ```
+    {
+    "Error": "",
+    "GeneratedSQL": " select st.city_id from retail.sales as s join retail.stores as st on s.id_store = st.id_store group by st.city_id order by count(*) desc limit 1;",
+    "ResponseCode": 200
+    }
+    ```
+
+
+4. Execute SQL : Run the SQL statement against provided database source
+
+    URI:/run_query
+    Complete URL Sample : https://OpenDataQnA-aeiouAEI-uc.a.run.app/run_query
+
+    Method: POST
+
+    Request payload:
+    ```
+    { "user_database": "retail",
+    "generated_sql":"select st.city_id from retail.sales as s join retail.stores as st on s.id_store = st.id_store group by st.city_id order by count(*) desc limit 1;"
+    }
+    ```
+
+    Request response:
+    ```
+    {
+    "Error": "",
+    "KnownDB": "[{\"city_id\":\"C014\"}]",
+    "ResponseCode": 200
+    }
+    ```
+5. Embedd SQL : To embed known good SQLs to your example embeddings
+
+    URI:/embed_sql
+    Complete URL Sample : https://OpenDataQnA-aeiouAEI-uc.a.run.app/embed_sql
+
+    METHOD: POST
+
+    Request Payload:
+
+    ```
+    {
+    "user_question":"Which city had maximum number of sales?",
+    "generated_sql":"select st.city_id from retail.sales as s join retail.stores as st on s.id_store = st.id_store group by st.city_id order by count(*) desc limit 1;",
+    "user_database":"retail"
+    }
+    ```
+
+    Request response:
+    ```
+    {
+    "ResponseCode" : 201, 
+    "Message" : "Example SQL has been accepted for embedding",
+    "Error":""
+    }
+    ```
+6. Generate Visualization Code : To generated javascript Google Charts code based on the SQL Results and display them on the UI
+
+    As per design we have two visualizations suggested showing up when the user clicks the visualize button. Hence two divs are send as part of the response “chart_div”, “chart_div_1” to bind them to that element in the UI
+        
+
+    If you are only looking to setup enpoint you can stop here. In case you require the demo app (frontend UI) built in the solution, proceed to the next step.
+
+    URI:/generate_viz
+    Complete URL Sample : https://OpenDataQnA-aeiouAEI-uc.a.run.app/generate_viz
+    
+    METHOD: POST
+
+    Request Payload:
+    ```
+      {
+      "user_question": "What are top 5 product skus that are ordered?",
+      "sql_generated": "SELECT productSKU as ProductSKUCode, sum(total_ordered) as TotalOrderedItems FROM `inbq1-joonix.demo.sales_sku` group by productSKU order by sum(total_ordered) desc limit 5",
+      "sql_results": [
+        {
+          "ProductSKUCode": "GGOEGOAQ012899",
+          "TotalOrderedItems": 456
+        },
+        {
+          "ProductSKUCode": "GGOEGDHC074099",
+          "TotalOrderedItems": 334
+        },
+        {
+          "ProductSKUCode": "GGOEGOCB017499",
+          "TotalOrderedItems": 319
+        },
+        {
+          "ProductSKUCode": "GGOEGOCC077999",
+          "TotalOrderedItems": 290
+        },
+        {
+          "ProductSKUCode": "GGOEGFYQ016599",
+          "TotalOrderedItems": 253
+        }
+      ]
+    }
+    
+    ```
+
+    Request response:
+    ```
+    {
+    "Error": "",
+    "GeneratedChartjs": {
+        "chart_div": "google.charts.load('current', {\n  packages: ['corechart']\n});\ngoogle.charts.setOnLoadCallback(drawChart);\n\nfunction drawChart() {\n  var data = google.visualization.arrayToDataTable([\n    ['Product SKU', 'Total Ordered Items'],\n    ['GGOEGOAQ012899', 456],\n    ['GGOEGDHC074099', 334],\n    ['GGOEGOCB017499', 319],\n    ['GGOEGOCC077999', 290],\n    ['GGOEGFYQ016599', 253],\n  ]);\n\n  var options = {\n    title: 'Top 5 Product SKUs Ordered',\n    width: 600,\n    height: 300,\n    hAxis: {\n      textStyle: {\n        fontSize: 12\n      }\n    },\n    vAxis: {\n      textStyle: {\n        fontSize: 12\n      }\n    },\n    legend: {\n      textStyle: {\n        fontSize: 12\n      }\n    },\n    bar: {\n      groupWidth: '50%'\n    }\n  };\n\n  var chart = new google.visualization.BarChart(document.getElementById('chart_div'));\n\n  chart.draw(data, options);\n}\n",
+        
+        "chart_div_1": "google.charts.load('current', {'packages':['corechart']});\ngoogle.charts.setOnLoadCallback(drawChart);\nfunction drawChart() {\n  var data = google.visualization.arrayToDataTable([\n    ['ProductSKUCode', 'TotalOrderedItems'],\n    ['GGOEGOAQ012899', 456],\n    ['GGOEGDHC074099', 334],\n    ['GGOEGOCB017499', 319],\n    ['GGOEGOCC077999', 290],\n    ['GGOEGFYQ016599', 253]\n  ]);\n\n  var options = {\n    title: 'Top 5 Product SKUs that are Ordered',\n    width: 600,\n    height: 300,\n    hAxis: {\n      textStyle: {\n        fontSize: 5\n      }\n    },\n    vAxis: {\n      textStyle: {\n        fontSize: 5\n      }\n    },\n    legend: {\n      textStyle: {\n        fontSize: 10\n      }\n    },\n    bar: {\n      groupWidth: \"60%\"\n    }\n  };\n\n  var chart = new google.visualization.ColumnChart(document.getElementById('chart_div_1'));\n\n  chart.draw(data, options);\n}\n"
+    },
+    "ResponseCode": 200
+    }
+
+    ```
+
+
+

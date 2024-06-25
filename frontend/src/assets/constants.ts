@@ -25,5 +25,4 @@ export const firebaseConfig = {
 };
 
 export const ENDPOINT_OPENDATAQNA = 'https://opendataqna-z5fchzhuiq-uc.a.run.app'
-
     

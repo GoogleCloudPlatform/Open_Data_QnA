@@ -215,7 +215,7 @@ async def add_sql_embedding(user_question, generated_sql, database):
                 await conn.execute("DELETE FROM example_prompt_sql_embeddings WHERE table_schema= $1 and example_user_question=$2",
                                     database,
                                     user_question)
-                cleaned_sql =generated_sql.replace("\n", "")
+                cleaned_sql =generated_sql.replace("\n", " ")
                 
                 await conn.execute(
                                 "INSERT INTO example_prompt_sql_embeddings (table_schema, example_user_question, example_generated_sql, embedding) VALUES ($1, $2, $3, $4)",
@@ -236,7 +236,7 @@ async def add_sql_embedding(user_question, generated_sql, database):
                                 WHERE table_schema= '{database}' and example_user_question= '{user_question}' '''
                                     )
                         # embedding=np.array(row["embedding"])
-            cleaned_sql = generated_sql.replace("\n", "")
+            cleaned_sql = generated_sql.replace("\n", " ")
 
             client.query_and_wait(f'''INSERT INTO `{PROJECT_ID}.{BQ_OPENDATAQNA_DATASET_NAME}.example_prompt_sql_embeddings` 
                         VALUES ("{database}","{user_question}" , 
@@ -295,5 +295,4 @@ if __name__ == '__main__':
 #     print("Issue while creating the embedding!! ")
 #     print(str(e))
 #     return 0
-
 

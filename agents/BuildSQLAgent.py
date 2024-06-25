@@ -52,10 +52,9 @@ class BuildSQLAgent(Agent, ABC):
     agentType: str = "BuildSQLAgent"
 
     def build_sql(self,source_type, user_question,tables_schema,tables_detailed_schema, similar_sql, max_output_tokens=2048, temperature=0.4, top_p=1, top_k=32): 
-
-        not_related_msg='select \'Question is not related to the dataset\' as unrelated_answer from dual;'
-        
+        not_related_msg=''
         if source_type=='bigquery':
+            not_related_msg="select `Question is not related to the dataset` as unrelated_answer"
             context_prompt = f"""
             You are a BigQuery SQL guru. Write a SQL comformant query for Bigquery that answers the following question while using the provided context to correctly refer to the BigQuery tables and the needed column names.
 
@@ -75,7 +74,8 @@ class BuildSQLAgent(Agent, ABC):
             - Use SQL 'AS' statement to assign a new name temporarily to a table column or even a table wherever needed.
             - Table names are case sensitive. DO NOT uppercase or lowercase the table names.
             - Always enclose subqueries and union queries in brackets.
-            - Refer to the examples provided below, if given. 
+            - Refer to the examples provided below, if given.
+            - Only answer questions relevant to the tables or columns listed in the table schema If a non-related question comes, answer exactly with : {not_related_msg}
 
 
             Here are some examples of user-question and SQL queries:
@@ -96,6 +96,7 @@ class BuildSQLAgent(Agent, ABC):
 
         else: 
 
+            not_related_msg='select \'Question is not related to the dataset\' as unrelated_answer from dual;'
         
             from dbconnectors import pg_specific_data_types
             pg_specific_data_types = pg_specific_data_types() 
@@ -156,5 +157,6 @@ class BuildSQLAgent(Agent, ABC):
             context_query = self.model.predict(context_prompt, max_output_tokens = max_output_tokens, temperature=temperature)
             generated_sql = str(context_query.candidates[0])
 
+        print(generated_sql)
 
         return generated_sql
