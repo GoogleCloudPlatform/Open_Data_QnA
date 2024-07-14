@@ -41,9 +41,15 @@ Repository Structure
   └── 2_Run_OpenDataQnA.ipynb
   └── 3_LoadKnownGoodSQL.ipynb
 └── scripts
+  └── tables_columns_descriptions.csv
+  └── copy_select_table_column_bigquery.csv
+  └── data_source_list.csv
+  └── known_good_sql.csv
+  └── save_config.py
   └── ...
 └── utilities
   └── __init__.py
+└── prompts.yaml
 └── pyproject.toml
 └── config.ini
 └── env_setup.py
@@ -65,6 +71,7 @@ Repository Structure
   - [`/copy_select_table_column_bigquery.py`](/scripts/copy_select_table_column_bigquery.py): Code Sample to copy select tables and columns from one BQ table to another; add table and column descriptions from csv file.
   - [`/tables_columns_descriptions.csv`](/scripts/tables_columns_descriptions.csv): CSV file containing table and column names and descriptions to be copied 
   - [`/known_good_sql.csv`](/scripts/known_good_sql.csv): CSV files
+  - [`/data_source_list.csv`](/scripts/data_source_list.csv): Data Source CSV File to mention the list of tables and source type etc.
 - [`/Dockerfile`](/Dockerfile): Dockerfile for deployment of backend apis. It is placed at the root folder to give it right context and access to the files.
 - [`/env_setup.py`](/env_setup.py): Python file for initial setup. 
 - [`/opendataqna.py`](/opendataqna.py): Python file for running the main pipeline. 

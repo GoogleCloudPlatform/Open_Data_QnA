@@ -9,7 +9,7 @@
 
 1. Install the firebase tools to run CLI commands
     ```
-    cd applied-ai-engineering-samples
+    cd Open_Data_QnA
 
     npm install -g firebase-tools
 
@@ -27,6 +27,7 @@
     **Note**:*Please complete the steps carely and use the same project which you are going to host the app*
 
     Follow detailed instructions:
+
     
     1. Navigate to your project root directory.
     2. Clone the cloud-builders-community repository:
@@ -57,67 +58,70 @@
     ```
 
 
-4. Configure Firebase
-
-    Login into firebase console (https://console.firebase.google.com/) and create project “Add existing GCP project” select your GCP project that you are using for the deployment of firebase. 
-
-    Choose pay as you go plan and turn off Google Analytics and create.
-
-    Once you added the project to firebase navigate and select your project
-
-   * Navigate to Project Settings > General
-
-   * Add App and select Web
-
-   * Fill the details e.g. Nickname : opendataqna and just register the app
-
-   * Once done continue back the general page and you should see the app
-
-   * Add the linked firebase project as the same that your initialize firebase for hosting (same as the selected)
-
-   * Copy the config object you will use in your app code in the later step
-
-
-    <p align="center">
-        <a href="../utilities/imgs/Firebase Config .png">
-            <img src="../utilities/imgs/Firebase Config.png" alt="aaie image">
-        </a>
-    </p>
-
-
-    * Navigate to Build>Authentication
-
-    * Under Sign-in Method add provider as Google
-
-
-4. Initialize Firebase
+3. Create and Initialize Firebase
 
     ```
-    cd applied-ai-engineering-samples
-
-    cd frontend
+    cd Open_Data_QnA/frontend
 
     firebase login --no-localhost
 
-    firebase init hosting 
+    ## Below command can be used re authenticate in case of authentication errors
+
+    firebase login --reauth --no-localhost 
+
+    #If incase there are old firebase files 
+
+    rm firebase.json .firebaserc
 
     ```
 
-    * firebase login --reauth --no-localhost # this command can be used re authenticate in case of authentication errors
+    ```
 
-    * Use the down arrow to select the option Use an existing project
+    firebase init hosting 
 
-    * For the public directory prompt provide >> /dist/frontend/browser
+    ## Select "Add Firebase to an existing Google Cloud Platfrom Project"
+
+    ## For the public directory prompt provide >> /dist/frontend/browser
+
+    ## Rewrite all URLs to index prompt enter >> Yes (Enter No for any other options)
+
+    ## You should now see firebase.json created in the folder
+
+    ```
+    ```
+    ## To modify the contents for this solution update it using the cp command as below
+
+    cp firebase_setup.json firebase.json
+    ```
+    ```
+ 
+    ## Run below command to create a webapp to host your application
+
+    firebase apps:create --project $PROJECT_ID
+
+    ## Select Web and Provide name : "opendataqna"
+    ```
+    ```
+
+    ## Below command provides the initialization code to add to your constant file
+
+    firebase apps:sdkconfig --project $PROJECT_ID
+
+    ```
+4. Enable Google Authentication in Firebase Console
+
+    - Go to the Firebase console (https://console.firebase.google.com/).
+    - Select your project.
+    - Navigate to "Authentication" -> "Sign-in method".
+    - Click "Add new provider" and select "Google".
+    - Provide a support email and click "Enable". This will enable Google authentication for your project.
+
+5. Update the Config Code and Endpoint URLs for the frontend
+
+    In the file [`/frontend/src/assets/constants.ts`](/frontend/src/assets/constants.ts) 
     
-    * Rewrite all URLs to index prompt enter >> Yes (Enter No for any other options)
-
-    * You should now see firebase.json created in the folder 
-
-
-
-5. Update the Config Object and Endpoint URLs for the frontend
-
-    In the file [`/frontend/src/assets/constants.ts`](/frontend/src/assets/constants.ts) replace the config object with the one you copied in the above step and replace the ENDPOINT_OPENDATAQNA with the Service URL from the Endpoint Deployment section above.
+    * Replace the config object with the one you copied in the above step 
+    * Replace the ENDPOINT_OPENDATAQNA value with the Service URL from the Endpoint Deployment section in the backend-apis README.md
 
     ***Note that these variables need to be exported using "export" keyword. So make sure export is mentioned for both the variables***
 
@@ -128,28 +132,13 @@
     </p>
 
 6. Deploy the app
-
-    Setup IAM permissions for the cloudbuild service account to deploy
-
-    * Open the IAM page in the Google Cloud console
-
-    * Select your project and click Open.
-
-    * In the permissions table, locate the email ending with @cloudbuild.gserviceaccount.com, and click on the pencil icon. This is the Cloud Build service account. (If you cannot find it check the box on the top right of permissions list which say Include Google-provided role grants)
-
-    * Add Cloud Build Service Account, Firebase Admin and API Keys Admin roles.
-
-    * Click Save.
-
     
     Run the below commands on the terminal
 
     ```
-    gcloud services enable firebase.googleapis.com # Enable firebase management API
+    gcloud services enable firebase.googleapis.com --project=$PROJECT_ID # Enable firebase management API
 
-    cd applied-ai-engineering-samples
-    git checkout opendataqna
-    cd frontend
+    cd Open_Data_QnA/frontend
     ```
     ```
     gcloud builds submit . --config frontend.yaml --substitutions _FIREBASE_PROJECT_ID=$PROJECT_ID --project=$PROJECT_ID
@@ -213,7 +202,7 @@
 
     ```
     {
-    "user_database":"retail"
+    "user_grouping":"retail"
     }
     ```
 
@@ -228,7 +217,7 @@
     ```
 
 
-3. SQL Generation : Generate the SQL for the input question asked aganist a database
+3. SQL Generation : Generate the SQL for the input question asked against a database
 
     URI: /generate_sql
 
@@ -242,8 +231,10 @@
 
     ```
     {
+    "session_id":"",
+    "user_id":"harry@hogwarts.com",
     "user_question":"Which city had maximum number of sales?",
-    "user_database":"retail"
+    "user_grouping":"retail"
     }
     ```
 
@@ -253,7 +244,8 @@
     {
     "Error": "",
     "GeneratedSQL": " select st.city_id from retail.sales as s join retail.stores as st on s.id_store = st.id_store group by st.city_id order by count(*) desc limit 1;",
-    "ResponseCode": 200
+    "ResponseCode": 200,
+    "SessionID":"1iuu2u-k1ij2-kkkhhj12131"
     }
     ```
 
@@ -267,14 +259,16 @@
 
     Request payload:
     ```
-    { "user_database": "retail",
-    "generated_sql":"select st.city_id from retail.sales as s join retail.stores as st on s.id_store = st.id_store group by st.city_id order by count(*) desc limit 1;"
+    { "user_grouping": "retail",
+    "generated_sql":"select st.city_id from retail.sales as s join retail.stores as st on s.id_store = st.id_store group by st.city_id order by count(*) desc limit 1;",
+    "session_id":"1iuu2u-k1ij2-kkkhhj12131"
     }
     ```
 
     Request response:
     ```
     {
+    "SessionID":"1iuu2u-k1ij2-kkkhhj12131",
     "Error": "",
     "KnownDB": "[{\"city_id\":\"C014\"}]",
     "ResponseCode": 200
@@ -291,9 +285,10 @@
 
     ```
     {
+      "session_id":"1iuu2u-k1ij2-kkkhhj12131",
     "user_question":"Which city had maximum number of sales?",
     "generated_sql":"select st.city_id from retail.sales as s join retail.stores as st on s.id_store = st.id_store group by st.city_id order by count(*) desc limit 1;",
-    "user_database":"retail"
+    "user_grouping":"retail"
     }
     ```
 
@@ -302,7 +297,8 @@
     {
     "ResponseCode" : 201, 
     "Message" : "Example SQL has been accepted for embedding",
-    "Error":""
+    "Error":"",
+    "SessionID":"1iuu2u-k1ij2-kkkhhj12131"
     }
     ```
 6. Generate Visualization Code : To generated javascript Google Charts code based on the SQL Results and display them on the UI
@@ -320,6 +316,7 @@
     Request Payload:
     ```
       {
+      "session_id":"1iuu2u-k1ij2-kkkhhj12131" ,
       "user_question": "What are top 5 product skus that are ordered?",
       "sql_generated": "SELECT productSKU as ProductSKUCode, sum(total_ordered) as TotalOrderedItems FROM `inbq1-joonix.demo.sales_sku` group by productSKU order by sum(total_ordered) desc limit 5",
       "sql_results": [
@@ -351,6 +348,7 @@
     Request response:
     ```
     {
+    "SessionID":"1iuu2u-k1ij2-kkkhhj12131",
     "Error": "",
     "GeneratedChartjs": {
         "chart_div": "google.charts.load('current', {\n  packages: ['corechart']\n});\ngoogle.charts.setOnLoadCallback(drawChart);\n\nfunction drawChart() {\n  var data = google.visualization.arrayToDataTable([\n    ['Product SKU', 'Total Ordered Items'],\n    ['GGOEGOAQ012899', 456],\n    ['GGOEGDHC074099', 334],\n    ['GGOEGOCB017499', 319],\n    ['GGOEGOCC077999', 290],\n    ['GGOEGFYQ016599', 253],\n  ]);\n\n  var options = {\n    title: 'Top 5 Product SKUs Ordered',\n    width: 600,\n    height: 300,\n    hAxis: {\n      textStyle: {\n        fontSize: 12\n      }\n    },\n    vAxis: {\n      textStyle: {\n        fontSize: 12\n      }\n    },\n    legend: {\n      textStyle: {\n        fontSize: 12\n      }\n    },\n    bar: {\n      groupWidth: '50%'\n    }\n  };\n\n  var chart = new google.visualization.BarChart(document.getElementById('chart_div'));\n\n  chart.draw(data, options);\n}\n",
@@ -361,6 +359,3 @@
     }
 
     ```
-
-
-

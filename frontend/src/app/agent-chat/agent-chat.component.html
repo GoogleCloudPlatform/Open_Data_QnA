@@ -1,0 +1,179 @@
+<ng-container *ngIf="msg">
+    <mat-stepper id="stepper" *ngIf="msg.author=='agent'" labelPosition="bottom">
+        <ng-template matStepperIcon="adjust">
+            <mat-icon>adjust</mat-icon>
+        </ng-template>
+        <mat-step label="Question Sent" [completed]="msg.generate_sql.GeneratedSQL"
+            [state]="msg.generate_sql.GeneratedSQL ? 'done' : 'number'">
+            <ng-template matStepLabel>
+                <div>Question Sent</div>
+            </ng-template>
+        </mat-step>
+        <mat-step [completed]="msg.generate_sql.GeneratedSQL && msg.generate_sql.ResponseCode === 200"
+            [state]="(msg.generate_sql.GeneratedSQL && msg.generate_sql.ResponseCode === 200)? 'done' : 'number'">
+            <ng-template matStepLabel>
+                <div>Converted to SQL</div>
+                <div>{{msg.generate_sql?.responseTime}}</div>
+            </ng-template>
+        </mat-step>
+        <mat-step [completed]="msg.dataSource && msg.displayedColumns"
+            [state]="(msg.dataSource && msg.displayedColumns) ? 'done' : 'number'">
+            <ng-template matStepLabel>
+                <div>Data retrieved</div>
+                <div>{{msg.run_query?.responseTime}}</div>
+            </ng-template>
+        </mat-step>
+        <mat-step [completed]="msg.visualize" [state]="msg.visualize ? 'done' : 'number'">
+            <ng-template matStepLabel>
+                <div>Visualization generated</div>
+                <div>{{msg.visualize?.responseTime}}</div>
+            </ng-template>
+        </mat-step>
+    </mat-stepper>
+    <div *ngIf="(msg.generate_sql.ResponseCode != 200 && msg.author == 'agent'); else tabTemplate" class="sqlError">
+        <div>
+            {{msg.generate_sql.Error}}
+        </div>
+    </div>
+    <ng-template #tabTemplate>
+        <mat-tab-group (selectedTabChange)="tabClick($event , msg.displayedColumns)" class="agentTab">
+            <mat-tab label="Generated SQL" style="overflow: auto;">
+                <div class="main mb-3" style="width:800px">
+                    <div>
+                        <button [cdkCopyToClipboard]="msg.generate_sql.GeneratedSQL" class="copyBtn"
+                            (click)="showContentCopiedMsg()">
+                            <span class="material-symbols-outlined" style="padding: 10px;">
+                                content_copy
+                            </span></button>
+                        <app-prism [code]="msg.generate_sql.GeneratedSQL" language="sql"></app-prism>
+                    </div>
+                </div>
+            </mat-tab>
+            <mat-tab label="Result">
+                <div class="result-content mt-4 d-flex flex-column justify-content-center align-items-center">
+                    <div *ngIf="resultLoader" class="spinner_loading-result-table">
+                        <mat-spinner diameter="20"></mat-spinner>
+                    </div>
+                    <div *ngIf="msg.run_query" style="width:90%">
+                        {{msg.run_query?.NaturalResponse}}
+                    </div>
+                    <div *ngIf="!resultLoader" style="max-width: 90%;word-break: break-word;">
+                        <mat-expansion-panel (opened)="panelOpenState.set(true)" (closed)="panelOpenState.set(false)"
+                            disableRipple *ngIf="msg.dataSource && msg.displayedColumns && msg.run_query.ResponseCode === 200">
+                            <mat-expansion-panel-header>
+                                <mat-panel-title><span>Table View</span></mat-panel-title>
+                            </mat-expansion-panel-header>
+                            <div class="table-prep">
+                                <table mat-table *ngIf="msg.dataSource && msg.displayedColumns"
+                                    [dataSource]="msg.dataSource" class="mat-elevation-z0">
+
+                                    <ng-container *ngFor="let col of msg.displayedColumns ; index as i;"
+                                        [matColumnDef]="col">
+                                        <th mat-header-cell *matHeaderCellDef> {{col | uppercase}} </th>
+                                        <td mat-cell *matCellDef="let element"> {{element[col]}} </td>
+                                    </ng-container>
+
+                                    <tr mat-header-row *matHeaderRowDef="msg.displayedColumns;sticky:true;"></tr>
+                                    <tr mat-row *matRowDef="let row; columns: msg.displayedColumns;"></tr>
+                                </table>
+                            </div>
+                        </mat-expansion-panel>
+
+                    </div>
+
+                    <div class="g-container chart_prep">
+                        <div attr.id="{{ind}}-chart_div">
+                        </div>
+                        <div attr.id="{{ind}}-chart_div_1">
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <button class="btnSave" (click)="visualizeBtn(msg , ind)"
+                            *ngIf="msg.dataSource && msg.run_query.ResponseCode === 200">Visualize</button>
+                        <div *ngIf="showLoader" class="d-flex mt-2 justify-content-center align-items-center">
+                            <mat-spinner [diameter]="30"></mat-spinner>
+                        </div>
+                    </div>
+                    <div style="width: 350px;" *ngIf="emptyMsg !== ''"><label
+                            class="card query-ref">{{emptyMsg}}</label>
+                    </div>
+                </div>
+            </mat-tab>
+            <mat-tab label="Data Sources">
+                <div class="mt-4 mb-3" id="dataSources">
+                    <div class="datasource-prep">
+                        <div class="d-flex gap-2 w-100">
+                            <p class="left-text"> Source </p>
+                            <span class="right-text"> {{dataSetName}}</span>
+                        </div>
+
+                        <div class="d-flex w-100">
+                            <p class="left-text"> Owner </p>
+                            <span class="right-text"> OpenData QnA</span>
+                        </div>
+                        <div class="d-flex gap-2 w-100">
+                            <p class="left-text"> Project ID </p>
+                            <span class="right-text"> Demo Project</span>
+                        </div>
+                        <div class="d-flex gap-2 w-100">
+                            <p class="left-text"> Grouping </p>
+                            <span class="right-text"> {{dataSet}}</span>
+                        </div>
+                    </div>
+                </div>
+            </mat-tab>
+        </mat-tab-group>
+    </ng-template>
+
+
+    <div *ngIf="showResult && msg.author == 'agent' && msg.generate_sql.ResponseCode === 200" class="mt-4 user-feedback"
+        #feedback>
+        <div *ngIf="showResult" class="d-flex flex-column align-items-center justify-content-center">
+            <p class="user-feedback-title">Is this what you were looking for?</p>
+            <div class="col-12" class="btns">
+
+                <div class="img-align">
+                    <img src="assets/images/thumbs-up-icon.svg" class="ml-2 mr-2 cursor-ref" alt="up"
+                        (click)="thumbsUp(msg.generate_sql.GeneratedSQL , ind)" cdkOverlayOrigin
+                        #trigger="cdkOverlayOrigin">
+                    <ng-template cdkConnectedOverlay [cdkConnectedOverlayOrigin]="trigger"
+                        [cdkConnectedOverlayOpen]="isOpen">
+                        <div class="container mt-4 wrap-background feedback-grad">
+                            <label class="feedback-label"> Provide Feedback
+                                <span class="material-symbols-outlined" style="float: right;" (click)="closeFeedback()">
+                                    close
+                                </span>
+                            </label>
+                            <div style="display: inline-block;">
+                                <span
+                                    [ngClass]="selectedFeedbackOption=='Correct answer'? 'feedback-ref-clicked' : 'feedback-ref'">
+                                    <a style="white-space: nowrap ;" (click)="feedbackOption(0)"> Correct
+                                        answer</a> </span>
+
+                                <span
+                                    [ngClass]="selectedFeedbackOption=='Easy to understand'? 'feedback-ref-clicked' : 'feedback-ref'">
+                                    <a style="white-space: nowrap ;" (click)="feedbackOption(1)"> Easy to
+                                        understand</a> </span>
+
+                                <span
+                                    [ngClass]="selectedFeedbackOption=='Quick results'? 'feedback-ref-clicked' : 'feedback-ref'">
+                                    <a style="white-space: nowrap ;" (click)="feedbackOption(2)"> Quick
+                                        results</a> </span>
+                            </div>
+                            <form [formGroup]="feedbackForm">
+                                <textarea rows="2" cols="25" class="form-control" id="feedback-comment"
+                                    placeholder=" Type" formControlName="feedbackCtrl" matInput></textarea>
+                                <a href="javascript:void(0);"
+                                    (click)="submitFeedback(ind , feedbackForm.controls['feedbackCtrl'].value)"
+                                    class="feedback-button">Submit</a>
+                            </form>
+                        </div>
+                    </ng-template>
+
+                    <img src="assets/images/thumbs-down-icon.svg" class="ml-2 mr-2 cursor-ref" alt="down"
+                        (click)="thumbsDown()" cdkOverlayOrigin #trigger="cdkOverlayOrigin">
+                </div>
+            </div>
+        </div>
+    </div>
+</ng-container>

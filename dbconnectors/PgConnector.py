@@ -1,18 +1,3 @@
-# Copyright 2024 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-
 """
 PostgreSQL Connector Class 
 """
@@ -107,10 +92,10 @@ class PgConnector(DBConnector, ABC):
         cache_known_sql() -> None:
             Caches known good SQL queries into a PostgreSQL table for future reference.
 
-        retrieve_matches(mode, schema, qe, similarity_threshold, limit) -> list:
+        retrieve_matches(mode, user_grouping, qe, similarity_threshold, limit) -> list:
             Retrieves similar matches (table schemas, column schemas, or example queries) from the database based on the given mode, query embedding (`qe`), similarity threshold, and limit.
 
-        getSimilarMatches(mode, schema, qe, num_matches, similarity_threshold) -> str:
+        getSimilarMatches(mode, user_grouping, qe, num_matches, similarity_threshold) -> str:
             Gets similar matches for tables, columns, or examples asynchronously, formatting the results into a string.
 
         test_sql_plan_execution(generated_sql) -> Tuple[bool, pd.DataFrame]:
@@ -173,7 +158,7 @@ class PgConnector(DBConnector, ABC):
         result_df=pd.DataFrame()
         try: 
             with self.pool.connect() as db_conn:
-                # query and fetch ratings table
+               
                 df = pd.read_sql(text(query), con=db_conn)
                 result_df = df
             # print('\n Return from code execution: ' + str(result_df) )
@@ -213,7 +198,7 @@ class PgConnector(DBConnector, ABC):
                 """CREATE TABLE query_example_embeddings(
                                     prompt TEXT,
                                     sql TEXT,
-                                    database_name TEXT)"""
+                                    user_grouping TEXT)"""
             )
 
             # Copy the dataframe to the 'query_example_embeddings' table.
@@ -225,7 +210,7 @@ class PgConnector(DBConnector, ABC):
         await conn.close()
 
 
-    async def retrieve_matches(self, mode, schema, qe, similarity_threshold, limit): 
+    async def retrieve_matches(self, mode, user_groupinguping, qe, similarity_threshold, limit): 
         """
         This function retrieves the most similar table_schema and column_schema.
         Modes can be either 'table', 'column', or 'example' 
@@ -254,7 +239,7 @@ class PgConnector(DBConnector, ABC):
                     1 - (embedding <=> $1) AS similarity
                     FROM table_details_embeddings
                     WHERE 1 - (embedding <=> $1) > $2
-                    AND table_schema = $4
+                    AND user_grouping = $4
                     ORDER BY similarity DESC LIMIT $3
                 """
                 
@@ -265,17 +250,17 @@ class PgConnector(DBConnector, ABC):
                     1 - (embedding <=> $1) AS similarity
                     FROM tablecolumn_details_embeddings
                     WHERE 1 - (embedding <=> $1) > $2
-                    AND table_schema = $4
+                    AND user_grouping = $4
                     ORDER BY similarity DESC LIMIT $3
                 """
 
             elif mode == 'example': 
                 sql = """
-                    SELECT table_schema, example_user_question, example_generated_sql,
+                    SELECT user_grouping, example_user_question, example_generated_sql,
                     1 - (embedding <=> $1) AS similarity
                     FROM example_prompt_sql_embeddings
                     WHERE 1 - (embedding <=> $1) > $2
-                    AND table_schema = $4
+                    AND user_grouping = $4
                     ORDER BY similarity DESC LIMIT $3
                 """
 
@@ -283,14 +268,14 @@ class PgConnector(DBConnector, ABC):
                 ValueError("No valid mode. Must be either table, column, or example")
                 name_txt = ''
                 
-            # print(sql,qe,similarity_threshold,limit,schema)
+            # print(sql,qe,similarity_threshold,limit,user_grouping)
             # FETCH RESULTS FROM POSTGRES DB 
             results = await conn.fetch(
                 sql,
                 qe,
                 similarity_threshold,
                 limit,
-                schema
+                user_groupinguping
             )
 
             # CHECK RESULTS 
@@ -330,18 +315,18 @@ class PgConnector(DBConnector, ABC):
 
 
 
-    async def getSimilarMatches(self, mode, schema, qe, num_matches, similarity_threshold):
+    async def getSimilarMatches(self, mode, user_grouping, qe, num_matches, similarity_threshold):
 
         if mode == 'table': 
-            match_result=await self.retrieve_matches(mode, schema, qe, similarity_threshold, num_matches)
+            match_result=await self.retrieve_matches(mode, user_grouping, qe, similarity_threshold, num_matches)
             match_result = match_result[0]
 
         elif mode == 'column': 
-            match_result=await self.retrieve_matches(mode, schema, qe, similarity_threshold, num_matches)
+            match_result=await self.retrieve_matches(mode, user_grouping, qe, similarity_threshold, num_matches)
             match_result = match_result[0]
         
         elif mode == 'example': 
-            match_result=await self.retrieve_matches(mode, schema, qe, similarity_threshold, num_matches)
+            match_result=await self.retrieve_matches(mode, user_grouping, qe, similarity_threshold, num_matches)
             if len(match_result) == 0:
                 match_result = None
             else:
@@ -351,22 +336,27 @@ class PgConnector(DBConnector, ABC):
 
 
     def test_sql_plan_execution(self, generated_sql):
-        exec_result_df = pd.DataFrame()
-        sql = f"""EXPLAIN ANALYZE {generated_sql}"""
-        exec_result_df = self.retrieve_df(sql)
+        try:
+            exec_result_df = pd.DataFrame()
+            sql = f"""EXPLAIN ANALYZE {generated_sql}"""
+            exec_result_df = self.retrieve_df(sql)
 
-        if not exec_result_df.empty:
-            if str(exec_result_df.iloc[0]).startswith('Error. Message'):
-                correct_sql = False 
-                
+            if not exec_result_df.empty:
+                if str(exec_result_df.iloc[0]).startswith('Error. Message'):
+                    correct_sql = False 
+                    
+                else:
+                    print('\n No need to rewrite the query. This seems to work fine and returned rows...')
+                    correct_sql = True
             else:
-                print('\n No need to rewrite the query. This seems to work fine and returned rows...')
+                print('\n No need to rewrite the query. This seems to work fine but no rows returned...')
                 correct_sql = True
-        else:
-            print('\n No need to rewrite the query. This seems to work fine but no rows returned...')
-            correct_sql = True
         
-        return correct_sql, exec_result_df
+            return correct_sql, exec_result_df
+
+        except Exception as e:
+            return False,str(e)
+        
 
 
 
@@ -389,7 +379,7 @@ class PgConnector(DBConnector, ABC):
                 exact_sql=example_sql
                 sql_example_txt = sql_example_txt + "\n Example_question: "+example_user_question+ "; Example_SQL: "+example_sql
 
-            print("Found a matching question from the history!" + str(sql_example_txt))
+            # print("Found a matching question from the history!" + str(sql_example_txt))
             final_sql=exact_sql
 
         else: 
@@ -402,7 +392,7 @@ class PgConnector(DBConnector, ABC):
 
 
 
-    def return_column_schema_sql(self, schema): 
+    def return_column_schema_sql(self, schema, table_names=None): 
         """
         This SQL returns a df containing the cols table_schema, table_name, column_name, data_type, column_description, table_description, primary_key, column_constraints
         for the schema specified above, e.g. 'retail'
@@ -415,7 +405,13 @@ class PgConnector(DBConnector, ABC):
         - primary_key: whether the col is PK; if yes, the field contains the col_name 
         - column_constraints: e.g. "Primary key for this table"
         """
-
+        table_filter_clause = ""
+        if table_names:
+            
+            # table_names = [name.strip() for name in table_names[1:-1].split(",")]  # Handle the string as a list
+            formatted_table_names = [f"'{name}'" for name in table_names]
+            table_filter_clause = f"""and table_name in ({', '.join(formatted_table_names)})"""
+            
 
         column_schema_sql = f'''
         WITH
@@ -432,17 +428,17 @@ class PgConnector(DBConnector, ABC):
         on d.objsubid=c.ordinal_position
         and d.objoid=c1.oid
         where
-        c.table_schema='{schema}'),
+        c.table_schema='{schema}' {table_filter_clause}) ,
         pk_schema as
         (SELECT table_name, column_name AS primary_key
         FROM information_schema.key_column_usage
-        WHERE TABLE_SCHEMA='{schema}'
+WHERE TABLE_SCHEMA='{schema}' {table_filter_clause}
         AND CONSTRAINT_NAME like '%_pkey%'
         ORDER BY table_name, primary_key),
         fk_schema as
         (SELECT table_name, column_name AS foreign_key
         FROM information_schema.key_column_usage
-        WHERE TABLE_SCHEMA='{schema}'
+        WHERE TABLE_SCHEMA='{schema}' {table_filter_clause}
         AND CONSTRAINT_NAME like '%_fkey%'
         ORDER BY table_name, foreign_key)
 
@@ -476,7 +472,7 @@ class PgConnector(DBConnector, ABC):
 
 
     
-    def return_table_schema_sql(self, schema): 
+    def return_table_schema_sql(self, schema, table_names=None): 
         """
         This SQL returns a df containing the cols table_schema, table_name, table_description, table_columns (with cols in the table)
         for the schema specified above, e.g. 'retail'
@@ -485,6 +481,14 @@ class PgConnector(DBConnector, ABC):
         - table_description: text descriptor, can be empty 
         - table_columns: aggregate of the col names inside the table 
         """
+
+        table_filter_clause = ""
+
+        if table_names:
+            # Extract individual table names from the input string
+            #table_names = [name.strip() for name in table_names[1:-1].split(",")]  # Handle the string as a list
+            formatted_table_names = [f"'{name}'" for name in table_names]
+            table_filter_clause = f"""and table_name in ({', '.join(formatted_table_names)})"""
 
 
         table_schema_sql = f'''
@@ -501,7 +505,7 @@ class PgConnector(DBConnector, ABC):
         on d.objsubid=c.ordinal_position
         and d.objoid=c1.oid
         where
-        c.table_schema='{schema}') data
+        c.table_schema='{schema}' {table_filter_clause} ) data
         GROUP BY table_schema, table_name, table_description
         ORDER BY table_name;
         '''
@@ -509,3 +513,15 @@ class PgConnector(DBConnector, ABC):
         return table_schema_sql  
     
 
+    def get_column_samples(self,columns_df):
+        sample_column_list=[]
+
+        for index, row in columns_df.iterrows():
+            get_column_sample_sql=f'''SELECT most_common_vals AS sample_values FROM pg_stats WHERE tablename = '{row["table_name"]}' AND schemaname = '{row["table_schema"]}' AND attname = '{row["column_name"]}' '''
+
+            column_samples_df=self.retrieve_df(get_column_sample_sql)
+            # display(column_samples_df)
+            sample_column_list.append(column_samples_df['sample_values'].to_string(index=False).replace("{","").replace("}",""))
+
+        columns_df["sample_values"]=sample_column_list
+        return columns_df

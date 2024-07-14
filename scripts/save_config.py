@@ -1,17 +1,3 @@
-# Copyright 2024 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import os
 import sys
 import configparser
@@ -37,22 +23,20 @@ def is_root_dir():
 
 def save_config(embedding_model,
                 description_model,
-                data_source, 
                 vector_store,
                 logging,
                 kgq_examples,
+                use_column_samples,
                 PROJECT_ID,
                 pg_region, 
                 pg_instance, 
                 pg_database, 
                 pg_user, 
-                pg_password, 
-                pg_schema, 
-                bq_dataset_region, 
-                bq_dataset_name, 
+                pg_password,
+                bq_dataset_region,
                 bq_opendataqna_dataset_name, 
                 bq_log_table_name,
-                bq_table_list): 
+                firestore_region): 
     
     config = configparser.ConfigParser()
 
@@ -69,26 +53,25 @@ def save_config(embedding_model,
 
 
     config['GCP']['PROJECT_ID'] = PROJECT_ID
-    config['CONFIG']['DATA_SOURCE'] = data_source
+    # config['CONFIG']['DATA_SOURCE'] = data_source
     config['CONFIG']['VECTOR_STORE'] = vector_store
     config['CONFIG']['EMBEDDING_MODEL'] = embedding_model
     config['CONFIG']['DESCRIPTION_MODEL'] = description_model
+    config['CONFIG']['FIRESTORE_REGION'] = firestore_region
 
 
-    # Save the parameters based on Data Source and Vector Store Choices
-    if data_source == 'cloudsql-pg' or vector_store == 'cloudsql-pgvector':
+    # Save the parameters based on Vector Store Choices
+    if vector_store == 'cloudsql-pgvector':
         config['PGCLOUDSQL']['PG_INSTANCE'] = pg_instance
         config['PGCLOUDSQL']['PG_DATABASE'] = pg_database
         config['PGCLOUDSQL']['PG_USER'] = pg_user
         config['PGCLOUDSQL']['PG_PASSWORD'] = pg_password
         config['PGCLOUDSQL']['PG_REGION'] = pg_region
-        config['PGCLOUDSQL']['PG_SCHEMA'] = pg_schema
+        # config['PGCLOUDSQL']['PG_SCHEMA'] = pg_schema
 
-    if data_source := 'bigquery':
+    if vector_store := 'bigquery':
         config['BIGQUERY']['BQ_DATASET_REGION'] = bq_dataset_region
-        config['BIGQUERY']['BQ_DATASET_NAME'] = bq_dataset_name
         config['BIGQUERY']['BQ_OPENDATAQNA_DATASET_NAME'] = bq_opendataqna_dataset_name
-        config['BIGQUERY']['BQ_TABLE_LIST'] = str(bq_table_list)
         config['BIGQUERY']['BQ_LOG_TABLE_NAME'] = bq_log_table_name
 
     if logging: 
@@ -103,6 +86,12 @@ def save_config(embedding_model,
 
     else: 
         config['CONFIG']['KGQ_EXAMPLES'] = 'no'
+
+    if use_column_samples:
+        config['CONFIG']['USE_COLUMN_SAMPLES'] = 'yes'
+    
+    else:
+        config['CONFIG']['USE_COLUMN_SAMPLES'] = 'no'
 
 
     with open(root_dir+'/config.ini', 'w') as configfile:  

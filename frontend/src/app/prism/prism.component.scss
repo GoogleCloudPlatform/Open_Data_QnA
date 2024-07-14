@@ -2,21 +2,19 @@ mat-icon {
   vertical-align: bottom;
 
 }
+
 .app-sidenav {
-  font-family: Google Sans Text;
+  font-family: "Google Sans";
   font-size: 14px;
-    width: 200px;
-  }
-  .app-sidenav mat-list-item {
-    cursor: pointer;
+  width: 200px;
+}
 
-    }
+.app-sidenav mat-list-item {
+  cursor: pointer;
+}
 
-     .active {
-      background-color: #E8F0FE      ;
-      border-radius: 25px;
-      color: #4D88FF;
-    }
-
-
-
+.active {
+  background-color: #E8F0FE;
+  border-radius: 25px;
+  color: #4D88FF;
+}

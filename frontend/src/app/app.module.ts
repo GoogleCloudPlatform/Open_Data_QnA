@@ -1,28 +1,11 @@
-/*
- * Copyright 2024 Google LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-
 import { CUSTOM_ELEMENTS_SCHEMA, NgModule, importProvidersFrom } from "@angular/core";
 import { AppComponent } from "./app.component";
 import { LoginComponent } from "./login/login.component";
 import { LoginButtonComponent } from "./login-button/login-button.component";
 import { LoginService } from "./shared/services/login.service";
 import { SharedService } from "./shared/services/shared.service";
-import { provideFirestore,getFirestore } from "@angular/fire/firestore";
-import { initializeApp, provideFirebaseApp } from "@angular/fire/app";
+import { provideFirestore, initializeFirestore } from "@angular/fire/firestore";
+import { getApp, initializeApp, provideFirebaseApp } from "@angular/fire/app";
 import { BrowserModule } from "@angular/platform-browser";
 import { UserJourneyComponent } from "./user-journey/user-journey.component";
 import { AppRoutingModule } from "./app-routing.module";
@@ -40,21 +23,21 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { CommonModule, NgFor, NgIf } from "@angular/common";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
-import {MatListModule} from '@angular/material/list';
-import {MatSidenavModule} from '@angular/material/sidenav';
-import { MatExpansionModule} from '@angular/material/expansion';
+import { MatListModule } from '@angular/material/list';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { MenuComponent } from "./menu/menu.component";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { BusinessUserComponent } from "./business-user/business-user.component";
-import {MatTableModule} from '@angular/material/table';
-import {MatCardModule} from '@angular/material/card';
-import { HttpClientModule } from '@angular/common/http';
+import { MatTableModule } from '@angular/material/table';
+import { MatCardModule } from '@angular/material/card';
+import { HTTP_INTERCEPTORS, HttpClientModule, provideHttpClient, withFetch } from '@angular/common/http';
 import { HomeService } from './shared/services/home.service';
 import { provideAuth, getAuth } from '@angular/fire/auth';
-import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
-import {ClipboardModule} from '@angular/cdk/clipboard';
-import {MatSlideToggleModule} from '@angular/material/slide-toggle';
+import { ClipboardModule } from '@angular/cdk/clipboard';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { OperationalUserComponent } from './operational-user/operational-user.component';
 import { NgChartsModule } from 'ng2-charts';
 import { ReportsComponent } from './reports/reports.component';
@@ -67,12 +50,16 @@ import { PrismComponent } from "./prism/prism.component";
 import 'prismjs/components/prism-sql';
 import { MatPaginatorModule } from "@angular/material/paginator";
 import { OverlayModule } from "@angular/cdk/overlay";
-import { LoadPopupComponent } from "./load-popup/load-popup.component";
 import { SavedQueriesComponent } from './saved-queries/saved-queries.component';
 import { HistoryComponent } from './history/history.component';
 import { GoogleChartsModule } from "angular-google-charts";
-import {MatRadioModule} from '@angular/material/radio';
-import {firebaseConfig} from "../assets/constants"
+import { MatRadioModule } from '@angular/material/radio';
+import { MatStepperModule } from '@angular/material/stepper';
+import { STEPPER_GLOBAL_OPTIONS } from "@angular/cdk/stepper";
+import { AgentChatComponent } from "./agent-chat/agent-chat.component";
+import { AppHttpInterceptor } from "./http.interceptor";
+import { firebaseConfig , FIRESTORE_DATABASE_ID} from "../assets/constants";
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -82,14 +69,15 @@ import {firebaseConfig} from "../assets/constants"
     HomeComponent,
     HeaderComponent,
     MenuComponent,
-    BusinessUserComponent,OperationalUserComponent,
+    BusinessUserComponent,
+    OperationalUserComponent,
     ReportsComponent,
     TechnicalUserComponent,
     UserPhotoComponent,
     PrismComponent,
-    LoadPopupComponent,
     SavedQueriesComponent,
-    HistoryComponent
+    HistoryComponent,
+    AgentChatComponent
   ],
   imports: [
     CommonModule,
@@ -98,17 +86,13 @@ import {firebaseConfig} from "../assets/constants"
     FormsModule,
     BrowserAnimationsModule,
     AppRoutingModule,
-    // provideFirebaseApp(() => initializeApp(firebaseConfig)),
-    // provideFirestore(() => getFirestore()),
-    // provideAuth(() => getAuth()),
-
     MatToolbarModule,
     MatIconModule,
     MatButtonModule,
     RouterLink,
     MatTabsModule,
     MatDividerModule,
-     NgIf,
+    NgIf,
     NgFor,
     MatSelectModule,
     MatInputModule,
@@ -131,18 +115,34 @@ import {firebaseConfig} from "../assets/constants"
     MatPaginatorModule,
     OverlayModule,
     GoogleChartsModule,
-    MatRadioModule
+    MatRadioModule,
+    MatStepperModule,
+    MatExpansionModule
   ],
   providers: [
+    {
+      provide: STEPPER_GLOBAL_OPTIONS,
+      useValue: { displayDefaultIndicatorType: false }
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AppHttpInterceptor,
+      multi: true
+    },
+    provideHttpClient(withFetch()),
     importProvidersFrom([
-        provideFirebaseApp(() => initializeApp(firebaseConfig)),
-        provideFirestore(() => getFirestore()),
-        provideAuth(() => getAuth()),
-   LoginService,
-   SharedService,
-   HomeService,
-   AngularFireAuth
-   
+      provideFirebaseApp(() => initializeApp(firebaseConfig)),
+      provideFirestore(() => {
+        const app = getApp();
+        const providedFirestore = initializeFirestore(app, {}, FIRESTORE_DATABASE_ID);
+        return providedFirestore;
+      }),
+ 
+      provideAuth(() => getAuth()),
+      LoginService,
+      SharedService,
+      HomeService,
+      AngularFireAuth
     ]),
   ],
   bootstrap: [AppComponent],

@@ -1,22 +1,53 @@
 mat-icon {
   vertical-align: bottom;
-
 }
+
 .app-sidenav {
-  font-family: Google Sans Text;
+  color: #000;
+  font-feature-settings: 'clig' off, 'liga' off;
+  font-family: "Google Sans";
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: -0.154px;
+  width: 280px;
+}
+
+.activeTab {
+  background-color: #E8F0FE;
+  border-radius: 25px;
+  color: #4D88FF;
+}
+
+.inactiveTab {
+  background-color: #FFF;
+  border-radius: 25px;
+  color: #444746;
+}
+
+.historyDetails {
+  text-wrap: wrap;
+  margin-bottom: 15px;
+  display: block;
+  color: #444746;
+  font-family: 'Google Sans';
   font-size: 14px;
-    width: 200px;
-  }
-  .app-sidenav mat-list-item {
-    cursor: pointer;
+  cursor: pointer;
+}
 
-    }
+.showMore {
+  font-size: .875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+  font-family: "Google Sans", "Helvetica Neue", sans-serif;
+  letter-spacing: normal;
+  border: transparent;
+  border-radius: 20px;
+  padding: 10px;
+  width: 100%;
+}
 
-     .active {
-      background-color: #E8F0FE      ;
-      border-radius: 25px;
-      color: #4D88FF;
-    }
-
-
-
+.mdc-list-item{
+  cursor: auto !important;
+}

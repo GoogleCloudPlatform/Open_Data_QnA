@@ -1,25 +1,9 @@
-/*
- * Copyright 2024 Google LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpHeaders, HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { catchError, throwError, BehaviorSubject } from 'rxjs';
+import { catchError, throwError, BehaviorSubject} from 'rxjs';
 import { Observable } from 'rxjs';
-import { ENDPOINT_OPENDATAQNA } from '../../../assets/constants'
+import { ENDPOINT_OPENDATAQNA } from '../../../assets/constants';
+import { Firestore, collection, collectionData, doc, docData, orderBy, query, updateDoc, where } from '@angular/fire/firestore';
 
 @Injectable({
   providedIn: 'root'
@@ -28,16 +12,23 @@ export class HomeService {
   public databaseSubject = new BehaviorSubject(null);
   databaseObservable = this.databaseSubject.asObservable();
   private databaseList: any;
-  private selectedDb: any;
-  public checkuserType: any;
+  private selectedGrouping: any;
   public selectedDBType: any;
-  DBType: any;
-  config: any;
   selectedDbName: any;
-
+  chatMsgs: any[] = []
+  private firestore: Firestore = inject(Firestore);
+  session_id: any = '';
   constructor(public http: HttpClient) { }
 
   ngOnInit() { }
+
+  getUserSessions(userId: string) {
+    const sessionCollection = collection(this.firestore, `session_logs`);
+    const orderedCollection = query(sessionCollection, orderBy("timestamp", "desc"));
+    const filter = query(orderedCollection, where("user_id", "==", userId))
+    return collectionData(filter, { idField: 'id' })
+  }
+
   getAvailableDatabases(): any {
     const header = {
       'Content-Type': 'application/json',
@@ -48,7 +39,7 @@ export class HomeService {
 
     return this.http.get(ENDPOINT_OPENDATAQNA + '/available_databases', requestOptions).pipe(catchError(this.handleError))
   }
-  sqlSuggestionList(databasetype: any, dbtype: any) {
+  sqlSuggestionList(grouping: any, dbtype: any) {
 
     const header = {
       'Content-Type': 'application/json',
@@ -59,7 +50,7 @@ export class HomeService {
 
     const body =
     {
-      "user_database": databasetype
+      "user_grouping": grouping
     }
     this.selectedDBType = dbtype;
 
@@ -70,7 +61,7 @@ export class HomeService {
   returnEndpointURL() {
     return ENDPOINT_OPENDATAQNA;
   }
-  generateSql(userQuestion: any, databasetype: any) {
+  generateSql(userQuestion: any, grouping: any, session_id: any, user_id: any) {
 
     const header = {
       'Content-Type': 'application/json',
@@ -81,7 +72,9 @@ export class HomeService {
     const body =
     {
       "user_question": userQuestion,
-      "user_database": databasetype
+      "user_grouping": grouping,
+      "session_id": session_id,
+      "user_id": user_id
     }
     let endpoint = ENDPOINT_OPENDATAQNA;
 
@@ -103,11 +96,12 @@ export class HomeService {
   getAvailableDBList(): string {
     return this.databaseList;
   }
-  setselectedDb(databaseList: any) {
-    this.selectedDb = databaseList;
+  setselectedDb(selectedDBGroup: any) {
+    console.log(selectedDBGroup)
+    this.selectedGrouping = selectedDBGroup;
   }
   getselectedDb(): string {
-    return this.selectedDb;
+    return this.selectedGrouping;
   }
 
   setselectedDbName(databaseList: any) {
@@ -116,7 +110,27 @@ export class HomeService {
   getselectedDbName(): string {
     return this.selectedDbName;
   }
-  generateResultforSql(query: any, databasetype: any) {
+
+  setSessionId(session_id: any) {
+    this.session_id = session_id;
+  }
+  getSessionId(): string {
+    return this.session_id;
+  }
+
+  getChatMsgs(): any[] {
+    return this.chatMsgs
+  }
+
+  updateChatMsgs(chatMsgs: any) {
+    this.chatMsgs = chatMsgs;
+  }
+
+  updateChatMsgsAtIndex(chatMsg: any, ind: any) {
+    this.chatMsgs[ind] = chatMsg
+  }
+
+  runQuery(query: any, grouping: any, user_question: any , session_id : any) {
     const header = {
       'Content-Type': 'application/json',
     }
@@ -126,14 +140,16 @@ export class HomeService {
     const body =
     {
       "generated_sql": query,
-      "user_database": databasetype
+      "user_grouping": grouping,
+      "user_question": user_question,
+      "session_id": session_id
     }
     let endpoint = ENDPOINT_OPENDATAQNA;
 
-    return this.http.post(endpoint + "/run_query", body, requestOptions)
-      .pipe(catchError(this.handleError));
+    return this.http.post(endpoint + "/run_query", body, requestOptions);
   }
-  thumbsUp(sql: any, selectedDb: any) {
+
+  thumbsUp(sql: any, user_question: any, selectedGrouping: any , session_id : any) {
 
     const header = {
       'Content-Type': 'application/json',
@@ -143,16 +159,17 @@ export class HomeService {
     };
     const body =
     {
-      user_database: selectedDb,
-      generated_sql: sql.example_generated_sql,
-      user_question: sql.example_user_question
+      user_grouping: selectedGrouping,
+      generated_sql: sql,
+      user_question: user_question,
+      "session_id": session_id
     }
     let endpoint = ENDPOINT_OPENDATAQNA;
     return this.http.post(endpoint + "/embed_sql", body, requestOptions)
       .pipe(catchError(this.handleError));
   }
 
-  generateViz(question: any, query: any, result: any) {
+  generateViz(question: any, query: any, result: any , session_id : any) {
     const header = {
       'Content-Type': 'application/json',
     }
@@ -163,7 +180,8 @@ export class HomeService {
     {
       "user_question": question,
       "sql_generated": query,
-      "sql_results": result
+      "sql_results": result,
+      "session_id": session_id
     }
     return this.http.post(ENDPOINT_OPENDATAQNA + "/generate_viz", body, requestOptions)
       .pipe(catchError(this.handleError));

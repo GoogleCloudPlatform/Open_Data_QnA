@@ -29,7 +29,7 @@ from flask_cors import CORS
 import os
 import sys
 
-from opendataqna import get_all_databases,get_kgq,generate_sql,embed_sql,get_response,get_results,Visualize
+from opendataqna import get_all_databases,get_kgq,generate_sql,embed_sql,get_response,get_results,visualize
 
 
 module_path = os.path.abspath(os.path.join('.'))
@@ -38,12 +38,12 @@ sys.path.append(module_path)
 
 RUN_DEBUGGER = True
 DEBUGGING_ROUNDS = 2 
-LLM_VALIDATION = True
+LLM_VALIDATION = False
 EXECUTE_FINAL_SQL = True
 Embedder_model = 'vertex'
-SQLBuilder_model = 'gemini-1.0-pro'
-SQLChecker_model = 'gemini-1.0-pro'
-SQLDebugger_model = 'gemini-1.0-pro'
+SQLBuilder_model = 'gemini-1.5-pro'
+SQLChecker_model = 'gemini-1.5-pro'
+SQLDebugger_model = 'gemini-1.5-pro'
 num_table_matches = 5
 num_column_matches = 10
 table_similarity_threshold = 0.3
@@ -84,16 +84,18 @@ async def embedSql():
 
     envelope = str(request.data.decode('utf-8'))
     envelope=json.loads(envelope)
-    user_database=envelope.get('user_database')
+    user_grouping=envelope.get('user_grouping')
     generated_sql = envelope.get('generated_sql')
     user_question = envelope.get('user_question')
+    session_id = envelope.get('session_id')
 
-    embedded, invalid_response=await embed_sql(user_database,user_question,generated_sql)
+    embedded, invalid_response=await embed_sql(session_id,user_grouping,user_question,generated_sql)
 
     if not invalid_response:
         responseDict = { 
                         "ResponseCode" : 201, 
                         "Message" : "Example SQL has been accepted for embedding",
+                        "SessionID" : session_id,
                         "Error":""
                         } 
         return jsonify(responseDict)
@@ -101,6 +103,7 @@ async def embedSql():
         responseDict = { 
                    "ResponseCode" : 500, 
                    "KnownDB" : "",
+                   "SessionID" : session_id,
                    "Error":embedded
                    } 
         return jsonify(responseDict)
@@ -114,21 +117,40 @@ def getSQLResult():
     envelope = str(request.data.decode('utf-8'))
     envelope=json.loads(envelope)
 
-    user_database = envelope.get('user_database')
+    user_question = envelope.get('user_question')
+    user_grouping = envelope.get('user_grouping')
     generated_sql = envelope.get('generated_sql')
+    session_id = envelope.get('session_id')
 
-    result_df,invalid_response=get_results(user_database,generated_sql)
+    result_df,invalid_response=get_results(user_grouping,generated_sql)
+
+
     if not invalid_response:
-        responseDict = { 
-                "ResponseCode" : 200, 
-                "KnownDB" : result_df.to_json(orient='records'),
-                "Error":""
-                }
+        _resp,invalid_response=get_response(session_id,user_question,result_df.to_json(orient='records'))
+        if not invalid_response:
+            responseDict = { 
+                    "ResponseCode" : 200, 
+                    "KnownDB" : result_df.to_json(orient='records'),
+                    "NaturalResponse" : _resp,
+                    "SessionID" : session_id,
+                    "Error":""
+                    }
+        else:
+            responseDict = { 
+                    "ResponseCode" : 500, 
+                    "KnownDB" : result_df.to_json(orient='records'),
+                    "NaturalResponse" : _resp,
+                    "SessionID" : session_id,
+                    "Error":""
+                    }
 
     else:
+        _resp=result_df
         responseDict = { 
                 "ResponseCode" : 500, 
                 "KnownDB" : "",
+                "NaturalResponse" : _resp,
+                "SessionID" : session_id,
                 "Error":result_df
                 } 
     return jsonify(responseDict)
@@ -142,10 +164,10 @@ def getKnownSQL():
     envelope = str(request.data.decode('utf-8'))
     envelope=json.loads(envelope)
     
-    user_database = envelope.get('user_database')
+    user_grouping = envelope.get('user_grouping')
 
 
-    result,invalid_response=get_kgq(user_database)
+    result,invalid_response=get_kgq(user_grouping)
     
     if not invalid_response:
         responseDict = { 
@@ -172,9 +194,12 @@ async def generateSQL():
     envelope=json.loads(envelope)
 
     user_question = envelope.get('user_question')
-    user_database = envelope.get('user_database')
-    generated_sql,invalid_response = await generate_sql(user_question,
-                user_database,  
+    user_grouping = envelope.get('user_grouping')
+    session_id = envelope.get('session_id')
+    user_id = envelope.get('user_id')
+    generated_sql,session_id,invalid_response = await generate_sql(session_id,
+                user_question,
+                user_grouping,  
                 RUN_DEBUGGER,
                 DEBUGGING_ROUNDS, 
                 LLM_VALIDATION,
@@ -187,18 +212,21 @@ async def generateSQL():
                 table_similarity_threshold,
                 column_similarity_threshold,
                 example_similarity_threshold,
-                num_sql_matches)
+                num_sql_matches,
+                user_id=user_id)
 
     if not invalid_response:
         responseDict = { 
                         "ResponseCode" : 200, 
                         "GeneratedSQL" : generated_sql,
+                        "SessionID" : session_id,
                         "Error":""
                         }
     else:
         responseDict = { 
                         "ResponseCode" : 500, 
                         "GeneratedSQL" : "",
+                        "SessionID" : session_id,
                         "Error":generated_sql
                         }          
 
@@ -214,16 +242,28 @@ async def generateViz():
     user_question = envelope.get('user_question')
     generated_sql = envelope.get('generated_sql')
     sql_results = envelope.get('sql_results')
-
+    session_id = envelope.get('session_id')
     chart_js=''
 
     try:
-        chart_js = Visualize.generate_charts(user_question,generated_sql,sql_results)
-        responseDict = { 
-        "ResponseCode" : 200, 
-        "GeneratedChartjs" : chart_js,
-        "Error":""
-        }
+        chart_js, invalid_response = visualize(session_id,user_question,generated_sql,sql_results)
+        
+        if not invalid_response:
+            responseDict = { 
+            "ResponseCode" : 200, 
+            "GeneratedChartjs" : chart_js,
+            "Error":"",
+            "SessionID":session_id
+            }
+        else:
+            responseDict = { 
+                "ResponseCode" : 500, 
+                "GeneratedSQL" : "",
+                "SessionID":session_id,
+                "Error": chart_js
+                } 
+
+
         return jsonify(responseDict)
 
     except Exception as e:
@@ -231,6 +271,7 @@ async def generateViz():
         responseDict = { 
                 "ResponseCode" : 500, 
                 "GeneratedSQL" : "",
+                "SessionID":session_id,
                 "Error":"Issue was encountered while generating the Google Chart, please check the logs!"  + str(e)
                 } 
         return jsonify(responseDict)
@@ -270,10 +311,10 @@ async def getNaturalResponse():
    envelope=json.loads(envelope)
    
    user_question = envelope.get('user_question')
-   user_database = envelope.get('user_database')
+   user_grouping = envelope.get('user_grouping')
    
-   generated_sql,invalid_response = await generate_sql(user_question,
-                user_database,  
+   generated_sql,session_id,invalid_response = await generate_sql(user_question,
+                user_grouping,  
                 RUN_DEBUGGER,
                 DEBUGGING_ROUNDS, 
                 LLM_VALIDATION,
@@ -290,7 +331,7 @@ async def getNaturalResponse():
    
    if not invalid_response:
 
-        result_df,invalid_response=get_results(user_database,generated_sql)
+        result_df,invalid_response=get_results(user_grouping,generated_sql)
         
         if not invalid_response:
             result,invalid_response=get_response(user_question,result_df.to_json(orient='records'))

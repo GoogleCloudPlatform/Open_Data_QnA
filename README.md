@@ -10,13 +10,6 @@
 </p>
 <h1 align="center">Open Data QnA - Chat with your SQL Database</h1> 
 
-_______________
-<div align="center"">
-  <strong>🚨 Version 1.2.0 is now live. Refer to the <a href="docs/changelog.md">Release Notes</a> for detailed information on updates and fixes. 🚨</strong>
-</div>
-
-_______________
-
 ✨ Overview
 -------------
 The **Open Data QnA** python library enables you to chat with your databases by leveraging LLM Agents on Google Cloud.
@@ -25,7 +18,10 @@ Open Data QnA enables a conversational approach to interacting with your data. A
 
 **Key Features:**
 
-* **Conversational Querying:** Ask questions naturally, without requiring SQL knowledge.
+* **Conversational Querying with Multiturn Support:** Ask questions naturally, without requiring SQL knowledge and ask follow up questions.
+* **Table Grouping:** Group tables under one usecase/user grouping name which can help filtering your large number tables for LLMs to understand about.
+* **Multi Schema/Dataset Support:** You can group tables from different schemas/datasets for embedding and asking questions against.
+* **Prompt Customization and Additional Context:** The prompts that are being used are loaded from a yaml file and it also give you ability to add extra context as well
 * **SQL Generation:** Automatically generates SQL queries based on your questions.
 * **Query Refinement:** Validates and debugs queries to ensure accuracy.
 * **Natural Language Responses:** DRun queries and present results in clear, easy-to-understand language.
@@ -38,11 +34,11 @@ It is built on a modular design and currently supports the following components:
 ### Database Connectors
 * **Google Cloud SQL for PostgreSQL**
 * **Google BigQuery**
+* **Google Firestore(for storing session logs)**
 
 ### Vector Stores 
 * **PGVector on Google Cloud SQL for PostgreSQL**
 * **BigQuery Vector Store**
-* **ChromaDB (WIP)**
 
 ### Agents 
 * **BuildSQLAgent:** An agent specialized in generating SQL queries for BigQuery or PostgreSQL databases. It analyzes user questions, available table schemas, and column descriptions to construct syntactically and semantically correct SQL queries, adapting its process based on the target database type.
@@ -58,7 +54,7 @@ It is built on a modular design and currently supports the following components:
 📏 Architecture
 -------------
 <p align="center">
-    <a href="utilities/imgs/OpenDataQnA Solution Architecture - v1.png">
+    <a href="utilities/imgs/Open Data QnA Solution Architecture.png">
         <img src="utilities/imgs/OpenDataQnA Solution Architecture - v1.png" alt="aaie image">
     </a>
 </p>
@@ -70,18 +66,15 @@ A detailed description of the Architecture can be found [`here`](/docs/architect
 -------------
 Details on the Repository Structure can be found [`here`](/docs/repo_structure.md) in the docs. 
 
-⚙️ Prerequisites   
--------------
-This library assumes that the source database is already set up in your GCP project. If a data source has not been set up, use the notebooks below to copy a public dataset from BigQuery to Cloud SQL PostgreSQL or from BigQuery into your GCP project.
-* PostgreSQL on Google Cloud SQL (Copy Sample Data: [0_CopyDataToCloudSqlPG.ipynb](/notebooks/0_CopyDataToCloudSqlPG.ipynb))
-* BigQuery (Copy Sample Data: [0_CopyDataToBigQuery.ipynb](/notebooks/0_CopyDataToBigQuery.ipynb))
 
 🏁 Getting Started: Quick Start   
 -------------
 
 **Quickstart with Open Data QnA: [Standalone BigQuery Notebook](/notebooks/(standalone)Run_OpenDataQnA.ipynb)**
 
-This notebook offers a streamlined way to experience the core functionality of Open Data QnA using BigQuery as both the data source and vector store. While it doesn't encompass the full flexibility of the repository setup, it's a perfect starting point to quickly test and explore the conversational querying capabilities of Open Data QnA with your own BigQuery datasets.
+Copy both [Standalone BigQuery Notebook](/notebooks/(standalone)Run_OpenDataQnA.ipynb) and [pyproject.toml](/pyproject.toml)
+
+This notebook offers a streamlined way to experience the core functionality of Open Data QnA using BigQuery as both the data source and vector store. While it doesn't encompass the full flexibility of the repository setup, it's a perfect starting point to quickly test and explore the conversational querying capabilities of Open Data QnA with your own BigQuery datasets. 
 
 
 🏁 Getting Started: Main Repository 
@@ -95,7 +88,6 @@ This notebook offers a streamlined way to experience the core functionality of O
    
     git clone git@github.com:GoogleCloudPlatform/Open_Data_QnA.git
     cd Open_Data_QnA
-
 __________
 
 ### A) Jupyter Notebook Based Approach
@@ -122,6 +114,31 @@ For setup we require details for vector store, source database etc. Edit the [co
 
 ℹ️ Follow the guidelines from the [config guide document](/docs/config_guide.md) to populate your [config.ini](/config.ini) file.
 
+**Sources to connect**
+
+- This solution lets you setup multiple data source at same time.
+- You can group multiple tables from different datasets or schema into a grouping and provide the details
+- If your dataset/schema has many tables and you want to run the solution against few you should specifically choose a group for that tables only
+
+**Format for data_source_list.csv**
+
+**source | user_grouping | schema | table**
+
+**source** - Supported Data Sources. #Options: bigquery , cloudsql-pg
+
+**user_grouping** - Logical grouping or use case name for tables from same or different schema/dataset. When left black it default to the schema value in the next column
+
+**schema** - schema name for postgres or dataset name in bigquery 
+
+**table** - name of the tables to run the solutions against. Leave this column blank after filling schema/dataset if you want to run solution for whole dataset/schema
+
+Update the [data_source_list.csv](/scripts/data_source_list.csv) according for your requirement.
+
+Note that the source details filled in the csv should have already be present. If not please use the Copy Notebooks if you want the demo source setup.
+
+Enabled Data Sources:
+* PostgreSQL on Google Cloud SQL (Copy Sample Data: [0_CopyDataToCloudSqlPG.ipynb](0_CopyDataToCloudSqlPG.ipynb))
+* BigQuery (Copy Sample Data: [0_CopyDataToBigQuery.ipynb](0_CopyDataToBigQuery.ipynb))
 
 #### 2. Creating Virtual Environment and Install Dependencies
 
@@ -152,12 +169,13 @@ Enable APIs for the solution setup
 ```
 gcloud services enable \
   cloudapis.googleapis.com \
+  compute.googleapis.com \
   iam.googleapis.com \
   run.googleapis.com \
   sqladmin.googleapis.com \
   aiplatform.googleapis.com \
   bigquery.googleapis.com \
-  storage.googleapis.com \ --project <<Enter Project Id>>
+  firestore.googleapis.com --project <<Enter Project Id>>
 
 ```
 
@@ -172,14 +190,16 @@ python env_setup.py
 The Open Data QnA SQL Generation tool can be conveniently used from your terminal or command prompt using a simple CLI interface. Here's how:
 
 ```
-python opendataqna.py --user_question "What are the top 5 cities with highest recalls?" --user_database "fda_food"
+python opendataqna.py --user_question "What are the top 5 cities with highest recalls?" --user_grouping "fda_food"
 ```
 
 Where
 
+*session_id* : Keep this unique unique same for follow up questions.
+
 *user_question* : Enter your question in string
 
-*user_database* : Enter the BQ_DATASET_NAME for BigQuery sources or PG_SCHEMA for PostgreSQL sources (refer your [config.ini](/config.ini) file)
+*user_grouping* : Enter the BQ_DATASET_NAME for BigQuery sources or PG_SCHEMA for PostgreSQL sources (refer your [data_source_list.csv](/scripts/data_source_list.csv) file)
 
 
 **Optional Parameters**
@@ -187,16 +207,16 @@ Where
 You can customize the pipeline's behavior using optional parameters. Here are some common examples:
 ```
 # Enable the SQL debugger:
-python opendataqna.py --user_question "..." --user_database "..." --run_debugger
+python opendataqna.py --session_id="..." --user_question "..." --user_grouping "..." --run_debugger
 
 # Execute the final generated SQL:
-python opendataqna.py --user_question "..." --user_database "..." --execute_final_sql
+python opendataqna.py --session_id="..." --user_question "..." --user_grouping "..." --execute_final_sql
 
 # Change the number of debugging rounds:
-python opendataqna.py --user_question "..." --user_database "..." --debugging_rounds 5
+python opendataqna.py --session_id="..." --user_question "..." --user_grouping "..." --debugging_rounds 5
 
 # Adjust similarity thresholds:
-python opendataqna.py --user_question "..." --user_database "..." --table_similarity_threshold 0.25 --column_similarity_threshold 0.4
+python opendataqna.py --session_id="..." --user_question "..." --user_grouping "..." --table_similarity_threshold 0.25 --column_similarity_threshold 0.4
 
 ```
 
@@ -224,35 +244,11 @@ If you are looking to deploy backend apis for the solution, refer to the README.
 If you are looking to deploy the frontend for the solution, refer to the README.md under [`/frontend`](/frontend/).
 
 
-🧹 CleanUp Resources 
--------------
-To clean up the resources provisioned in this solution, use commands below to remove them using gcloud/bq: 
-
-For cloudsql-pgvector as vector store : [Delete SQL Instance](<https://cloud.google.com/sql/docs/mysql/delete-instance#delete-cloud-sql-instance>)
-
-```
-gcloud sql instances delete <CloudSQL Instance Name> -q
-```
-
-Delete BigQuery Dataset Created for Logs and Vector Store : [Remove BQ Dataset](<https://cloud.google.com/bigquery/docs/reference/bq-cli-reference#bq_rm>)
-
-```
-bq rm -r -f -d <BigQuery Dataset Name for OpenDataQnA>
-```
-
-(For Backend APIs)Remove the Cloud Run service : [Delete Service](<https://cloud.google.com/run/docs/managing/services#delete>)
-
-```
-gcloud run services delete <Cloud Run Service Name>
-```
-
-For frontend, based on firebase: [Remove the firebase app](<https://support.google.com/firebase/answer/7047853?sjid=6757651181596811904-AP#how-to-remove>)
-
 
 📄 Documentation
 -------------
 
-* [Open Data QnA Source Code (GitHub)](<https://github.com/GoogleCloudPlatform/applied-ai-engineering-samples/tree/opendataqna>)
+* [Open Data QnA Source Code (GitHub)](<https://github.com/GoogleCloudPlatform/Open_Data_QnA>)
 * [Open Data QnA usage notebooks](/notebooks)
 * [`Architecture`](/docs/architecture.md)
 * [`FAQ`](/docs/faq.md)
@@ -283,4 +279,4 @@ It also contains code derived from the following third-party packages:
 🙋 Getting Help
 ----------
 
-If you have any questions or if you found any problems with this repository, please report through Hub issues.
+If you have any questions or if you found any problems with this repository, please report through GitHub issues.

@@ -1,0 +1,23 @@
+{
+  "hosting": {
+    "public": "/dist/frontend/browser",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "firestore": [
+    {
+      "database": "opendataqna-session-logs",
+      "rules": "database.rules.json",
+      "indexes": "database.indexes.json"
+    }
+  ]
+}

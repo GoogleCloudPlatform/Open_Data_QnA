@@ -1,28 +1,13 @@
-# Copyright 2024 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-
 import asyncio
 import argparse
+import uuid
 
 from agents import EmbedderAgent, BuildSQLAgent, DebugSQLAgent, ValidateSQLAgent, ResponseAgent,VisualizeAgent
 from utilities import (PROJECT_ID, PG_REGION, BQ_REGION, EXAMPLES, LOGGING, VECTOR_STORE,
                        BQ_OPENDATAQNA_DATASET_NAME)
-from dbconnectors import bqconnector, pgconnector
+from dbconnectors import bqconnector, pgconnector, firestoreconnector
 from embeddings.store_embeddings import add_sql_embedding
 
-Visualize=VisualizeAgent()
 
 
 #Based on VECTOR STORE in config.ini initialize vector connector and region
@@ -39,6 +24,15 @@ elif VECTOR_STORE == 'cloudsql-pgvector':
 else: 
     raise ValueError("Please specify a valid Data Store. Supported are either 'bigquery-vector' or 'cloudsql-pgvector'")
 
+
+def generate_uuid():
+    """Generates a random UUID (Universally Unique Identifier) Version 4.
+
+    Returns:
+        str: A string representation of the UUID in the format 
+             xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.
+    """
+    return str(uuid.uuid4())
 
 
 ############################
@@ -66,13 +60,13 @@ def get_all_databases():
     try:
         if VECTOR_STORE=='bigquery-vector': 
             final_sql=f'''SELECT
-    DISTINCT CONCAT(table_schema,'-',source_type) AS table_schema
+    DISTINCT user_grouping AS table_schema
     FROM
         `{PROJECT_ID}.{BQ_OPENDATAQNA_DATASET_NAME}.table_details_embeddings`'''
 
         else:
             final_sql="""SELECT
-    DISTINCT CONCAT(table_schema,'-',source_type) AS table_schema
+    DISTINCT user_grouping AS table_schema
     FROM
     table_details_embeddings"""
         result = vector_connector.retrieve_df(final_sql)
@@ -88,14 +82,14 @@ def get_all_databases():
 ############################
 #_____GET SOURCE TYPE_____##
 ############################
-def get_source_type(user_database):
+def get_source_type(user_grouping):
     """Retrieves the source type of a specified database from the vector store.
 
     This function queries the vector store (BigQuery or PostgreSQL) to determine whether the
     given database is a BigQuery dataset ('bigquery') or a PostgreSQL schema ('postgres').
 
     Args:
-        user_database (str): The name of the database to look up.
+        user_grouping (str): The name of the database to look up.
 
     Returns:
         tuple: A tuple containing two elements:
@@ -108,16 +102,16 @@ def get_source_type(user_database):
     try: 
         if VECTOR_STORE=='bigquery-vector': 
             sql=f'''SELECT
-        DISTINCT source_type AS table_schema
+        DISTINCT source_type
         FROM
         `{PROJECT_ID}.{BQ_OPENDATAQNA_DATASET_NAME}.table_details_embeddings`
-        where table_schema='{user_database}' '''
+        where user_grouping='{user_grouping}' '''
 
         else:
             sql=f'''SELECT
-        DISTINCT source_type AS table_schema
+        DISTINCT source_type
         FROM
-        table_details_embeddings where table_schema='{user_database}' '''
+        table_details_embeddings where user_grouping='{user_grouping}' '''
         
         result = vector_connector.retrieve_df(sql)
         result = (str(result.iloc[0, 0])).lower() 
@@ -132,8 +126,9 @@ def get_source_type(user_database):
 ############################
 ###_____GENERATE SQL_____###
 ############################
-async def generate_sql(user_question,
-                user_database,  
+async def generate_sql(session_id,
+                user_question,
+                user_grouping,  
                 RUN_DEBUGGER,
                 DEBUGGING_ROUNDS, 
                 LLM_VALIDATION,
@@ -146,15 +141,17 @@ async def generate_sql(user_question,
                 table_similarity_threshold,
                 column_similarity_threshold,
                 example_similarity_threshold,
-                num_sql_matches):
+                num_sql_matches,
+                user_id="opendataqna-user@google.com"):
     """Generates an SQL query based on a user's question and database.
 
     This asynchronous function orchestrates a pipeline to generate an SQL query from a natural language question.
     It leverages various agents for embedding, SQL building, validation, and debugging.
 
     Args:
+        session_id (str): Session ID to identify the chat conversation
         user_question (str): The user's natural language question.
-        user_database (str): The name of the database to query.
+        user_grouping (str): The name of the database to query.
         RUN_DEBUGGER (bool): Whether to run the SQL debugger.
         DEBUGGING_ROUNDS (int): The number of debugging rounds to perform.
         LLM_VALIDATION (bool): Whether to use LLM for validation.
@@ -176,12 +173,30 @@ async def generate_sql(user_question,
     """
 
     try:
+
+        if session_id is None or session_id=="":
+            print("This is a new session")
+            session_id=generate_uuid()
+
         ## LOAD AGENTS 
+
         print("Loading Agents.")
         embedder = EmbedderAgent(Embedder_model) 
         SQLBuilder = BuildSQLAgent(SQLBuilder_model)
         SQLChecker = ValidateSQLAgent(SQLChecker_model)
         SQLDebugger = DebugSQLAgent(SQLDebugger_model)
+
+        re_written_qe=user_question
+
+        print("Getting the history for the session.......\n")
+        session_history =firestoreconnector.get_chat_logs_for_session(session_id)
+        print("Grabbed history for the session:: "+ str(session_history))
+
+        if session_history is None or not session_history:
+            print("No records for the session. Not rewriting the question\n")
+        else:
+            concated_questions,re_written_qe=SQLBuilder.rewrite_question(user_question,session_history)
+
 
         found_in_vector = 'N' # if an exact query match was found 
         final_sql='Not Generated Yet' # final generated SQL 
@@ -189,26 +204,25 @@ async def generate_sql(user_question,
         error_msg=''
         corrected_sql = ''
 
+        DATA_SOURCE,src_invalid = get_source_type(user_grouping)
 
-        DATA_SOURCE,src_invalid = get_source_type(user_database)
-        
         if src_invalid:
             raise ValueError(DATA_SOURCE)
 
         #vertexai.init(project=PROJECT_ID, location=region)
         #aiplatform.init(project=PROJECT_ID, location=region)
 
-        print("Source selected as : "+ str(DATA_SOURCE) + "\nSchema or Dataset Name is : "+ str(user_database))
+        print("Source selected as : "+ str(DATA_SOURCE) + "\nSchema or Dataset Name is : "+ str(user_grouping))
         print("Vector Store selected as : "+ str(VECTOR_STORE))
 
         # Reset AUDIT_TEXT
         AUDIT_TEXT = 'Creating embedding for given question'
         # Fetch the embedding of the user's input question 
-        embedded_question = embedder.create(user_question)
+        embedded_question = embedder.create(re_written_qe)
 
         
 
-        AUDIT_TEXT = AUDIT_TEXT + "\nUser Question : " + str(user_question) + "\nUser Database : " + str(user_database)
+        AUDIT_TEXT = AUDIT_TEXT + "\nUser Question : " + str(user_question) + "\nUser Database : " + str(user_grouping)
         process_step = "\n\nGet Exact Match: "
 
         # Look for exact matches in known questions IF kgq is enabled 
@@ -231,20 +245,20 @@ async def generate_sql(user_question,
                 AUDIT_TEXT = AUDIT_TEXT +  process_step + "\nNo exact match found in query cache, retreiving revelant schema and known good queries for few shot examples using similarity search...."
                 process_step = "\n\nGet Similar Match: "
                 if call_await:
-                    similar_sql = await vector_connector.getSimilarMatches('example', user_database, embedded_question, num_sql_matches, example_similarity_threshold)
+                    similar_sql = await vector_connector.getSimilarMatches('example', user_grouping, embedded_question, num_sql_matches, example_similarity_threshold)
                 else:
-                    similar_sql = vector_connector.getSimilarMatches('example', user_database, embedded_question, num_sql_matches, example_similarity_threshold)
+                    similar_sql = vector_connector.getSimilarMatches('example', user_grouping, embedded_question, num_sql_matches, example_similarity_threshold)
 
             else: similar_sql = "No similar SQLs provided..."
 
             process_step = "\n\nGet Table and Column Schema: "
             # Retrieve matching tables and columns
             if call_await: 
-                table_matches =  await vector_connector.getSimilarMatches('table', user_database, embedded_question, num_table_matches, table_similarity_threshold)
-                column_matches =  await vector_connector.getSimilarMatches('column', user_database, embedded_question, num_column_matches, column_similarity_threshold)
+                table_matches =  await vector_connector.getSimilarMatches('table', user_grouping, embedded_question, num_table_matches, table_similarity_threshold)
+                column_matches =  await vector_connector.getSimilarMatches('column', user_grouping, embedded_question, num_column_matches, column_similarity_threshold)
             else:
-                table_matches =  vector_connector.getSimilarMatches('table', user_database, embedded_question, num_table_matches, table_similarity_threshold)
-                column_matches =  vector_connector.getSimilarMatches('column', user_database, embedded_question, num_column_matches, column_similarity_threshold)
+                table_matches =  vector_connector.getSimilarMatches('table', user_grouping, embedded_question, num_table_matches, table_similarity_threshold)
+                column_matches =  vector_connector.getSimilarMatches('column', user_grouping, embedded_question, num_column_matches, column_similarity_threshold)
 
             AUDIT_TEXT = AUDIT_TEXT +  process_step + "\nRetrieved Similar Known Good Queries, Table Schema and Column Schema: \n" + '\nRetrieved Tables: \n' + str(table_matches) + '\n\nRetrieved Columns: \n' + str(column_matches) + '\n\nRetrieved Known Good Queries: \n' + str(similar_sql)
             
@@ -254,19 +268,20 @@ async def generate_sql(user_question,
 
                 # GENERATE SQL
                 process_step = "\n\nBuild SQL: "
-                generated_sql = SQLBuilder.build_sql(DATA_SOURCE,user_question,table_matches,column_matches,similar_sql)
+                generated_sql = SQLBuilder.build_sql(DATA_SOURCE,user_grouping,user_question,session_history,table_matches,column_matches,similar_sql)
                 final_sql=generated_sql
                 AUDIT_TEXT = AUDIT_TEXT + process_step +  "\nGenerated SQL : " + str(generated_sql)
                 
                 if 'unrelated_answer' in generated_sql :
                     invalid_response=True
+                    final_sql="This is an unrelated question for this dataset"
 
                 # If agent assessment is valid, proceed with checks  
                 else:
                     invalid_response=False
 
                     if RUN_DEBUGGER: 
-                        generated_sql, invalid_response, AUDIT_TEXT = SQLDebugger.start_debugger(DATA_SOURCE, generated_sql, user_question, SQLChecker, table_matches, column_matches, AUDIT_TEXT, similar_sql, DEBUGGING_ROUNDS, LLM_VALIDATION) 
+                        generated_sql, invalid_response, AUDIT_TEXT = SQLDebugger.start_debugger(DATA_SOURCE,user_grouping, generated_sql, user_question, SQLChecker, table_matches, column_matches, AUDIT_TEXT, similar_sql, DEBUGGING_ROUNDS, LLM_VALIDATION) 
                         # AUDIT_TEXT = AUDIT_TEXT + '\n Feedback from Debugger: \n' + feedback_text
 
                     final_sql=generated_sql
@@ -282,7 +297,7 @@ async def generate_sql(user_question,
         # print(f'\n\n AUDIT_TEXT: \n {AUDIT_TEXT}')
     
         if LOGGING: 
-            bqconnector.make_audit_entry(DATA_SOURCE, user_database, SQLBuilder_model, user_question, final_sql, found_in_vector, "", process_step, error_msg,AUDIT_TEXT)  
+            bqconnector.make_audit_entry(DATA_SOURCE, user_grouping, SQLBuilder_model, user_question, final_sql, found_in_vector, "", process_step, error_msg,AUDIT_TEXT)  
 
 
     except Exception as e:
@@ -290,22 +305,26 @@ async def generate_sql(user_question,
         final_sql="Error generating the SQL Please check the logs. "+str(e)
         invalid_response=True
         AUDIT_TEXT="Exception at SQL generation"
+    
+    if not invalid_response:
+        firestoreconnector.log_chat(session_id,user_question,final_sql,user_id)
+        print("Session history persisted")  
 
 
-    return final_sql,invalid_response
+    return final_sql,session_id,invalid_response
 
 
 ############################
 ###_____GET RESULTS_____####
 ############################
-def get_results(user_database, final_sql, invalid_response=False, EXECUTE_FINAL_SQL=True):
+def get_results(user_grouping, final_sql, invalid_response=False, EXECUTE_FINAL_SQL=True):
     """Executes the final SQL query (if valid) and retrieves the results.
 
     This function first determines the data source (BigQuery or PostgreSQL) based on the provided database name.
     If the SQL query is valid and execution is enabled, it fetches the results using the appropriate connector.
 
     Args:
-        user_database (str): The name of the database to query.
+        user_grouping (str): The name of the database to query.
         final_sql (str): The final SQL query to execute.
         invalid_response (bool, optional): A flag indicating whether the SQL query is invalid. Defaults to False.
         EXECUTE_FINAL_SQL (bool, optional): Whether to execute the final SQL query. Defaults to True.
@@ -322,7 +341,7 @@ def get_results(user_database, final_sql, invalid_response=False, EXECUTE_FINAL_
     
     try:
 
-        DATA_SOURCE,src_invalid = get_source_type(user_database)
+        DATA_SOURCE,src_invalid = get_source_type(user_grouping)
         
         if not src_invalid:
             ## SET DATA SOURCE 
@@ -338,8 +357,6 @@ def get_results(user_database, final_sql, invalid_response=False, EXECUTE_FINAL_
                 if EXECUTE_FINAL_SQL is True:
                         final_exec_result_df=src_connector.retrieve_df(final_sql.replace("```sql","").replace("```","").replace("EXPLAIN ANALYZE ",""))
                         result_df = final_exec_result_df
-                        
-
 
                 else:  # Do not execute final SQL
                         print("Not executing final SQL since EXECUTE_FINAL_SQL variable is False\n ")
@@ -359,9 +376,20 @@ def get_results(user_database, final_sql, invalid_response=False, EXECUTE_FINAL_
 
     return result_df,invalid_response
 
-def get_response(user_question,result_df,Responder_model='gemini-1.0-pro'):
+def get_response(session_id,user_question,result_df,Responder_model='gemini-1.0-pro'):
     try:
         Responder = ResponseAgent(Responder_model)
+
+        if session_id is None or session_id=="":
+            print("This is a new session")
+        else:
+            session_history =firestoreconnector.get_chat_logs_for_session(session_id)
+            if session_history is None or not session_history:
+                print("No records for the session. Not rewriting the question\n")
+            else:
+                concated_questions,re_written_qe=Responder.rewrite_question(user_question,session_history)
+                user_question=re_written_qe
+        
         _resp=Responder.run(user_question, result_df)
         invalid_response=False
     except Exception as e: 
@@ -374,12 +402,13 @@ def get_response(user_question,result_df,Responder_model='gemini-1.0-pro'):
 ############################
 ###_____RUN PIPELINE_____###
 ############################
-async def run_pipeline(user_question,
-                user_database,
+async def run_pipeline(session_id,
+                user_question,
+                user_grouping,
                 RUN_DEBUGGER=True,
                 EXECUTE_FINAL_SQL=True,
                 DEBUGGING_ROUNDS = 2, 
-                LLM_VALIDATION=True,
+                LLM_VALIDATION=False,
                 Embedder_model='vertex',
                 SQLBuilder_model= 'gemini-1.5-pro',
                 SQLChecker_model= 'gemini-1.0-pro',
@@ -398,7 +427,7 @@ async def run_pipeline(user_question,
 
     Args:
         user_question (str): The user's natural language question.
-        user_database (str): The name of the database to query.
+        user_grouping (str): The name of the user grouping to query.
         RUN_DEBUGGER (bool, optional): Whether to run the SQL debugger. Defaults to True.
         EXECUTE_FINAL_SQL (bool, optional): Whether to execute the final SQL query. Defaults to True.
         DEBUGGING_ROUNDS (int, optional): The number of debugging rounds to perform. Defaults to 2.
@@ -421,10 +450,11 @@ async def run_pipeline(user_question,
             - results_df (pandas.DataFrame or str): The results of the SQL query as a DataFrame, or an error message if the query is invalid or execution failed.
             - _resp (str): The generated natural language response based on the results, or an error message if response generation failed.
     """
-    
 
-    final_sql, invalid_response = await generate_sql(user_question,
-                user_database,
+
+    final_sql,session_id, invalid_response = await generate_sql(session_id,
+                user_question,
+                user_grouping,
                 RUN_DEBUGGER,
                 DEBUGGING_ROUNDS, 
                 LLM_VALIDATION,
@@ -440,13 +470,14 @@ async def run_pipeline(user_question,
                 num_sql_matches)
 
     if not invalid_response:
-        results_df, invalid_response = get_results(user_database, 
+        
+        results_df, invalid_response = get_results(user_grouping, 
                                     final_sql,
                                     invalid_response=invalid_response,
                                     EXECUTE_FINAL_SQL=EXECUTE_FINAL_SQL)
 
         if not invalid_response:
-            _resp,invalid_response=get_response(user_question,results_df.to_json(orient='records'),Responder_model=Responder_model)
+            _resp,invalid_response=get_response(session_id,user_question,results_df.to_json(orient='records'),Responder_model=Responder_model)
         else:
             _resp=results_df
     else:
@@ -459,7 +490,7 @@ async def run_pipeline(user_question,
 ############################
 #####_____GET KGQ_____######
 ############################
-def get_kgq(user_database):
+def get_kgq(user_grouping):
     """Retrieves known good SQL queries (KGQs) for a specific database from the vector store.
 
     This function queries the vector store (BigQuery or PostgreSQL) to fetch a limited number of
@@ -467,7 +498,7 @@ def get_kgq(user_database):
     specified database. These KGQs can be used as examples or references for generating new SQL queries.
 
     Args:
-        user_database (str): The name of the database for which to retrieve KGQs.
+        user_grouping (str): The name of the user grouping for which to retrieve KGQs.
 
     Returns:
         tuple: A tuple containing two elements:
@@ -487,14 +518,14 @@ def get_kgq(user_database):
         example_generated_sql 
         FROM
         `{PROJECT_ID}.{BQ_OPENDATAQNA_DATASET_NAME}.example_prompt_sql_embeddings`
-        where table_schema='{user_database}'  LIMIT 5 '''
+        where user_grouping='{user_grouping}'  LIMIT 5 '''
 
         else:
             sql="""select distinct
         example_user_question,
         example_generated_sql 
         from example_prompt_sql_embeddings
-        where table_schema = '{user_database}' LIMIT 5""".format(user_database=user_database)
+        where user_grouping = '{user_grouping}' LIMIT 5""".format(user_grouping=user_grouping)
 
         result = vector_connector.retrieve_df(sql)
         result = result.to_json(orient='records')
@@ -509,7 +540,7 @@ def get_kgq(user_database):
 ############################
 ####_____EMBED SQL_____#####
 ############################
-async def embed_sql(user_database,user_question,generate_sql):
+async def embed_sql(session_id,user_grouping,user_question,generate_sql):
     """Embeds a generated SQL query into the vector store as an example.
 
     This asynchronous function takes a user's question, a generated SQL query, and a database name as input.
@@ -517,7 +548,7 @@ async def embed_sql(user_database,user_question,generate_sql):
     potentially for future reference as a known good query (KGQ).
 
     Args:
-        user_database (str): The name of the database associated with the query.
+        user_grouping (str): The name of the grouping associated with the query.
         user_question (str): The user's original question.
         generate_sql (str): The SQL query generated from the user's question.
 
@@ -532,7 +563,19 @@ async def embed_sql(user_database,user_question,generate_sql):
                    The exception message will be included in the returned `embedded` value.
     """ 
     try:
-        embedded = await add_sql_embedding(user_question, generate_sql,user_database)
+        Rewriter=ResponseAgent('gemini-1.5-pro')
+
+        if session_id is None or session_id=="":
+            print("This is a new session")
+        else:
+            session_history =firestoreconnector.get_chat_logs_for_session(session_id)
+            if session_history is None or not session_history:
+                print("No records for the session. Not rewriting the question\n")
+            else:
+                concated_questions,re_written_qe=Rewriter.rewrite_question(user_question,session_history)
+                user_question=re_written_qe
+        
+        embedded = await add_sql_embedding(user_question, generate_sql,user_grouping)
         invalid_response=False
 
     except Exception as e: 
@@ -540,6 +583,31 @@ async def embed_sql(user_database,user_question,generate_sql):
         invalid_response=True
 
     return embedded,invalid_response
+
+def visualize(session_id,user_question,generated_sql,sql_results):
+    try:
+        Rewriter=ResponseAgent('gemini-1.5-pro')
+        
+        if session_id is None or session_id=="":
+            print("This is a new session")
+        else:
+            session_history =firestoreconnector.get_chat_logs_for_session(session_id)
+            if session_history is None or not session_history:
+                print("No records for the session. Not rewriting the question\n")
+            else:
+                concated_questions,re_written_qe=Rewriter.rewrite_question(user_question,session_history)
+                user_question=re_written_qe
+        
+        _viz=VisualizeAgent()
+        js_chart = _viz.generate_charts(user_question, generate_sql,sql_results)
+        invalid_response=False
+
+    except Exception as e: 
+        js_chart="Issue was encountered while Generating Charts ::"  + str(e)
+        invalid_response=True
+
+    return js_chart,invalid_response
+
 
 
 
@@ -550,11 +618,12 @@ async def embed_sql(user_database,user_question,generate_sql):
 if __name__ == '__main__': 
     # user_question = "How many movies have review ratings above 5?"
     # user_question="What are the top 5 cities with highest recalls?"
-    # user_database='food' #user database is BQ_DATASET_NAME for BQ Source or PG_SCHEMA for PostgreSQL as source, add the value accordingly
+    # user_grouping='fda_food' #user database is BQ_DATASET_NAME for BQ Source or PG_SCHEMA for PostgreSQL as source, add the value accordingly
 
     parser = argparse.ArgumentParser(description="Open Data QnA SQL Generation")
+    parser.add_argument("--session_id", type=str, required=True, help="Session Id")
     parser.add_argument("--user_question", type=str, required=True, help="The user's question.")
-    parser.add_argument("--user_database", type=str, required=True, help="The user database to query (BQ_DATASET_NAME for BQ Source or PG_SCHEMA for PostgreSQL as source, add the value accordingly)")
+    parser.add_argument("--user_grouping", type=str, required=True, help="The user database to query (BQ_DATASET_NAME for BQ Source or PG_SCHEMA for PostgreSQL as source, add the value accordingly)")
 
     # Optional Arguments for run_pipeline Parameters
     parser.add_argument("--run_debugger", action="store_true", help="Enable the debugger (default: False)")
@@ -576,9 +645,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Use Argument Values in run_pipeline
-    final_sql, response, _resp = asyncio.run(run_pipeline(
+    final_sql, response, _resp = asyncio.run(run_pipeline(args.session_id,
         args.user_question,
-        args.user_database,
+        args.user_grouping,
         RUN_DEBUGGER=args.run_debugger,
         EXECUTE_FINAL_SQL=args.execute_final_sql,
         DEBUGGING_ROUNDS=args.debugging_rounds,

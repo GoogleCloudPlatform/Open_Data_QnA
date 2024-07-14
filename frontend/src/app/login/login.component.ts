@@ -1,20 +1,3 @@
-/*
- * Copyright 2024 Google LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-
 import { Component, ElementRef } from '@angular/core';
 import { LoginButtonComponent } from '../login-button/login-button.component';
 import { Subscription } from 'rxjs';
@@ -35,12 +18,12 @@ export class LoginComponent {
   acceptAndAgreeButton: boolean = true;
   loginError = false;
   loginErrorMessage: any
-  constructor(private _router: Router, public loginService: LoginService, private elementRef:ElementRef
-    ,public dialog: Dialog, public snackbar : MatSnackBar) {
-      this.loginService.getLoginError().subscribe((res: any) => {
-        this.loginErrorMessage = res
-        this.loginError = true;
-      });
+  constructor(private _router: Router, public loginService: LoginService, private elementRef: ElementRef
+    , public dialog: Dialog, public snackbar: MatSnackBar) {
+    this.loginService.getLoginError().subscribe((res: any) => {
+      this.loginErrorMessage = res
+      this.loginError = true;
+    });
     this.subscription = this.loginService.getUserDetails().subscribe(res => {
       this.userLoggedIn = true;
       this.photoURL = res?.photoURL
@@ -48,7 +31,8 @@ export class LoginComponent {
   }
 
   ngOnInit() {
-   this.showLogIn()
+    if (!this.photoURL)
+      this.showLogIn()
   }
 
   userLoggedIn: boolean = false;
@@ -57,8 +41,8 @@ export class LoginComponent {
       this.userLoggedIn = true;
       this._router.navigate(['user-journey']);
     }
-    else{
-      this.showSnackbarCssStyles(this.loginErrorMessage,'Close',10000);
+    else {
+      this.showSnackbarCssStyles(this.loginErrorMessage, 'Close', 10000);
     }
   }
 

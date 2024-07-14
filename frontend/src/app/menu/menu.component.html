@@ -1,25 +1,28 @@
-<mat-nav-list class="app-sidenav pr-4 " >
-	<mat-list-item style="cursor: pointer"routerLink="javascript:void(0)" [ngClass]="{active: clickedItem === 'Query'}" (click)="onClick('Query')" >
-		<img src="assets/images/query.svg"><span class="ms-2">Query</span>
+<mat-nav-list class="app-sidenav pr-4 ">
+  <mat-list-item style="cursor: pointer" [ngClass]="clickedItem === 'Query' ? 'activeTab' : 'inactiveTab'"
+    (click)="onClick('New Query')">
+    <img src="assets/images/add-new-query.svg"><span class="ms-2">New Query</span>
   </mat-list-item>
-  <mat-list-item routerLink="javascript:void(0);" [ngClass]="{active: clickedItem === 'Reports'}" (click)="onClick('Reports')">
-    <img src="assets/images/reports.svg"><span class="ms-2">Reports</span>
-	</mat-list-item>
-  <mat-list-item [ngClass]="{active: clickedItem === 'Saved'}" (click)="onClick('Saved')">
-		<mat-icon>star_border</mat-icon><span class="ms-2">Saved Queries</span>
-	</mat-list-item>
-  <mat-list-item routerLink="#" [ngClass]="{active: clickedItem === 'History'}" (click)="onClick('History')">
-		<mat-icon>history</mat-icon><span class="ms-2">History</span>
-	</mat-list-item>
-    <mat-list-item  style = "position: absolute;bottom: 15px;" >
-        <mat-slide-toggle
-        class="example-margin"
-        [color]="color"
-        [checked]="checked"
-        [disabled]="disabled">
+  <mat-list-item (click)="onClick('History')" style="height:auto; padding-right: 0;">
+    <mat-expansion-panel (opened)="panelOpenState.set(true)" (closed)="panelOpenState.set(false)" disableRipple>
+      <mat-expansion-panel-header>
+        <mat-panel-title> <mat-icon>star_border</mat-icon><span class="ms-2">History</span></mat-panel-title>
+      </mat-expansion-panel-header>
+      <p>
+        <a *ngFor="let history of recentHistory" class="historyDetails" (click)="onClickHistory(history.chatThread)">
+          {{history.question}}</a>
+      </p>
+      <button class="showMore" (click)="showMore()" *ngIf="userHistory.length > 5"> Show More </button>
+      <p *ngIf="showMoreHistory"> 
+        <a *ngFor="let history of showMoreHistory" class="historyDetails" (click)="onClickHistory(history.chatThread)">
+          {{history.question}}</a>
+      </p>
+     </mat-expansion-panel>
+  </mat-list-item>
+  <!-- <mat-list-item style="position: absolute;bottom: 15px;">
+    <mat-slide-toggle class="example-margin" [color]="color" [checked]="checked" [disabled]="disabled">
     </mat-slide-toggle>
-<span class="ms-2">Operations Mode</span>
-	</mat-list-item>
-
+    <span>Operations Mode</span>
+  </mat-list-item> -->
 
 </mat-nav-list>

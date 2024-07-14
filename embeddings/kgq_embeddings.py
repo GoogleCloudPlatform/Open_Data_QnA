@@ -1,18 +1,3 @@
-# Copyright 2024 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-
 import os
 import asyncio
 import asyncpg
@@ -25,7 +10,7 @@ from google.cloud import bigquery
 from dbconnectors import pgconnector
 from agents import EmbedderAgent
 from sqlalchemy.sql import text
-from utilities import PG_SCHEMA, PROJECT_ID, PG_INSTANCE, PG_DATABASE, PG_USER, PG_PASSWORD, PG_REGION, BQ_OPENDATAQNA_DATASET_NAME, BQ_REGION
+from utilities import PROJECT_ID, PG_INSTANCE, PG_DATABASE, PG_USER, PG_PASSWORD, PG_REGION, BQ_OPENDATAQNA_DATASET_NAME, BQ_REGION
 
 embedder = EmbedderAgent('vertex')
 
@@ -47,10 +32,10 @@ async def setup_kgq_table( project_id,
         client=bigquery.Client(project=project_id)
 
         # Delete an old table
-        # client.query_and_wait(f'''DROP TABLE IF EXISTS `{project_id}.{schema}.example_prompt_sql_embeddings''')
+        # client.query_and_wait(f'''DROP TABLE IF EXISTS `{project_id}.{schema}.example_prompt_sql_embeddings`''')
         # Create a new emptry table
         client.query_and_wait(f'''CREATE TABLE IF NOT EXISTS `{project_id}.{schema}.example_prompt_sql_embeddings` (
-                              table_schema string NOT NULL, example_user_question string NOT NULL, example_generated_sql string NOT NULL,
+                              user_grouping string NOT NULL, example_user_question string NOT NULL, example_generated_sql string NOT NULL,
                               embedding ARRAY<FLOAT64>)''')
         
 
@@ -72,7 +57,7 @@ async def setup_kgq_table( project_id,
             # Create a new emptry table
             await conn.execute(
             """CREATE TABLE IF NOT EXISTS example_prompt_sql_embeddings(
-                                table_schema VARCHAR(1024) NOT NULL,
+                                user_grouping VARCHAR(1024) NOT NULL,
                                 example_user_question text NOT NULL,
                                 example_generated_sql text NOT NULL,
                                 embedding vector(768))"""
@@ -103,27 +88,27 @@ async def store_kgq_embeddings(df_kgq,
 
             example_user_question = str(row_aug['prompt'])
             example_generated_sql = str(row_aug['sql'])
-            example_database_name = str(row_aug['database_name'])
+            example_grouping = str(row_aug['user_grouping'])
             emb =  embedder.create(example_user_question)
             
 
-            r = {"example_database_name":example_database_name,"example_user_question": example_user_question,"example_generated_sql": example_generated_sql,"embedding": emb}
+            r = {"example_grouping":example_grouping,"example_user_question": example_user_question,"example_generated_sql": example_generated_sql,"embedding": emb}
             example_sql_details_chunked.append(r)
 
         example_prompt_sql_embeddings = pd.DataFrame(example_sql_details_chunked)
 
         client.query_and_wait(f'''CREATE TABLE IF NOT EXISTS `{project_id}.{schema}.example_prompt_sql_embeddings` (
-            table_schema string NOT NULL, example_user_question string NOT NULL, example_generated_sql string NOT NULL,
+            user_grouping string NOT NULL, example_user_question string NOT NULL, example_generated_sql string NOT NULL,
             embedding ARRAY<FLOAT64>)''')
 
         for _, row in example_prompt_sql_embeddings.iterrows():
                 client.query_and_wait(f'''DELETE FROM `{project_id}.{schema}.example_prompt_sql_embeddings`
-                            WHERE table_schema= '{row["example_database_name"]}' and example_user_question= '{row["example_user_question"]}' '''
+                            WHERE user_grouping= '{row["example_grouping"]}' and example_user_question= "{row["example_user_question"]}" '''
                                 )
                     # embedding=np.array(row["embedding"])
                 cleaned_sql = row["example_generated_sql"].replace("\n", " ")
                 client.query_and_wait(f'''INSERT INTO `{project_id}.{schema}.example_prompt_sql_embeddings` 
-                    VALUES ("{row["example_database_name"]}","{row["example_user_question"]}" , 
+                    VALUES ("{row["example_grouping"]}","{row["example_user_question"]}" , 
                     "{cleaned_sql}",{row["embedding"]} )''')
                     
         
@@ -149,26 +134,25 @@ async def store_kgq_embeddings(df_kgq,
 
                 example_user_question =  str(row_aug['prompt'])
                 example_generated_sql = str(row_aug['sql'])
-                example_database_name = str(row_aug['database_name'])
+                example_grouping = str(row_aug['user_grouping'])
 
                 emb =  embedder.create(example_user_question)
 
-                r = {"example_database_name":example_database_name,"example_user_question": example_user_question,"example_generated_sql": example_generated_sql,"embedding": emb}
+                r = {"example_grouping":example_grouping,"example_user_question": example_user_question,"example_generated_sql": example_generated_sql,"embedding": emb}
                 example_sql_details_chunked.append(r)
 
             example_prompt_sql_embeddings = pd.DataFrame(example_sql_details_chunked)
             
             for _, row in example_prompt_sql_embeddings.iterrows():
                 await conn.execute(
-                        "DELETE FROM example_prompt_sql_embeddings WHERE table_schema= $1 and example_user_question=$2",
-                        row["example_database_name"],
+                        "DELETE FROM example_prompt_sql_embeddings WHERE user_grouping= $1 and example_user_question=$2",
+                        row["example_grouping"],
                         row["example_user_question"])
                 cleaned_sql = row["example_generated_sql"].replace("\n", " ")
                 await conn.execute(
-                    "INSERT INTO example_prompt_sql_embeddings (table_schema, example_user_question, example_generated_sql, embedding) VALUES ($1, $2, $3, $4)",
-                    row["example_database_name"],
+                    "INSERT INTO example_prompt_sql_embeddings (user_grouping, example_user_question, example_generated_sql, embedding) VALUES ($1, $2, $3, $4)",
+                    row["example_grouping"],
                     row["example_user_question"],
-                    row["example_generated_sql"],
                     cleaned_sql,
                     str(row["embedding"]),
                 )
@@ -197,7 +181,7 @@ def load_kgq_df():
 
     # Load the file
     df_kgq = pd.read_csv(file_path)
-    df_kgq = df_kgq.loc[:, ["prompt", "sql", "database_name"]]
+    df_kgq = df_kgq.loc[:, ["prompt", "sql", "user_grouping"]]
     df_kgq = df_kgq.dropna()
 
     return df_kgq
@@ -205,7 +189,7 @@ def load_kgq_df():
 
 
 if __name__ == '__main__': 
-    from utilities import PG_SCHEMA, PROJECT_ID, PG_INSTANCE, PG_DATABASE, PG_USER, PG_PASSWORD, PG_REGION
+    from utilities import PROJECT_ID, PG_INSTANCE, PG_DATABASE, PG_USER, PG_PASSWORD, PG_REGION
     VECTOR_STORE = "cloudsql-pgvector"
     
     current_dir = os.getcwd()
@@ -232,7 +216,6 @@ if __name__ == '__main__':
     asyncio.run(setup_kgq_table(PROJECT_ID,
                             PG_INSTANCE,
                             PG_DATABASE,
-                            PG_SCHEMA,
                             PG_USER,
                             PG_PASSWORD,
                             PG_REGION,
@@ -242,7 +225,6 @@ if __name__ == '__main__':
                             PROJECT_ID,
                             PG_INSTANCE,
                             PG_DATABASE,
-                            PG_SCHEMA,
                             PG_USER,
                             PG_PASSWORD,
                             PG_REGION,

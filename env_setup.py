@@ -1,42 +1,24 @@
-# Copyright 2024 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 
 import asyncio
-from google.cloud import bigquery
-import google.api_core 
 from google.cloud import bigquery
 import google.api_core 
 
 from embeddings import retrieve_embeddings, store_schema_embeddings, setup_kgq_table, load_kgq_df, store_kgq_embeddings
 
-from utilities import (PG_SCHEMA, PG_REGION, PG_INSTANCE, PG_DATABASE, PG_USER, PG_PASSWORD, 
-                       BQ_DATASET_NAME, BQ_REGION, 
-                       EXAMPLES, LOGGING, VECTOR_STORE, DATA_SOURCE, PROJECT_ID, 
-                       BQ_OPENDATAQNA_DATASET_NAME, BQ_TABLE_LIST) 
+from utilities import ( PG_REGION, PG_INSTANCE, PG_DATABASE, PG_USER, PG_PASSWORD, 
+                        BQ_REGION, 
+                       EXAMPLES, LOGGING, VECTOR_STORE, PROJECT_ID, 
+                       BQ_OPENDATAQNA_DATASET_NAME) 
 import subprocess
 import time
 
-if 'None' in BQ_TABLE_LIST or 'none' in BQ_TABLE_LIST: BQ_TABLE_LIST=None
 
-if DATA_SOURCE == 'bigquery':
+if VECTOR_STORE == 'bigquery-vector':
     DATASET_REGION = BQ_REGION
 
-elif DATA_SOURCE == 'cloudsql-pg':
+elif VECTOR_STORE == 'cloudsql-pgvector':
     DATASET_REGION = PG_REGION
-
-
+    
 def setup_postgresql(pg_instance, pg_region, pg_database, pg_user, pg_password):
     """Sets up a PostgreSQL Cloud SQL instance with a database and user.
 
@@ -94,7 +76,6 @@ def setup_postgresql(pg_instance, pg_region, pg_database, pg_user, pg_password):
 
 
 
-
 def create_vector_store():
     """
     Initializes the environment and sets up the vector store for Open Data QnA.
@@ -132,11 +113,14 @@ def create_vector_store():
 
     print("Initializing environment setup.")
     print("Loading configurations from config.ini file.")
-    print("Data source set to: ", DATA_SOURCE)
+
+
+
+    print("Vector Store source set to: ", VECTOR_STORE)
 
     # Create PostgreSQL Instance is data source is different from PostgreSQL Instance
-    if VECTOR_STORE == 'cloudsql-pgvector' and DATA_SOURCE != 'cloudsql-pg':
-        print("pgvector is being used without PG as source. Generating pg dataset for vector store.")
+    if VECTOR_STORE == 'cloudsql-pgvector' :
+        print("Generating pg dataset for vector store.")
         # Parameters for PostgreSQL Instance
         pg_region = DATASET_REGION
         pg_instance = "pg15-opendataqna"
@@ -199,12 +183,85 @@ def get_embeddings():
 
 
     print("Generating embeddings from source db schemas")
-    if DATA_SOURCE =='bigquery':
-        table_schema_embeddings, col_schema_embeddings = retrieve_embeddings(DATA_SOURCE, SCHEMA=BQ_DATASET_NAME, table_names=BQ_TABLE_LIST)
-    else: 
-        table_schema_embeddings, col_schema_embeddings = retrieve_embeddings(DATA_SOURCE, SCHEMA=PG_SCHEMA)
+
+    import pandas as pd
+    import os
+
+    current_dir = os.getcwd()
+    root_dir = os.path.expanduser('~')  # Start at the user's home directory
+
+    while current_dir != root_dir:
+        for dirpath, dirnames, filenames in os.walk(current_dir):
+            config_path = os.path.join(dirpath, 'data_source_list.csv')
+            if os.path.exists(config_path):
+                file_path = config_path  # Update root_dir to the found directory
+                break  # Stop outer loop once found
+
+        current_dir = os.path.dirname(current_dir)
+
+    print("Source Found at Path :: "+file_path)
+
+    # Load the file
+    df_src = pd.read_csv(file_path)
+    df_src = df_src.loc[:, ["source", "user_grouping", "schema","table"]]
+    df_src = df_src.sort_values(by=["source","user_grouping","schema","table"])
+    
+    #If no schema Error Out
+    if df_src['schema'].astype(str).str.len().min()==0 or df_src['schema'].isna().any():
+        raise ValueError("Schema column cannot be empty")
+
+
+    #Group by for all the tables filtered
+    df=df_src.groupby(['source','schema'])['table'].agg(lambda x: list(x.dropna().unique())).reset_index()
+
+    df['table']=df['table'].apply(lambda x: None if pd.isna(x).any() else x)
+    
+    print("The Embeddings are extracted for the below combinations")
+    print(df)
+    table_schema_embeddings=pd.DataFrame(columns=['source_type','join_by','table_schema', 'table_name', 'content','embedding'])
+    col_schema_embeddings=pd.DataFrame(columns=['source_type','join_by','table_schema', 'table_name', 'column_name', 'content','embedding'])
+
+    for _, row in df.iterrows():
+        DATA_SOURCE = row['source']
+        SCHEMA = row['schema']
+        TABLE_LIST = row['table']
+        _t, _c = retrieve_embeddings(DATA_SOURCE, SCHEMA=SCHEMA, table_names=TABLE_LIST)
+        _t["source_type"]=DATA_SOURCE
+        _c["source_type"]=DATA_SOURCE
+        if not TABLE_LIST:
+            _t["join_by"]=DATA_SOURCE+"_"+SCHEMA+"_"+SCHEMA
+            _c["join_by"]=DATA_SOURCE+"_"+SCHEMA+"_"+SCHEMA
+        table_schema_embeddings = pd.concat([table_schema_embeddings,_t],ignore_index=True)
+        col_schema_embeddings = pd.concat([col_schema_embeddings,_c],ignore_index=True)
+
+    df_src['join_by'] = df_src.apply(
+    lambda row: f"{row['source']}_{row['schema']}_{row['schema']}" if pd.isna(row['table']) else f"{row['source']}_{row['schema']}_{row['table']}",axis=1)
+
+    table_schema_embeddings['join_by'] = table_schema_embeddings['join_by'].fillna(table_schema_embeddings['source_type'] + "_" + table_schema_embeddings['table_schema'] + "_" + table_schema_embeddings['table_name'])
+
+
+    col_schema_embeddings['join_by'] = col_schema_embeddings['join_by'].fillna(col_schema_embeddings['source_type'] + "_" + col_schema_embeddings['table_schema'] + "_" + col_schema_embeddings['table_name'])
+
+
+
+    table_schema_embeddings = table_schema_embeddings.merge(df_src[['join_by', 'user_grouping']], on='join_by', how='left')
+
+    table_schema_embeddings.drop(columns=["join_by"],inplace=True)
+    #Replace NaN values in group to default to the schema
+
+    
+    table_schema_embeddings['user_grouping'] = table_schema_embeddings['user_grouping'].fillna(table_schema_embeddings['table_schema']+"-"+table_schema_embeddings['source_type'])
+
+
+    col_schema_embeddings = col_schema_embeddings.merge(df_src[['join_by', 'user_grouping']], on='join_by', how='left')
+
+    col_schema_embeddings.drop(columns=["join_by"],inplace=True)
+
+    #Replace NaN values in group to default to the schema
+    col_schema_embeddings['user_grouping'] = col_schema_embeddings['user_grouping'].fillna(col_schema_embeddings['table_schema']+"-"+col_schema_embeddings['source_type'])
 
     print("Table and Column embeddings are created")
+
 
     return table_schema_embeddings, col_schema_embeddings
 
@@ -379,6 +436,38 @@ async def store_kgq_sql_embeddings():
         print("If no Known Good Queries for the dataset are availabe at this time, you can use 3_LoadKnownGoodSQL.ipynb to load them later!!")
 
 
+def create_firestore_db(firestore_region,firestore_database="opendataqna-session-logs"):
+
+    # Check if Firestore database exists
+    database_exists_cmd = [
+        "gcloud", "firestore", "databases", "list", 
+        "--filter", f"name=projects/{PROJECT_ID}/databases/{firestore_database}", 
+        "--format", "value(name)"  # Extract just the name if found
+    ]
+
+    database_exists_process = subprocess.run(
+        database_exists_cmd, capture_output=True, text=True
+    )
+    
+    if database_exists_process.returncode == 0 and database_exists_process.stdout:
+        if database_exists_process.stdout.startswith(f"projects/{PROJECT_ID}/databases/{firestore_database}"):
+            print("Found existing Firestore database with this name already!")
+        else:
+            raise RuntimeError("Issue with checking if the firestore db exists or not")
+    else:
+        # Create Firestore database
+        print("Creating new Firestore database...")
+        create_db_cmd = [
+            "gcloud", "firestore", "databases", "create", 
+            "--database", firestore_database,
+            "--location", firestore_region
+        ]
+        subprocess.run(create_db_cmd, check=True)  # Raise exception on failure
+
+        # Potential wait for database readiness (optional)
+        time.sleep(30)  # May not be strictly necessary for basic use
+
+
 
 
 
@@ -396,5 +485,7 @@ if __name__ == '__main__':
     asyncio.run(create_kgq_sql_table()) 
 
     # Store known good query embeddings (if enabled)
-    asyncio.run(store_kgq_sql_embeddings())  
+    asyncio.run(store_kgq_sql_embeddings())
+
+    create_firestore_db(firestore_region)  
 

@@ -1,18 +1,3 @@
-# Copyright 2024 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-
 """
 BigQuery Connector Class
 """
@@ -85,7 +70,7 @@ class BQConnector(DBConnector, ABC):
         retrieve_df(query) -> pd.DataFrame:
             Executes a SQL query and returns the results as a pandas DataFrame.
 
-        make_audit_entry(source_type, schema, model, question, generated_sql, found_in_vector, need_rewrite, failure_step, error_msg, FULL_LOG_TEXT) -> str:
+        make_audit_entry(source_type, user_grouping, model, question, generated_sql, found_in_vector, need_rewrite, failure_step, error_msg, FULL_LOG_TEXT) -> str:
             Logs an audit entry to BigQuery, recording details of the interaction and the generated SQL query.
 
         create_vertex_connection(connection_id) -> None:
@@ -94,10 +79,10 @@ class BQConnector(DBConnector, ABC):
         create_embedding_model(connection_id, embedding_model) -> None:
             Creates or replaces an embedding model in BigQuery using a Vertex AI connection.
 
-        retrieve_matches(mode, schema, qe, similarity_threshold, limit) -> list:
+        retrieve_matches(mode, user_grouping, qe, similarity_threshold, limit) -> list:
             Retrieves the most similar table schemas, column schemas, or example queries based on the given mode and parameters.
 
-        getSimilarMatches(mode, schema, qe, num_matches, similarity_threshold) -> str:
+        getSimilarMatches(mode, user_grouping, qe, num_matches, similarity_threshold) -> str:
             Returns a formatted string containing similar matches found for tables, columns, or examples.
 
         getExactMatches(query) -> str or None:
@@ -117,13 +102,11 @@ class BQConnector(DBConnector, ABC):
     def __init__(self,
                  project_id:str,
                  region:str,
-                 dataset_name:str,
                  opendataqna_dataset:str,
                  audit_log_table_name:str):
 
         self.project_id = project_id
         self.region = region
-        self.dataset_name = dataset_name
         self.opendataqna_dataset = opendataqna_dataset
         self.audit_log_table_name = audit_log_table_name
         self.client=self.getconn()
@@ -135,7 +118,7 @@ class BQConnector(DBConnector, ABC):
     def retrieve_df(self,query):
         return self.client.query_and_wait(query).to_dataframe()
 
-    def make_audit_entry(self, source_type, schema, model, question, generated_sql, found_in_vector, need_rewrite, failure_step, error_msg, FULL_LOG_TEXT):
+    def make_audit_entry(self, source_type, user_grouping, model, question, generated_sql, found_in_vector, need_rewrite, failure_step, error_msg, FULL_LOG_TEXT):
         # global FULL_LOG_TEXT
         auth_user=get_auth_user()
 
@@ -151,7 +134,7 @@ class BQConnector(DBConnector, ABC):
                 'source_type',
                 'project_id',
                 'user',
-                'schema',
+                'user_grouping',
                 'model_used',
                 'question',
                 'generated_sql',
@@ -167,7 +150,7 @@ class BQConnector(DBConnector, ABC):
                 "source_type":source_type,
                 "project_id":str(PROJECT_ID),
                 "user":str(auth_user),
-                "schema": schema,
+                "user_grouping": user_grouping,
                 "model_used": model,
                 "question": question,
                 "generated_sql": generated_sql,
@@ -188,7 +171,7 @@ class BQConnector(DBConnector, ABC):
                     bigquery.SchemaField("source_type", bigquery.enums.SqlTypeNames.STRING),
                     bigquery.SchemaField("project_id", bigquery.enums.SqlTypeNames.STRING),
                     bigquery.SchemaField("user", bigquery.enums.SqlTypeNames.STRING),
-                    bigquery.SchemaField("schema", bigquery.enums.SqlTypeNames.STRING),
+                    bigquery.SchemaField("user_grouping", bigquery.enums.SqlTypeNames.STRING),
                     bigquery.SchemaField("model_used", bigquery.enums.SqlTypeNames.STRING),
                     bigquery.SchemaField("question", bigquery.enums.SqlTypeNames.STRING),
                     bigquery.SchemaField("generated_sql", bigquery.enums.SqlTypeNames.STRING),
@@ -241,7 +224,7 @@ class BQConnector(DBConnector, ABC):
                                             OPTIONS (ENDPOINT = '{embedding_model}');''')
    
     
-    def retrieve_matches(self, mode, schema, qe, similarity_threshold, limit): 
+    def retrieve_matches(self, mode, user_grouping, qe, similarity_threshold, limit): 
         """
         This function retrieves the most similar table_schema and column_schema.
         Modes can be either 'table', 'column', or 'example' 
@@ -297,19 +280,19 @@ class BQConnector(DBConnector, ABC):
 
         return matches
 
-    def getSimilarMatches(self, mode, schema, qe, num_matches, similarity_threshold):
+    def getSimilarMatches(self, mode, user_grouping, qe, num_matches, similarity_threshold):
 
         if mode == 'table': 
-            match_result= self.retrieve_matches(mode, schema, qe, similarity_threshold, num_matches)
+            match_result= self.retrieve_matches(mode, user_grouping, qe, similarity_threshold, num_matches)
             match_result = match_result[0]
             # print(match_result)
 
         elif mode == 'column': 
-            match_result= self.retrieve_matches(mode, schema, qe, similarity_threshold, num_matches)
+            match_result= self.retrieve_matches(mode, user_grouping, qe, similarity_threshold, num_matches)
             match_result = match_result[0]
         
         elif mode == 'example': 
-            match_result= self.retrieve_matches(mode, schema, qe, similarity_threshold, num_matches)
+            match_result= self.retrieve_matches(mode, user_grouping, qe, similarity_threshold, num_matches)
             if len(match_result) == 0:
                 match_result = None
             else:
@@ -334,7 +317,7 @@ class BQConnector(DBConnector, ABC):
                 exact_sql=example_sql
                 sql_example_txt = sql_example_txt + "\n Example_question: "+example_user_question+ "; Example_SQL: "+example_sql
 
-            print("Found a matching question from the history!" + str(sql_example_txt))
+            # print("Found a matching question from the history!" + str(sql_example_txt))
             final_sql=exact_sql
 
         else: 
@@ -345,7 +328,7 @@ class BQConnector(DBConnector, ABC):
 
     def test_sql_plan_execution(self, generated_sql):
         try:
-
+            exec_result_df=""
             job_config=bigquery.QueryJobConfig(dry_run=True, use_query_cache=False)
             query_job = self.client.query(generated_sql,job_config=job_config)
             # print(query_job)
@@ -375,10 +358,7 @@ class BQConnector(DBConnector, ABC):
         if table_names:
             # Extract individual table names from the input string
             #table_names = [name.strip() for name in table_names[1:-1].split(",")]  # Handle the string as a list
-            # formatted_table_names = [f"'{name}'" for name in table_names]
-            # table_filter_clause = f"""AND TABLE_NAME IN ({', '.join(formatted_table_names)})"""
-            table_names = [name.strip() for name in table_names[1:-1].split(",")]
-            formatted_table_names = list(table_names)
+            formatted_table_names = [f"'{name}'" for name in table_names]
             table_filter_clause = f"""AND TABLE_NAME IN ({', '.join(formatted_table_names)})"""
 
 
@@ -433,14 +413,13 @@ class BQConnector(DBConnector, ABC):
         user_dataset = self.project_id + '.' + dataset
 
         table_filter_clause = ""
-        if table_names:
-            # table_names = [name.strip() for name in table_names[1:-1].split(",")]  # Handle the string as a list
-            # formatted_table_names = [f"'{name}'" for name in table_names]
-            # table_filter_clause = f"""AND C.TABLE_NAME IN ({', '.join(formatted_table_names)})"""
-            table_names = [name.strip() for name in table_names[1:-1].split(",")]
-            formatted_table_names = list(table_names)
-            table_filter_clause = f"""AND C.TABLE_NAME IN ({', '.join(formatted_table_names)})"""
 
+        if table_names:
+            
+            # table_names = [name.strip() for name in table_names[1:-1].split(",")]  # Handle the string as a list
+            formatted_table_names = [f"'{name}'" for name in table_names]
+            table_filter_clause = f"""AND C.TABLE_NAME IN ({', '.join(formatted_table_names)})"""
+            
         column_schema_sql = f"""
         SELECT
             C.TABLE_CATALOG as project_id, C.TABLE_SCHEMA as table_schema, C.TABLE_NAME as table_name, C.COLUMN_NAME as column_name,
@@ -466,4 +445,17 @@ class BQConnector(DBConnector, ABC):
 
         return column_schema_sql
 
-   
+    def get_column_samples(self,columns_df):
+        sample_column_list=[]
+
+        for index, row in columns_df.iterrows():
+            get_column_sample_sql=f'''SELECT STRING_AGG(CAST(value AS STRING)) as sample_values FROM UNNEST((SELECT APPROX_TOP_COUNT({row["column_name"]},5) as osn 
+            FROM `{row["project_id"]}.{row["table_schema"]}.{row["table_name"]}`
+            ))'''
+
+            column_samples_df=self.retrieve_df(get_column_sample_sql)
+            # display(column_samples_df)
+            sample_column_list.append(column_samples_df['sample_values'].to_string(index=False))
+
+        columns_df["sample_values"]=sample_column_list
+        return columns_df
