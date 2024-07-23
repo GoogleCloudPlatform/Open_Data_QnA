@@ -3,27 +3,14 @@ import { LoginService } from '../shared/services/login.service';
 import { FormControl, FormGroup } from '@angular/forms';
 import { HomeService } from '../shared/services/home.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Timestamp } from '@angular/fire/firestore'
 import { Subject, Subscription, takeUntil } from 'rxjs';
 import { Router } from '@angular/router';
 import { GroupingModalComponent } from '../grouping-modal/grouping-modal.component';
 import { MatDialog } from '@angular/material/dialog';
+import { ChatService } from '../shared/services/chat.service';
 
 export interface Tabledata {
   city_id: string;
-}
-
-type Author = "User" | "Agent" | "System";
-
-export interface ChatMessage {
-  author: Author,
-  language: string,
-  user_question: string,
-  timestamp?: Timestamp,
-  link?: string,
-  iconURL?: string,
-  sentiment_score?: number;
-  sentiment_magnitude?: number
 }
 
 @Component({
@@ -37,6 +24,7 @@ export class BusinessUserComponent {
   selectedHistory!: any;
   @Input('selectedGrouping') selectedGrouping: any
   @Input('userSessions') userSessions!: string;
+  currentScenario: any;
   chatMsgs: any[] = [];
   userLoggedIn: boolean = false;
   photoURL: any;
@@ -54,18 +42,17 @@ export class BusinessUserComponent {
   readonly dialog = inject(MatDialog);
   isOpen: boolean = false;
   dataSet: string | undefined;
-  showChart: boolean = false;
-  showLoader: boolean = false;
-  selectedFeedbackOption: any;
   dataSetName!: string;
-  subscription!: Subscription;
   userId: any;
   private _destroy$ = new Subject<void>();
   sessionId !: string;
+  subscription!: Subscription;
+  sub!: Subscription;
+  //ind: number = 0;
 
-  constructor(public loginService: LoginService, public homeService: HomeService,
+  constructor(public loginService: LoginService, public homeService: HomeService, public chatService: ChatService,
     private snackBar: MatSnackBar, private change: ChangeDetectorRef, public router: Router) {
-    this.loginService.getUserDetails().subscribe((res: any) => {
+    this.loginService.getUserDetails().pipe(takeUntil(this._destroy$)).subscribe((res: any) => {
       this.userId = res.uid;
       this.userLoggedIn = true;
       this.photoURL = res?.photoURL
@@ -79,106 +66,20 @@ export class BusinessUserComponent {
     for (const propName in changes) {
       if (changes.hasOwnProperty(propName)) {
         switch (propName) {
-          case 'checkSideNav': {
-            if (this.checkSideNav === 'New Query') {
-              let initialChat =
-                [{
-                  'author': 'agent',
-                  'message': this.suggestionList,
-                  'user_question': 'Looking for a specific insight or want to browse through your database? Ask what you are looking for in a natural language and Open Data QnA will translate to SQL and bring back results in natural language.'
-                }];
-              this.chatMsgs = []
-              this.homeService.updateChatMsgs(initialChat);
-              this.chatMsgs = this.homeService.getChatMsgs();
-              this.homeService.setSessionId('')
-              this.sessionId = ''
-            };
-          }
-            break;
           case 'selectedHistory': {
             if (this.selectedHistory) {
-              this.resultLoader = true;
               this.showResult = false;
-              let initialChat =
-                [{
-                  'author': 'agent',
-                  'message': this.suggestionList,
-                  'user_question': 'Looking for a specific insight or want to browse through your database? Ask what you are looking for in a natural language and Open Data QnA will translate to SQL and bring back results in natural language.'
-                }];
-              this.chatMsgs = [];
-              this.homeService.updateChatMsgs(initialChat);
-              this.chatMsgs = this.homeService.getChatMsgs()
-              for (let i = this.selectedHistory.length - 1; i >= 0; i--) {
-                this.chatMsgs.push({
-                  'author': 'user',
-                  'user_question': this.selectedHistory[i]?.user_question
-                });
-                this.chatMsgs.push({
-                  'author': 'agent',
-                  'user_question': this.selectedHistory[i]?.user_question,
-                  'generate_sql': {
-                    'GeneratedSQL': this.selectedHistory[i]?.bot_response,
-                    'SessionID': this.selectedHistory[i]?.session_id,
-                    "ResponseCode": 200
-                  }
-                });
-                this.homeService.setSessionId(this.selectedHistory[i]?.session_id)
-                this.sessionId = this.homeService.getSessionId()
-              }
-              this.homeService.updateChatMsgs(this.chatMsgs);
-              this.chatMsgs = this.homeService.getChatMsgs()
-              this.resultLoader = false;
+              this.sessionId = this.homeService.getSessionId()
             }
           }
             break;
-          case 'selectedGrouping': {
-            this.sessionId = "";
-            this.homeService.setSessionId('')
-            this.sessionId = this.homeService.getSessionId();
-            this.chatMsgs = [];
-            if (this.selectedHistory) {
-              this.resultLoader = true;
-              this.showResult = false;
-              let initialChat =
-                [{
-                  'author': 'agent',
-                  'message': this.suggestionList,
-                  'user_question': 'Looking for a specific insight or want to browse through your database? Ask what you are looking for in a natural language and Open Data QnA will translate to SQL and bring back results in natural language.'
-                }];
-              this.chatMsgs = [];
-              this.homeService.updateChatMsgs(initialChat);
-              this.chatMsgs = this.homeService.getChatMsgs()
-              this.resultLoader = false;
-            }
-          }
         }
       }
     }
   }
   ngOnInit() {
     this.sessionId = '';
-    if (this.checkSideNav === 'New Query') {
-      this.reloadComponent(true);
-    }
-    this.chatMsgs = []
-
-    this.subscription = this.homeService.databaseObservable?.pipe(takeUntil(this._destroy$)).subscribe((response: any) => {
-      if (response && response != null) {
-        this.showResult = false;
-        this.chatMsgs = []
-        this.suggestionList = JSON.parse(response);
-        let initialChat =
-          [{
-            'author': 'agent',
-            'message': this.suggestionList,
-            'user_question': 'Looking for a specific insight or want to browse through your database? Ask what you are looking for in a natural language and Open Data QnA will translate to SQL and bring back results in natural language.'
-          }]
-        this.homeService.updateChatMsgs(initialChat);
-        this.chatMsgs = this.homeService.getChatMsgs();
-      }
-      this.dataSet = this.homeService.getselectedDb();
-      this.dataSetName = this.homeService.getselectedDbName();
-    });
+    this.loadInitialChat();
   }
   reloadComponent(self: boolean, urlToNavigateTo?: string) {
     //skipLocationChange:true means dont update the url to / when navigating
@@ -190,19 +91,31 @@ export class BusinessUserComponent {
       })
     })
   }
+
+  loadInitialChat() {
+    this.chatService.chatSessionObservable.pipe(takeUntil(this._destroy$)).subscribe((res) => {
+      this.chatMsgs = res.chatMsgs
+      console.log("chatMsgs", this.chatMsgs)
+      this.dataSet = this.homeService.getSelectedDbGrouping();
+      this.dataSetName = this.homeService.getselectedDbName();
+      this.sub = this.chatService.agentResponseLoader$.pipe(takeUntil(this._destroy$)).subscribe((res) => {
+        this.resultLoader = res
+        console.log("resultLoader", this.resultLoader)
+      })
+      this.sessionId = this.homeService.getSessionId()
+      console.log("sess", this.sessionId)
+    })
+  }
   followUp(query: any, event?: any) {
     if (this.dataSet) {
       event?.preventDefault();
       if (this.sqlSearchForm.controls.name?.value !== null) {
-        this.resultLoader = true;
         this.showResult = false;
-        this.chatMsgs = this.homeService.getChatMsgs()
-        this.chatMsgs.push({
-          'author': 'user',
-          'user_question': query
-        });
-        this.homeService.updateChatMsgs(this.chatMsgs);
-        this.generate_sql(query);
+        this.chatService.addQuestion(query, this.userId, "followup")
+        this.sqlSearchForm.controls['name'].setValue("");
+        this.chatService.agentResponseLoader.next(true)
+        this.resultLoader = true;
+        //  this.generate_sql(query);
       } else {
         this.setErrorCSS = true;
       }
@@ -219,51 +132,13 @@ export class BusinessUserComponent {
     }
   }
 
-  generate_sql(query: any) {
-    this.sqlSearchForm.controls['name'].setValue("");
-    this.homeService.generateSql(query, this.homeService.getselectedDb(), this.sessionId, this.userId).subscribe((response: any) => {
-      if (response && response.ResponseCode === 200) {
-        this.resultLoader = false
-        this.showResult = true;
-        this.generatedSql.example_user_question = query;
-        this.homeService.setSessionId(response.SessionID)
-        this.sessionId = this.homeService.getSessionId()
-        // this.sessionId = response.SessionID
-        this.chatMsgs = this.homeService.getChatMsgs()
-        this.chatMsgs.push({
-          'author': 'agent',
-          'user_question': query,
-          'generate_sql': response,
-        })
-        this.homeService.updateChatMsgs(this.chatMsgs);
-        //this.change.markForCheck();
-      }
-      else if (response && response.ResponseCode != 200) {
-        this.chatMsgs.push({
-          'author': 'agent',
-          'generate_sql': response,
-        });
-        this.homeService.setSessionId(response.SessionID)
-        this.sessionId = this.homeService.getSessionId();
-        //  this.sessionId = response.SessionID
-        this.resultLoader = false;
-      }
-    })
-  }
   suggestionResult(selectedsql: any) {
     this.showResult = true;
-    this.chatMsgs = this.homeService.getChatMsgs()
-    this.chatMsgs.push(
-      {
-        'author': 'user',
-        'user_question': selectedsql.example_user_question,
-      }
-    );
-    this.homeService.updateChatMsgs(this.chatMsgs);
+    this.chatService.addQuestion(selectedsql.example_user_question, this.userId, "followup")
     this.resultLoader = true;
     this.generatedSql.example_user_question = selectedsql.example_user_question;
+    this.sqlSearchForm.controls['name'].setValue("");
     this.updateStyleEvent.emit(this.showResult);
-    this.generate_sql(selectedsql.example_user_question);
     //this.change.markForCheck();
   }
 
@@ -285,9 +160,9 @@ export class BusinessUserComponent {
 
   ngOnDestroy() {
     this.chatMsgs = [];
-    this.subscription.unsubscribe();
+    //this.subscription.unsubscribe();
     this._destroy$.next();
-    console.log(this.sessionId)
-    this.sessionId = ""
+    this.sessionId = "";
+    this.sub.unsubscribe()
   }
 }

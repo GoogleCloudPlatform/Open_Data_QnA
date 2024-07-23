@@ -1,9 +1,9 @@
 <ng-container *ngIf="msg">
-    <mat-stepper id="stepper" *ngIf="msg.author=='agent'" labelPosition="bottom">
+    <mat-stepper id="stepper" *ngIf="msg?.author=='agent'" labelPosition="bottom">
         <ng-template matStepperIcon="adjust">
             <mat-icon>adjust</mat-icon>
         </ng-template>
-        <mat-step label="Question Sent" [completed]="msg.generate_sql.GeneratedSQL"
+        <mat-step label="Question Sent" [completed]="msg?.generate_sql.GeneratedSQL"
             [state]="msg.generate_sql.GeneratedSQL ? 'done' : 'number'">
             <ng-template matStepLabel>
                 <div>Question Sent</div>
@@ -13,11 +13,11 @@
             [state]="(msg.generate_sql.GeneratedSQL && msg.generate_sql.ResponseCode === 200)? 'done' : 'number'">
             <ng-template matStepLabel>
                 <div>Converted to SQL</div>
-                <div>{{msg.generate_sql?.responseTime}}</div>
+                <div>{{msg?.generate_sql?.responseTime}}</div>
             </ng-template>
         </mat-step>
-        <mat-step [completed]="msg.dataSource && msg.displayedColumns"
-            [state]="(msg.dataSource && msg.displayedColumns) ? 'done' : 'number'">
+        <mat-step [completed]="msg?.dataSource && msg?.displayedColumns"
+            [state]="(msg?.dataSource && msg.displayedColumns) ? 'done' : 'number'">
             <ng-template matStepLabel>
                 <div>Data retrieved</div>
                 <div>{{msg.run_query?.responseTime}}</div>

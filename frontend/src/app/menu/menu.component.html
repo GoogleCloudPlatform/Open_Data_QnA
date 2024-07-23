@@ -1,23 +1,57 @@
-<mat-nav-list class="app-sidenav pr-4 ">
-  <mat-list-item style="cursor: pointer" [ngClass]="clickedItem === 'Query' ? 'activeTab' : 'inactiveTab'"
-    (click)="onClick('New Query')">
+<mat-nav-list class="app-sidenav pr-4 " disableRipple>
+  <mat-list-item
+    [ngClass]="(clickedMenuItem === 'Query' || clickedMenuItem === 'New Query' ) ? 'activeTab' : 'inactiveTab'"
+    (click)="onMenuClick('New Query')">
     <img src="assets/images/add-new-query.svg"><span class="ms-2">New Query</span>
   </mat-list-item>
-  <mat-list-item (click)="onClick('History')" style="height:auto; padding-right: 0;">
-    <mat-expansion-panel (opened)="panelOpenState.set(true)" (closed)="panelOpenState.set(false)" disableRipple>
+  <mat-list-item (click)="onMenuClick('History')" style="height:auto; padding-right: 0;"
+    [ngClass]="(clickedMenuItem === 'History') ? 'activeTab' : 'inactiveTab'">
+    <mat-expansion-panel (opened)="panelOpenState.set(true)" (closed)="panelOpenState.set(false)" disableRipple
+      style="cursor:auto">
       <mat-expansion-panel-header>
-        <mat-panel-title> <mat-icon>star_border</mat-icon><span class="ms-2">History</span></mat-panel-title>
+        <mat-panel-title> <img src="assets/images/history-icon.svg"><span class="ms-2">History</span></mat-panel-title>
       </mat-expansion-panel-header>
       <p>
         <a *ngFor="let history of recentHistory" class="historyDetails" (click)="onClickHistory(history.chatThread)">
           {{history.question}}</a>
       </p>
-      <button class="showMore" (click)="showMore()" *ngIf="userHistory.length > 5"> Show More </button>
-      <p *ngIf="showMoreHistory"> 
+      <p *ngIf="showMoreHistory">
         <a *ngFor="let history of showMoreHistory" class="historyDetails" (click)="onClickHistory(history.chatThread)">
           {{history.question}}</a>
       </p>
-     </mat-expansion-panel>
+      <button class="showMore" (click)="showMore()" *ngIf="userHistory.length > 5 && !showMoreHistory"> Show More
+      </button>
+    </mat-expansion-panel>
+  </mat-list-item>
+  <mat-list-item style="height:auto; padding-right: 0;cursor: pointer" *ngIf="csvData?.length > 0"
+    [ngClass]="(clickedMenuItem === 'Scenarios') ? 'activeTab' : 'inactiveTab'" (click)="onMenuClick('Scenarios')">
+
+    <mat-expansion-panel (opened)="scenarioPanelOpenState.set(true)" (closed)="scenarioPanelOpenState.set(false)"
+      disableRipple style="cursor:auto">
+      <mat-expansion-panel-header>
+        <mat-panel-title> <mat-icon>star_border</mat-icon><span class="ms-2">Scenarios</span></mat-panel-title>
+      </mat-expansion-panel-header>
+      <app-scenario-list [csvData]="csvData"></app-scenario-list>
+    </mat-expansion-panel>
+  </mat-list-item>
+  <mat-list-item>
+    <div class="d-flex align-items-center justify-content-center">
+      <div class="d-flex align-items-center justify-content-center" *ngIf="showUploadSection">
+        <button class="file-wrapper">
+          <input type="file" name="file" id="file" #fileInput (change)="onFileChange(fileInput)" accept=".csv"
+            multiple />
+          <label for="file" style="min-width: 146px;cursor: pointer;">
+            <span class="dropLabel">Upload Scenarios</span>
+          </label>
+        </button>
+      </div>
+      <div class="d-flex align-items-center justify-content-center" *ngIf="!showUploadSection">
+        <button class="file-wrapper" style="min-width: 146px;cursor: pointer;" (click)="uploadTemplate()">
+          Scenario Template
+        </button>
+      </div>
+    </div>
+
   </mat-list-item>
   <!-- <mat-list-item style="position: absolute;bottom: 15px;">
     <mat-slide-toggle class="example-margin" [color]="color" [checked]="checked" [disabled]="disabled">

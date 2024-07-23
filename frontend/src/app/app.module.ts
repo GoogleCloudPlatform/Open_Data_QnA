@@ -51,7 +51,6 @@ import 'prismjs/components/prism-sql';
 import { MatPaginatorModule } from "@angular/material/paginator";
 import { OverlayModule } from "@angular/cdk/overlay";
 import { SavedQueriesComponent } from './saved-queries/saved-queries.component';
-import { HistoryComponent } from './history/history.component';
 import { GoogleChartsModule } from "angular-google-charts";
 import { MatRadioModule } from '@angular/material/radio';
 import { MatStepperModule } from '@angular/material/stepper';
@@ -59,6 +58,8 @@ import { STEPPER_GLOBAL_OPTIONS } from "@angular/cdk/stepper";
 import { AgentChatComponent } from "./agent-chat/agent-chat.component";
 import { AppHttpInterceptor } from "./http.interceptor";
 import { firebaseConfig , FIRESTORE_DATABASE_ID} from "../assets/constants";
+import { MatTreeModule } from "@angular/material/tree";
+import { ScenarioListComponent } from "./scenario-list/scenario-list.component";
 
 @NgModule({
   declarations: [
@@ -76,8 +77,8 @@ import { firebaseConfig , FIRESTORE_DATABASE_ID} from "../assets/constants";
     UserPhotoComponent,
     PrismComponent,
     SavedQueriesComponent,
-    HistoryComponent,
-    AgentChatComponent
+    AgentChatComponent,
+    ScenarioListComponent
   ],
   imports: [
     CommonModule,
@@ -117,7 +118,8 @@ import { firebaseConfig , FIRESTORE_DATABASE_ID} from "../assets/constants";
     GoogleChartsModule,
     MatRadioModule,
     MatStepperModule,
-    MatExpansionModule
+    MatExpansionModule,
+    MatTreeModule
   ],
   providers: [
     {

@@ -18,8 +18,7 @@ export class LoginComponent {
   acceptAndAgreeButton: boolean = true;
   loginError = false;
   loginErrorMessage: any
-  constructor(private _router: Router, public loginService: LoginService, private elementRef: ElementRef
-    , public dialog: Dialog, public snackbar: MatSnackBar) {
+  constructor(private _router: Router, public loginService: LoginService, public dialog: Dialog, public snackbar: MatSnackBar) {
     this.loginService.getLoginError().subscribe((res: any) => {
       this.loginErrorMessage = res
       this.loginError = true;
@@ -30,9 +29,10 @@ export class LoginComponent {
     });
   }
 
-  ngOnInit() {
-    if (!this.photoURL)
+  ngAfterViewInit() {
+    if (!this.photoURL) {
       this.showLogIn()
+    }
   }
 
   userLoggedIn: boolean = false;
@@ -48,6 +48,7 @@ export class LoginComponent {
 
 
   showLogIn(): void {
+    console.log("this.photoURL", this.photoURL)
     const dialogRef = this.dialog.open(LoginButtonComponent, {
       disableClose: true,
       width: '350px',

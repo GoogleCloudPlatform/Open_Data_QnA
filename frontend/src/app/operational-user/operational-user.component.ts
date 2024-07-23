@@ -59,7 +59,7 @@ export class OperationalUserComponent {
 
   ngOnInit() {
     this.dataSource = ELEMENT_DATA;
-    this.homeService.databaseObservable.subscribe((response: any) => {
+    this.homeService.knownSqlObservable.subscribe((response: any) => {
       if (response) {
         this.showResult = false;
         this.suggestionList = JSON.parse(response);

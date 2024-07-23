@@ -1,9 +1,10 @@
-import { AfterViewInit, Component, ElementRef, Input, ViewChild, signal } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, Input, ViewChild, signal } from '@angular/core';
 import { HomeService } from '../shared/services/home.service';
 import { format } from 'sql-formatter';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { Subject } from 'rxjs';
+import { Subject, takeUntil } from 'rxjs';
+import { ChatService } from '../shared/services/chat.service';
 
 @Component({
   selector: 'app-agent-chat',
@@ -14,7 +15,6 @@ export class AgentChatComponent implements AfterViewInit {
   msg: any;
   @Input('example_user_question') example_user_question: any;
   @Input('ind') ind: any;
-  @Input('sessionId') sessionId: any;
   emptyMsg: any = '';
   @Input('suggestionList') suggestionList: any;
   showResult: boolean = false;
@@ -36,22 +36,37 @@ export class AgentChatComponent implements AfterViewInit {
   feedbackElement!: ElementRef;
   readonly panelOpenState = signal(false);
 
-  constructor(public homeService: HomeService, private snackBar: MatSnackBar, private formBuilder: FormBuilder) { }
+  constructor(public homeService: HomeService, private snackBar: MatSnackBar, private formBuilder: FormBuilder, public chatService: ChatService, private cdref: ChangeDetectorRef) { }
   ngOnInit() {
-    this.dataSet = this.homeService.getselectedDb();
+    this.homeService.knownSqlObservable?.pipe(takeUntil(this._destroy$)).subscribe((response: any) => {
+      if (response && response != null) {
+        this.suggestionList = JSON.parse(response);
+      }
+    })
+    this.dataSet = this.homeService.getSelectedDbGrouping();
     this.dataSetName = this.homeService.getselectedDbName();
-    this.msg = this.homeService.getChatMsgs().at(this.ind);
+    this.chatService.chatSessionObservable.pipe(takeUntil(this._destroy$)).subscribe((res) => {
+      this.homeService.updateChatMsgs(res.chatMsgs)
+      // this.msg = res.chatMsgs.at(this.ind)
+    })
+    //  this.msg = this.homeService.getChatMsgs().at(this.ind);
     this.showResult = true;
 
   }
+  ngAfterContentChecked() {
+    this.cdref.detectChanges();
+  }
+
   ngAfterViewInit() {
+    this.msg = this.homeService.getChatMsgs().at(this.ind);
     this.feedbackElement?.nativeElement.scrollIntoView({ behavior: "smooth", block: "start" });
+    this.cdref.detectChanges();
   }
   getResultforSql() {
     this.resultLoader = true;
     // Subscribe to the response data observable
-    this.homeService.runQuery(this.msg?.generate_sql.GeneratedSQL, this.homeService.getselectedDb(), this.msg?.user_question, this.sessionId)
-      .subscribe((res: any) => {
+    this.homeService.runQuery(this.msg?.generate_sql.GeneratedSQL, this.homeService.getSelectedDbGrouping(), this.msg?.user_question, this.homeService.getSessionId())
+      .pipe(takeUntil(this._destroy$)).subscribe((res: any) => {
         const data = JSON.parse(res.KnownDB);
         if (res && res.ResponseCode === 200) {
           if (data.length === 0) {
@@ -69,6 +84,7 @@ export class AgentChatComponent implements AfterViewInit {
                 }
               }
             }
+            // console.log(this.ind)
             this.updateLocalMessage(this.ind, res, data);
             this.dataSource = data;
           }
@@ -91,7 +107,7 @@ export class AgentChatComponent implements AfterViewInit {
   visualizeBtn(msg: any, ind: any) {
     this.showLoader = true;
     let sql = format(msg.generate_sql.GeneratedSQL, { language: 'mysql' })
-    this.homeService.generateViz(this.msg.user_question, sql, msg.dataSource, this.sessionId).subscribe((res: any) => {
+    this.homeService.generateViz(this.msg.user_question, sql, msg.dataSource, this.homeService.getSessionId()).subscribe((res: any) => {
       const object = res.GeneratedChartjs;
       this.msg = {
         ...this.msg, "visualize": res
@@ -119,7 +135,7 @@ export class AgentChatComponent implements AfterViewInit {
       //   }
       // })
       // const concatenatedStr = concatedUserQuestionsList.filter((word) => word).reduce((accumulator, currentValue) => accumulator + ' , ' + currentValue);
-      this.homeService.thumbsUp(sql, chats[ind]?.user_question, this.homeService.getselectedDb(), this.sessionId).subscribe((res: any) => {
+      this.homeService.thumbsUp(sql, chats[ind]?.user_question, this.homeService.getSelectedDbGrouping(), this.homeService.getSessionId()).subscribe((res: any) => {
         if (res && res.ResponseCode === 201) {
           this.updateLocalMessage(ind, res, "");
           this.showSnackbarCssStyles(res?.Message, 'Close', '10000')
@@ -157,7 +173,6 @@ export class AgentChatComponent implements AfterViewInit {
       };
     }
     this.msg = localChatMsgs;
-    console.log(this.msg)
     //this.homeService.updateChatMsgsAtIndex(localChatMsgs, this.ind);
   }
 

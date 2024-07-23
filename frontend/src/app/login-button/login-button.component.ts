@@ -4,7 +4,6 @@ import { LoginService } from '../shared/services/login.service';
 import { SharedService } from '../shared/services/shared.service';
 
 @Component({
-
   selector: 'app-login-button',
   templateUrl: './login-button.component.html',
   styleUrl: './login-button.component.scss'
@@ -19,12 +18,12 @@ export class LoginButtonComponent {
     this.fireservice.googleSignin().then((res => {
       this.userLoggedIn = true;
       this.photoURL = res?.photoURL;
-      this.updateData(res);
+      this.updateUserData(res);
       this.dialog.closeAll()
     }))
   }
 
-  updateData(userDetails: any): void {
+  updateUserData(userDetails: any): void {
     this.loginService.sendUserDetails(userDetails);
   }
 }

@@ -26,6 +26,7 @@ export class UserPhotoComponent {
       if (aUser) {
         this.dialog.closeAll();
         this.userLoggedIn = true;
+        console.log(aUser)
         this.loginService.sendUserDetails(aUser)
         if (aUser.photoURL) {
           this.photoURL = aUser.photoURL;
@@ -38,11 +39,11 @@ export class UserPhotoComponent {
     })
   }
 
-  ngOnInit() {
-    if (!this.photoURL) {
-      this.showLogIn()
-    }
-  }
+  // ngOnInit() {
+  //   if (!this.photoURL) {
+  //     this.showLogIn()
+  //   }
+  // }
 
   showLogIn(): void {
     this.dialog.open(LoginButtonComponent, {

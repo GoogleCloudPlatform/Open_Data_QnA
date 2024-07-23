@@ -1,17 +1,22 @@
-import { Component, Input, EventEmitter, Output, signal, SimpleChanges, inject } from '@angular/core';
+import { Component, Input, EventEmitter, Output, signal, SimpleChanges, inject, ViewChild } from '@angular/core';
 import { ThemePalette } from '@angular/material/core';
 import { Router } from '@angular/router';
 import { HomeService } from '../shared/services/home.service';
 import { GroupingModalComponent } from '../grouping-modal/grouping-modal.component';
 import { MatDialog } from '@angular/material/dialog';
+import { ScenarioListComponent } from '../scenario-list/scenario-list.component';
+import { ChatService } from '../shared/services/chat.service';
+import { LoginService } from '../shared/services/login.service';
+import { UploadTemplateComponent } from '../upload-template/upload-template.component';
 
 @Component({
   selector: 'app-menu',
   templateUrl: './menu.component.html',
-  styleUrl: './menu.component.scss'
+  styleUrl: './menu.component.scss',
+
 })
 export class MenuComponent {
-  clickedItem: 'Query' | 'New Query' | 'Reports' | 'History' | 'Operations Mode' | 'My workspace' | 'Team workspaces' | 'Recent' | 'Shared with me' | 'Trash' | 'Templates' | undefined;
+  clickedMenuItem: 'Query' | 'New Query' | 'Reports' | 'History' | 'Operations Mode' | 'My workspace' | 'Team workspaces' | 'Recent' | 'Shared with me' | 'Trash' | 'Templates' | 'Scenarios' | undefined;
   color: ThemePalette = 'accent';
   checked = false;
   disabled = true;
@@ -20,16 +25,29 @@ export class MenuComponent {
   @Output() selectedTab = new EventEmitter<string>();
   @Output() selectedHistory = new EventEmitter<string>();
   panelOpenState = signal(false);
+  scenarioPanelOpenState = signal(false)
   readonly dialog = inject(MatDialog);
   userType: any;
   recentHistory: any;
   showMoreHistory: any;
   selectedGrouping: string = '';
-  constructor(public _router: Router, public homeService: HomeService) {
-    this.clickedItem = 'Query';
+  csvData: any;
+  @ViewChild(ScenarioListComponent)
+  child!: ScenarioListComponent;
+  userId: any;
+  showUploadSection: boolean = false;
+
+  constructor(public _router: Router, public homeService: HomeService, public chatService: ChatService, public loginService: LoginService) {
+    this.clickedMenuItem = 'Query';
   }
   ngOnInit() {
-    this.selectedTab.emit(this.clickedItem);
+    // this.homeService.currentSelectedGroupingObservable.subscribe((res) => {
+    //   this.selectedGrouping = res
+    // })
+    this.loginService.getUserDetails().subscribe((res: any) => {
+      this.userId = res.uid;
+    });
+    this.selectedTab.emit(this.clickedMenuItem);
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -57,9 +75,10 @@ export class MenuComponent {
             });
 
             sessionToDisplayQuery?.sort((a: any, b: any) => {
-              return b.timestamp - a.timestamp
+              return b.chatThread[0].timestamp - a.chatThread[0].timestamp
             });
             this.userHistory = sessionToDisplayQuery;
+            console.log(this.userHistory)
             this.recentHistory = this.userHistory.slice(0, 5);
           }
             break;
@@ -70,19 +89,35 @@ export class MenuComponent {
   showMore() {
     this.showMoreHistory = this.userHistory.slice(5, 10)
   }
-  onClick(item: 'Query' | 'New Query' | 'Reports' | 'History' | 'Operations Mode' | 'My workspace' | 'Team workspaces' | 'Recent' | 'Shared with me' | 'Trash' | 'Templates') {
-    this.clickedItem = item;
-    if (this.clickedItem == 'History') {
-      this.selectedGrouping = this.homeService.getselectedDb();
-      if (!this.selectedGrouping) {
-        this.openDialog();
-      }
+  onMenuClick(item: 'Query' | 'New Query' | 'Reports' | 'History' | 'Operations Mode' | 'My workspace' | 'Team workspaces' | 'Recent' | 'Shared with me' | 'Trash' | 'Templates' | 'Scenarios') {
+    this.clickedMenuItem = item;
+    this.selectedGrouping = this.homeService.getSelectedDbGrouping();
 
+    if (this.clickedMenuItem == 'New Query') {
+      this.chatService.createNewSession();
+      this.homeService.setSessionId('')
+      this.child?.resetSelectedScenario()
     }
-    this.selectedTab.emit(this.clickedItem);
+    this.selectedTab.emit(this.clickedMenuItem);
   }
   onClickHistory(chatThread: any) {
-    this.selectedHistory.emit(chatThread)
+    this.child?.resetSelectedScenario()
+
+    this.selectedGrouping = this.homeService.getSelectedDbGrouping();
+    if (this.selectedGrouping) {
+      this.homeService.updateChatMsgs(chatThread)
+      this.chatService.createNewSession()
+      this.homeService.setSessionId(chatThread[0].session_id)
+      console.log(chatThread)
+      this.homeService.updateSelectedHistory(chatThread)
+      console.log(this.selectedHistory)
+      this.chatService.addQuestion(chatThread[chatThread?.length - 1]?.user_question, this.userId, 'history', chatThread)
+      // this.sessionId = this.homeService.getSessionId()
+
+      this.selectedHistory.emit(chatThread);
+    } else {
+      this.openDialog();
+    }
   }
 
   openDialog() {
@@ -97,4 +132,43 @@ export class MenuComponent {
     });
   }
 
+  uploadTemplate() {
+    let dialogRef = this.dialog.open(UploadTemplateComponent, {
+      disableClose: true,
+      width: '450px',
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      this.showUploadSection = result
+      console.log(`Dialog result: ${result}`);
+    });
+
+  }
+  onFileChange(fileInput: any) {
+    if (fileInput) {
+      const file: File = fileInput.files[0];
+      let reader: FileReader = new FileReader();
+      reader.readAsText(file);
+      reader.onload = (e) => {
+        let csv: any = reader.result;
+        csv = csv.split('\n')
+        for (let i = 0; i < csv.length; i++) {
+          csv[i] = csv[i].split(',');
+          if (i != 0) { // 0th element has the column header 
+            csv[i] = this.arrToObject(csv[i], csv[0]);
+          }
+        }
+        this.panelOpenState = signal(false)
+        this.csvData = csv.slice(1);
+      }
+    }
+  }
+  arrToObject(arr: any[], header: any[]) {
+    let rv: any = {};
+    for (let i = 0; i < arr.length; ++i)
+      if (arr[i] !== undefined && arr.length == header.length) {
+        rv[header[i]] = arr[i];
+      }
+    return rv;
+  }
 }

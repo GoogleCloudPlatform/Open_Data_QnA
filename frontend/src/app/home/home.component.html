@@ -27,18 +27,21 @@
       <mat-sidenav-container fullscreen>
         <mat-sidenav [mode]="isMobile ? 'over' : 'side'" [opened]="isMobile ? 'false' : 'true'" class="no-border">
           <app-menu *ngIf="userSessions" (selectedTab)="checkSideNavTAb($event)" (selectedHistory)="sendHistory($event)"
-            [userHistory]="userHistory" [userSessions]="userSessions"></app-menu>
+            [userHistory]="userHistory" [userSessions]="userSessions"
+            ></app-menu>
         </mat-sidenav>
         <!-- <mat-sidenav-content [ngStyle]="checkStyle?{'background-color': '#FFF'} : {'background-color': '#F3F6FC'}"> -->
         <mat-sidenav-content style="background-color: #FFF; min-height: 100vh;">
           <div *ngIf="checkSideNav === 'Query'" style="height:100%">
             <app-business-user *ngIf="checkSideNav === 'Query'" (updateStyleEvent)="updateBackgroundStyle($event)"
-              [checkSideNav]="checkSideNav" [selectedHistory]="selectedHistory" [selectedGrouping]="organizationCtrl.value"></app-business-user>
+              [checkSideNav]="checkSideNav" [selectedHistory]="selectedHistory"
+              [selectedGrouping]="organizationCtrl.value"></app-business-user>
           </div>
-          <div *ngIf="checkSideNav === 'History'|| checkSideNav ==='New Query'" style="height:100%">
-            <app-business-user *ngIf="checkSideNav === 'History'|| checkSideNav ==='New Query'"
-              (updateStyleEvent)="updateBackgroundStyle($event)" [checkSideNav]="checkSideNav"
-              [selectedHistory]="selectedHistory" [userSessions]="userSessions" [selectedGrouping]="organizationCtrl.value"></app-business-user>
+          <div *ngIf="checkSideNav === 'History'|| checkSideNav ==='New Query' || checkSideNav ==='Scenarios'"
+            style="height:100%">
+            <app-business-user (updateStyleEvent)="updateBackgroundStyle($event)" [checkSideNav]="checkSideNav"
+              [selectedHistory]="selectedHistory" [userSessions]="userSessions"
+              [selectedGrouping]="organizationCtrl.value" [selectedScenario]="selectedScenario"></app-business-user>
           </div>
           <router-outlet></router-outlet>
         </mat-sidenav-content>

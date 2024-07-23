@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpHeaders, HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { catchError, throwError, BehaviorSubject} from 'rxjs';
-import { Observable } from 'rxjs';
+import { catchError, throwError, BehaviorSubject } from 'rxjs';
 import { ENDPOINT_OPENDATAQNA } from '../../../assets/constants';
 import { Firestore, collection, collectionData, doc, docData, orderBy, query, updateDoc, where } from '@angular/fire/firestore';
 
@@ -9,13 +8,17 @@ import { Firestore, collection, collectionData, doc, docData, orderBy, query, up
   providedIn: 'root'
 })
 export class HomeService {
-  public databaseSubject = new BehaviorSubject(null);
-  databaseObservable = this.databaseSubject.asObservable();
+  public knownSqlFromDb = new BehaviorSubject(null);
+  knownSqlObservable = this.knownSqlFromDb.asObservable();
+
+  public currentSelectedGrouping = new BehaviorSubject('');
+  currentSelectedGroupingObservable = this.currentSelectedGrouping.asObservable();
   private databaseList: any;
   private selectedGrouping: any;
   public selectedDBType: any;
   selectedDbName: any;
-  chatMsgs: any[] = []
+  chatMsgs: any[] = [];
+  selectedHistory: any
   private firestore: Firestore = inject(Firestore);
   session_id: any = '';
   constructor(public http: HttpClient) { }
@@ -96,11 +99,11 @@ export class HomeService {
   getAvailableDBList(): string {
     return this.databaseList;
   }
-  setselectedDb(selectedDBGroup: any) {
+  setSelectedDbGrouping(selectedDBGroup: any) {
     console.log(selectedDBGroup)
     this.selectedGrouping = selectedDBGroup;
   }
-  getselectedDb(): string {
+  getSelectedDbGrouping(): string {
     return this.selectedGrouping;
   }
 
@@ -126,11 +129,19 @@ export class HomeService {
     this.chatMsgs = chatMsgs;
   }
 
+  getSelectedHistory() {
+    return this.selectedHistory
+  }
+
+  updateSelectedHistory(selectedHistory: any) {
+    this.selectedHistory = selectedHistory
+  }
+
   updateChatMsgsAtIndex(chatMsg: any, ind: any) {
     this.chatMsgs[ind] = chatMsg
   }
 
-  runQuery(query: any, grouping: any, user_question: any , session_id : any) {
+  runQuery(query: any, grouping: any, user_question: any, session_id: any) {
     const header = {
       'Content-Type': 'application/json',
     }
@@ -142,14 +153,14 @@ export class HomeService {
       "generated_sql": query,
       "user_grouping": grouping,
       "user_question": user_question,
-      "session_id": session_id
+      "session_id": this.session_id
     }
     let endpoint = ENDPOINT_OPENDATAQNA;
 
     return this.http.post(endpoint + "/run_query", body, requestOptions);
   }
 
-  thumbsUp(sql: any, user_question: any, selectedGrouping: any , session_id : any) {
+  thumbsUp(sql: any, user_question: any, selectedGrouping: any, session_id: any) {
 
     const header = {
       'Content-Type': 'application/json',
@@ -162,14 +173,14 @@ export class HomeService {
       user_grouping: selectedGrouping,
       generated_sql: sql,
       user_question: user_question,
-      "session_id": session_id
+      session_id: this.session_id
     }
     let endpoint = ENDPOINT_OPENDATAQNA;
     return this.http.post(endpoint + "/embed_sql", body, requestOptions)
       .pipe(catchError(this.handleError));
   }
 
-  generateViz(question: any, query: any, result: any , session_id : any) {
+  generateViz(question: any, query: any, result: any, session_id: any) {
     const header = {
       'Content-Type': 'application/json',
     }
@@ -181,7 +192,7 @@ export class HomeService {
       "user_question": question,
       "sql_generated": query,
       "sql_results": result,
-      "session_id": session_id
+      "session_id": this.session_id
     }
     return this.http.post(ENDPOINT_OPENDATAQNA + "/generate_viz", body, requestOptions)
       .pipe(catchError(this.handleError));
