@@ -4,6 +4,7 @@ Provides the base class for all Agents
 
 from abc import ABC
 import vertexai
+from google.cloud.aiplatform import telemetry
 from vertexai.language_models import TextGenerationModel
 from vertexai.language_models import CodeGenerationModel
 from vertexai.language_models import CodeChatModel
@@ -33,39 +34,50 @@ class Agent(ABC):
         self.model_id = model_id 
 
         if model_id == 'code-bison-32k':
-            self.model = CodeGenerationModel.from_pretrained('code-bison-32k')
+            with telemetry.tool_context_manager('opendataqna'):
+                self.model = CodeGenerationModel.from_pretrained('code-bison-32k')
+
         elif model_id == 'text-bison-32k':
-            self.model = TextGenerationModel.from_pretrained('text-bison-32k')
+            with telemetry.tool_context_manager('opendataqna'):
+                self.model = TextGenerationModel.from_pretrained('text-bison-32k')
+        
         elif model_id == 'codechat-bison-32k':
-            self.model = CodeChatModel.from_pretrained("codechat-bison-32k")
+            with telemetry.tool_context_manager('opendataqna'):
+                self.model = CodeChatModel.from_pretrained("codechat-bison-32k")
+        
         elif model_id == 'gemini-1.0-pro':
-            # print("Model is gemini 1.0 pro")
-            self.model = GenerativeModel("gemini-1.0-pro-001")
-            self.safety_settings: Optional[dict] = {
-            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-        }
+            with telemetry.tool_context_manager('opendataqna'):
+                # print("Model is gemini 1.0 pro")
+                self.model = GenerativeModel("gemini-1.0-pro-001")
+                self.safety_settings: Optional[dict] = {
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+            }
+        
         elif model_id == 'gemini-1.5-flash':
-            # print("Model is gemini 1.5 flash")
-            self.model = GenerativeModel("gemini-1.5-flash-preview-0514")
-            self.safety_settings: Optional[dict] = {
-            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-        }
+            with telemetry.tool_context_manager('opendataqna'):
+                # print("Model is gemini 1.5 flash")
+                self.model = GenerativeModel("gemini-1.5-flash-preview-0514")
+                self.safety_settings: Optional[dict] = {
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+            }
 
         elif model_id == 'gemini-1.5-pro':
-            # print("Model is gemini 1.5 Pro")
-            self.model = GenerativeModel("gemini-1.5-pro-001")
-            self.safety_settings: Optional[dict] = {
-            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-        }
+            with telemetry.tool_context_manager('opendataqna'):
+                # print("Model is gemini 1.5 Pro")
+                self.model = GenerativeModel("gemini-1.5-pro-001")
+                self.safety_settings: Optional[dict] = {
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+            }
+        
         else:
             raise ValueError("Please specify a compatible model.")
 

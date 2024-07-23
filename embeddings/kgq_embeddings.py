@@ -164,20 +164,21 @@ async def store_kgq_embeddings(df_kgq,
 
 def load_kgq_df():
     import pandas as pd
+    
+    def is_root_dir():
+        current_dir = os.getcwd()
+        notebooks_path = os.path.join(current_dir, "notebooks")
+        agents_path = os.path.join(current_dir, "agents")
+        
+        return os.path.exists(notebooks_path) or os.path.exists(agents_path)
 
-    current_dir = os.getcwd()
-    root_dir = os.path.expanduser('~')  # Start at the user's home directory
+    if is_root_dir():
+        current_dir = os.getcwd()
+        root_dir = current_dir
+    else:
+        root_dir = os.path.abspath(os.path.join(os.getcwd(), '..'))
 
-    while current_dir != root_dir:
-        for dirpath, dirnames, filenames in os.walk(current_dir):
-            config_path = os.path.join(dirpath, 'known_good_sql.csv')
-            if os.path.exists(config_path):
-                file_path = config_path  # Update root_dir to the found directory
-                break  # Stop outer loop once found
-
-        current_dir = os.path.dirname(current_dir)
-
-    print("Known Good SQL Found at Path :: "+file_path)
+    file_path = root_dir + "/scripts/known_good_sql.csv"
 
     # Load the file
     df_kgq = pd.read_csv(file_path)
