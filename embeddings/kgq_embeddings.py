@@ -106,7 +106,7 @@ async def store_kgq_embeddings(df_kgq,
                             WHERE user_grouping= '{row["example_grouping"]}' and example_user_question= "{row["example_user_question"]}" '''
                                 )
                     # embedding=np.array(row["embedding"])
-                cleaned_sql = row["example_generated_sql"].replace("\n", " ")
+                cleaned_sql = row["example_generated_sql"].replace("\r", " ").replace("\n", " ")
                 client.query_and_wait(f'''INSERT INTO `{project_id}.{schema}.example_prompt_sql_embeddings` 
                     VALUES ("{row["example_grouping"]}","{row["example_user_question"]}" , 
                     "{cleaned_sql}",{row["embedding"]} )''')
@@ -148,7 +148,7 @@ async def store_kgq_embeddings(df_kgq,
                         "DELETE FROM example_prompt_sql_embeddings WHERE user_grouping= $1 and example_user_question=$2",
                         row["example_grouping"],
                         row["example_user_question"])
-                cleaned_sql = row["example_generated_sql"].replace("\n", " ")
+                cleaned_sql = row["example_generated_sql"].replace("\r", " ").replace("\n", " ")
                 await conn.execute(
                     "INSERT INTO example_prompt_sql_embeddings (user_grouping, example_user_question, example_generated_sql, embedding) VALUES ($1, $2, $3, $4)",
                     row["example_grouping"],

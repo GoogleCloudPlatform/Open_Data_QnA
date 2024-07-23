@@ -1,0 +1,19 @@
+user_grouping,scenario,question
+MovieExplorer-bigquery,Genres,What are the top 5 most common movie genres in the dataset?
+MovieExplorer-bigquery,Genres,How many are musicals?
+MovieExplorer-bigquery,Genres,Romance?
+MovieExplorer-bigquery,Movie,What is the average user rating of the God Father movie?
+MovieExplorer-bigquery,Movie,Which year was it released?
+MovieExplorer-bigquery,Movie,How long is it?
+MovieExplorer-bigquery,Movie,Who is the lead actor?
+MovieExplorer-bigquery,Movie,Director
+MovieExplorer-bigquery,Movie,Cast
+WorldCensus-cloudsql-pg,Life Expectancy,What is the life expectancy for men and women in a United States in 2022?
+WorldCensus-cloudsql-pg,Life Expectancy,In India?
+WorldCensus-cloudsql-pg,Life Expectancy,Which country has highest male life expectancy?
+WorldCensus-cloudsql-pg,Life Expectancy,Female life expectancy?
+WorldCensus-cloudsql-pg,Population Density,What are the top 5 coutries with highest population density in 2024? 
+WorldCensus-cloudsql-pg,Population Density,What are the birth and death rates in these counties?
+WorldCensus-cloudsql-pg,Sex Ratio at Birth,What is the sex ratio at birth in China in 2023?
+WorldCensus-cloudsql-pg,Sex Ratio at Birth,Which country has the highest?
+WorldCensus-cloudsql-pg,Sex Ratio at Birth,Whats the world average?

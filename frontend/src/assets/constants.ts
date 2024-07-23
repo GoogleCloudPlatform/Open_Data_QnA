@@ -6,6 +6,6 @@ export const firebaseConfig = {
   "authDomain": "three-p-o.firebaseapp.com",
   "messagingSenderId": "978842762722"
 };
-export const ENDPOINT_OPENDATAQNA = 'https://opendataqna-mvsdhy7rzq-uc.a.run.app'
+export const ENDPOINT_OPENDATAQNA = 'https://opendataqna-kdr33rftkq-uc.a.run.app'
 
 export const FIRESTORE_DATABASE_ID = 'opendataqna-session-logs'
