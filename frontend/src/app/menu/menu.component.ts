@@ -153,6 +153,7 @@ export class MenuComponent {
         let csv: any = reader.result;
         csv = csv.split('\n')
         for (let i = 0; i < csv.length; i++) {
+         csv[i] = csv[i].replace(/(\r\n|\n|\r)/gm,"");
           csv[i] = csv[i].split(',');
           if (i != 0) { // 0th element has the column header 
             csv[i] = this.arrToObject(csv[i], csv[0]);
