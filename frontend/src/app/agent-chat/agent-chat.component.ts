@@ -38,6 +38,7 @@ export class AgentChatComponent implements AfterViewInit {
 
   constructor(public homeService: HomeService, private snackBar: MatSnackBar, private formBuilder: FormBuilder, public chatService: ChatService, private cdref: ChangeDetectorRef) { }
   ngOnInit() {
+    // added this comment for test PR
     this.homeService.knownSqlObservable?.pipe(takeUntil(this._destroy$)).subscribe((response: any) => {
       if (response && response != null) {
         this.suggestionList = JSON.parse(response);
