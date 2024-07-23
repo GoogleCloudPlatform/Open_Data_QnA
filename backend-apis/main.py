@@ -359,21 +359,21 @@ async def getResultsResponse():
         if not invalid_response:
             responseDict = { 
                             "ResponseCode" : 200, 
-                            "summary_response" : result_df.to_json(orient='records'),
+                            "GeneratedResults" : result_df.to_json(orient='records'),
                             "Error":""
                             } 
 
         else:
             responseDict = { 
                     "ResponseCode" : 500, 
-                    "KnownDB" : "",
+                    "GeneratedResults" : "",
                     "Error":result_df
                     } 
 
    else:
         responseDict = { 
                         "ResponseCode" : 500, 
-                        "GeneratedSQL" : "",
+                        "GeneratedResults" : "",
                         "Error":generated_sql
                         }
 
