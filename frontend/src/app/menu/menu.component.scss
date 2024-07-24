@@ -72,12 +72,13 @@ input[type="file"] {
   font-weight: 400;
   line-height: 20px;
   cursor: pointer;
+  display: flex;
 }
 
 .file-wrapper {
   border-color: transparent;
   height: 41px;
-  background: #1A73E8;
+  background: #34A853;
   border-radius: 100px;
   font-family: "Google Sans";
   font-style: normal;
