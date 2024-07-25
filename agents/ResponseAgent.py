@@ -3,6 +3,11 @@ from abc import ABC
 from .core import Agent
 from utilities import PROMPTS, format_prompt 
 from vertexai.generative_models import HarmCategory, HarmBlockThreshold
+from google.cloud.aiplatform import telemetry
+import vertexai 
+from utilities import PROJECT_ID, PG_REGION
+vertexai.init(project=PROJECT_ID, location=PG_REGION)
+
 
 class ResponseAgent(Agent, ABC):
     """
@@ -42,12 +47,14 @@ class ResponseAgent(Agent, ABC):
 
 
         if 'gemini' in self.model_id:
-            context_query = self.model.generate_content(context_prompt,safety_settings=self.safety_settings, stream=False)
-            generated_sql = str(context_query.candidates[0].text)
+            with telemetry.tool_context_manager('opendataqna-response-v2'):
+                context_query = self.model.generate_content(context_prompt,safety_settings=self.safety_settings, stream=False)
+                generated_sql = str(context_query.candidates[0].text)
 
         else:
-            context_query = self.model.predict(context_prompt, max_output_tokens = 8000, temperature=0)
-            generated_sql = str(context_query.candidates[0])
+            with telemetry.tool_context_manager('opendataqna-response-v2'):
+                context_query = self.model.predict(context_prompt, max_output_tokens = 8000, temperature=0)
+                generated_sql = str(context_query.candidates[0])
         
         return generated_sql
 

@@ -8,7 +8,10 @@ import pandas as pd
 import json  
 from dbconnectors import pgconnector, bqconnector
 from utilities import PROMPTS, format_prompt
-
+from google.cloud.aiplatform import telemetry
+import vertexai 
+from utilities import PROJECT_ID, PG_REGION
+vertexai.init(project=PROJECT_ID, location=PG_REGION)
 
 
 class DebugSQLAgent(Agent, ABC):
@@ -90,10 +93,14 @@ class DebugSQLAgent(Agent, ABC):
         # print(f"Prompt to Debug SQL after formatting: \n{context_prompt}")
         
         if self.model_id == 'codechat-bison-32k':
-            chat_session = self.model.start_chat(context=context_prompt)
+            with telemetry.tool_context_manager('opendataqna-debugsql-v2'):
+
+                chat_session = self.model.start_chat(context=context_prompt)
         elif 'gemini' in self.model_id:
-            chat_session = self.model.start_chat(response_validation=False)
-            chat_session.send_message(context_prompt)
+            with telemetry.tool_context_manager('opendataqna-debugsql-v2'):
+
+                chat_session = self.model.start_chat(response_validation=False)
+                chat_session.send_message(context_prompt)
         else:
             raise ValueError('Invalid Chat Model Specified')
         
@@ -124,11 +131,13 @@ class DebugSQLAgent(Agent, ABC):
             """
 
         if self.model_id =='codechat-bison-32k':
-            response = chat_session.send_message(context_prompt)
-            resp_return = (str(response.candidates[0])).replace("```sql", "").replace("```", "")
+            with telemetry.tool_context_manager('opendataqna-debugsql-v2'):
+                response = chat_session.send_message(context_prompt)
+                resp_return = (str(response.candidates[0])).replace("```sql", "").replace("```", "")
         elif 'gemini' in self.model_id:
-            response = chat_session.send_message(context_prompt, stream=False)
-            resp_return = (str(response.text)).replace("```sql", "").replace("```", "")
+            with telemetry.tool_context_manager('opendataqna-debugsql-v2'):
+                response = chat_session.send_message(context_prompt, stream=False)
+                resp_return = (str(response.text)).replace("```sql", "").replace("```", "")
         else:
             raise ValueError('Invalid Model Id')
 

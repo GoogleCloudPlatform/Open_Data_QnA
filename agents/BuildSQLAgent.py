@@ -7,7 +7,10 @@ import json
 from datetime import datetime
 from dbconnectors import pgconnector,bqconnector,firestoreconnector
 from utilities import PROMPTS, format_prompt
-
+from google.cloud.aiplatform import telemetry
+import vertexai 
+from utilities import PROJECT_ID, PG_REGION
+vertexai.init(project=PROJECT_ID, location=PG_REGION)
 
 
 class BuildSQLAgent(Agent, ABC):
@@ -69,14 +72,18 @@ class BuildSQLAgent(Agent, ABC):
         # print("Chat History Retrieved")
 
         if self.model_id == 'codechat-bison-32k':
-            chat_session = self.model.start_chat(context=context_prompt)
+            with telemetry.tool_context_manager('opendataqna-buildsql-v2'):
+            
+                chat_session = self.model.start_chat(context=context_prompt)
         elif 'gemini' in self.model_id:
-            # print("SQL Builder Agent : " + str(self.model_id))
-            config = GenerationConfig(
-                max_output_tokens=max_output_tokens, temperature=temperature, top_p=top_p, top_k=top_k
-            )
-            chat_session = self.model.start_chat(history=chat_history,response_validation=False)
-            chat_session.send_message(context_prompt)
+            with telemetry.tool_context_manager('opendataqna-buildsql-v2'):
+
+                # print("SQL Builder Agent : " + str(self.model_id))
+                config = GenerationConfig(
+                    max_output_tokens=max_output_tokens, temperature=temperature, top_p=top_p, top_k=top_k
+                )
+                chat_session = self.model.start_chat(history=chat_history,response_validation=False)
+                chat_session.send_message(context_prompt)
         else:
             raise ValueError('Invalid Model Specified')
         
@@ -108,9 +115,10 @@ class BuildSQLAgent(Agent, ABC):
 
         # print("BUILD CONTEXT ::: "+str(build_context_prompt))
 
+        with telemetry.tool_context_manager('opendataqna-buildsql-v2'):
 
-        response = chat_session.send_message(build_context_prompt, stream=False)
-        generated_sql = (str(response.text)).replace("```sql", "").replace("```", "")
+            response = chat_session.send_message(build_context_prompt, stream=False)
+            generated_sql = (str(response.text)).replace("```sql", "").replace("```", "")
 
         generated_sql = (str(response.text)).replace("```sql", "").replace("```", "")
         # print(generated_sql)
