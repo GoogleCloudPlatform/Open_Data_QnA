@@ -69,7 +69,7 @@ Details on the Repository Structure can be found [`here`](/docs/repo_structure.m
 
 🏁 Getting Started: Quick Start   
 -------------
-
+**NOTE: THIS IS STILL v1 - UPDATING THE STANDALONE NOTEBOOK TO v2 IS WIP**
 **Quickstart with Open Data QnA: [Standalone BigQuery Notebook](/notebooks/(standalone)Run_OpenDataQnA.ipynb)**
 
 Copy both [Standalone BigQuery Notebook](/notebooks/(standalone)Run_OpenDataQnA.ipynb) and [pyproject.toml](/pyproject.toml)
