@@ -16,8 +16,11 @@
 
 from abc import ABC
 from .core import Agent 
+import vertexai
+from google.cloud.aiplatform import telemetry
 from vertexai.generative_models import GenerationConfig
-
+from utilities import PROJECT_ID, PG_REGION
+vertexai.init(project=PROJECT_ID, location=PG_REGION)
 
 
 class BuildSQLAgent(Agent, ABC):
@@ -150,12 +153,15 @@ class BuildSQLAgent(Agent, ABC):
             )
 
             # Generate text
-            context_query = self.model.generate_content(context_prompt, generation_config=config, stream=False)
-            generated_sql = str(context_query.candidates[0].text)
+            with telemetry.tool_context_manager('opendataqna-buildsql'):
+                context_query = self.model.generate_content(context_prompt, generation_config=config, stream=False)
+                generated_sql = str(context_query.candidates[0].text)
 
         else:
-            context_query = self.model.predict(context_prompt, max_output_tokens = max_output_tokens, temperature=temperature)
-            generated_sql = str(context_query.candidates[0])
+            with telemetry.tool_context_manager('opendataqna-buildsql'):
+
+                context_query = self.model.predict(context_prompt, max_output_tokens = max_output_tokens, temperature=temperature)
+                generated_sql = str(context_query.candidates[0])
 
         print(generated_sql)
 

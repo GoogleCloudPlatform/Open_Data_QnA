@@ -15,14 +15,18 @@
 
 from abc import ABC
 
+import vertexai
 from vertexai.language_models import CodeChatModel
 from vertexai.generative_models import GenerativeModel
+from google.cloud.aiplatform import telemetry
+
 
 from .core import Agent
 import pandas as pd
 import json  
 from dbconnectors import pgconnector, bqconnector
-
+from utilities import PROJECT_ID, PG_REGION
+vertexai.init(project=PROJECT_ID, location=PG_REGION)
 
 
 class DebugSQLAgent(Agent, ABC):
@@ -157,16 +161,19 @@ class DebugSQLAgent(Agent, ABC):
         """
         
         if self.chat_model_id == 'codechat-bison-32k':
-            chat_model = CodeChatModel.from_pretrained("codechat-bison-32k")
-            chat_session = chat_model.start_chat(context=context_prompt)
+            with telemetry.tool_context_manager('opendataqna-debugsql'):
+                chat_model = CodeChatModel.from_pretrained("codechat-bison-32k")
+                chat_session = chat_model.start_chat(context=context_prompt)
         elif self.chat_model_id == 'gemini-1.0-pro':
-            chat_model = GenerativeModel("gemini-1.0-pro-001")
-            chat_session = chat_model.start_chat(response_validation=False)
-            chat_session.send_message(context_prompt)
+            with telemetry.tool_context_manager('opendataqna-debugsql'):
+                chat_model = GenerativeModel("gemini-1.0-pro-001")
+                chat_session = chat_model.start_chat(response_validation=False)
+                chat_session.send_message(context_prompt)
         elif self.chat_model_id == 'gemini-ultra':
-            chat_model = GenerativeModel("gemini-1.0-ultra-001")
-            chat_session = chat_model.start_chat(response_validation=False)
-            chat_session.send_message(context_prompt)
+            with telemetry.tool_context_manager('opendataqna-debugsql'):
+                chat_model = GenerativeModel("gemini-1.0-ultra-001")
+                chat_session = chat_model.start_chat(response_validation=False)
+                chat_session.send_message(context_prompt)
         else:
             raise ValueError('Invalid chat_model_id')
         
@@ -194,14 +201,17 @@ class DebugSQLAgent(Agent, ABC):
             """
 
         if self.chat_model_id =='codechat-bison-32k':
-            response = chat_session.send_message(context_prompt)
-            resp_return = (str(response.candidates[0])).replace("```sql", "").replace("```", "")
+            with telemetry.tool_context_manager('opendataqna-debugsql'):
+                response = chat_session.send_message(context_prompt)
+                resp_return = (str(response.candidates[0])).replace("```sql", "").replace("```", "")
         elif self.chat_model_id =='gemini-1.0-pro':
-            response = chat_session.send_message(context_prompt, stream=False)
-            resp_return = (str(response.text)).replace("```sql", "").replace("```", "")
+            with telemetry.tool_context_manager('opendataqna-debugsql'):
+                response = chat_session.send_message(context_prompt, stream=False)
+                resp_return = (str(response.text)).replace("```sql", "").replace("```", "")
         elif self.chat_model_id == 'gemini-ultra':
-            response = chat_session.send_message(context_prompt, stream=False)
-            resp_return = (str(response.text)).replace("```sql", "").replace("```", "")
+            with telemetry.tool_context_manager('opendataqna-debugsql'):
+                response = chat_session.send_message(context_prompt, stream=False)
+                resp_return = (str(response.text)).replace("```sql", "").replace("```", "")
         else:
             raise ValueError('Invalid chat_model_id')
 

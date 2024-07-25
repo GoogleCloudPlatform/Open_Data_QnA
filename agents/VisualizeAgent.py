@@ -27,6 +27,10 @@ from .core import Agent
 from agents import ValidateSQLAgent 
 import pandas as pd
 import json  
+from google.cloud.aiplatform import telemetry
+import vertexai 
+from utilities import PROJECT_ID, PG_REGION
+vertexai.init(project=PROJECT_ID, location=PG_REGION)
 
 
 class VisualizeAgent(Agent, ABC):
@@ -237,10 +241,13 @@ Guidelines:
                 HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
                 HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
             }
-        context_query = self.model.generate_content(context_prompt,safety_settings=safety_settings, stream=False)
-        context_query_1 = self.model.generate_content(context_prompt_1,safety_settings=safety_settings, stream=False)
-        google_chart_js={"chart_div":context_query.candidates[0].text.replace("```json", "").replace("```", "").replace("json", "").replace("```html", "").replace("```", "").replace("js","").replace("json","").replace("python","").replace("javascript",""),
-                        "chart_div_1":context_query_1.candidates[0].text.replace("```json", "").replace("```", "").replace("json", "").replace("```html", "").replace("```", "").replace("js","").replace("json","").replace("python","").replace("javascript","")}
+        
+        with telemetry.tool_context_manager('opendataqna-visualize'):
+        
+            context_query = self.model.generate_content(context_prompt,safety_settings=safety_settings, stream=False)
+            context_query_1 = self.model.generate_content(context_prompt_1,safety_settings=safety_settings, stream=False)
+            google_chart_js={"chart_div":context_query.candidates[0].text.replace("```json", "").replace("```", "").replace("json", "").replace("```html", "").replace("```", "").replace("js","").replace("json","").replace("python","").replace("javascript",""),
+                            "chart_div_1":context_query_1.candidates[0].text.replace("```json", "").replace("```", "").replace("json", "").replace("```html", "").replace("```", "").replace("js","").replace("json","").replace("python","").replace("javascript","")}
 
         return google_chart_js
 
