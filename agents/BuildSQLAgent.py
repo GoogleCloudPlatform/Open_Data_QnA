@@ -30,8 +30,11 @@ class BuildSQLAgent(Agent, ABC):
             from dbconnectors import pg_specific_data_types
             specific_data_types = pg_specific_data_types()
 
-
-        usecase_context = PROMPTS[f'usecase_{source_type}_{user_grouping}']
+        if f'usecase_{source_type}_{user_grouping}' in PROMPTS:
+            usecase_context = PROMPTS[f'usecase_{source_type}_{user_grouping}']
+        else:
+            usecase_context = "No extra context for the usecase is provided"
+            
         context_prompt = PROMPTS[f'buildsql_{source_type}']
 
 

@@ -10,12 +10,14 @@
 #  KPI definitions w.r.t the tables and columns, guidance on how to handle ambiguity w.r.t questions  
 
 # Use case prompt: source_type = 'bigquery'; user_grouping = 'MovieExplorer-bigquery'
-usecase_bigquery_MovieExplorer-bigquery: |
-  Dont have any specific usecase context
+
+#usecase_bigquery_MovieExplorer-bigquery: |
+  # Dont have any specific usecase context
 
 # Use case prompt: source_type = 'cloudsql-pg'; user_grouping = 'WorldCensus-cloudsql-pg'
-usecase_cloudsql-pg_WorldCensus-cloudsql-pg: |
-  Dont have any specific usecase context
+
+#usecase_cloudsql-pg_WorldCensus-cloudsql-pg: |
+  #Dont have any specific usecase context
 
 #################################################################################################
 
