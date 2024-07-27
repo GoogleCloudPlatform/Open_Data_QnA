@@ -63,6 +63,8 @@
     ```
     cd Open_Data_QnA/frontend
 
+    rm firebase.json .firebaserc
+
     firebase login --no-localhost
 
     ## Below command can be used re authenticate in case of authentication errors
@@ -70,8 +72,6 @@
     firebase login --reauth --no-localhost 
 
     #If incase there are old firebase files 
-
-    rm firebase.json .firebaserc
 
     ```
 
@@ -145,28 +145,37 @@
 
     ```
     
+---------
+---------
 
+You can see the app URL at the end of successful deployment
 
-    You can see the app URL at the end of successful deployment
+> Once deployed login if your Google Account > Select Business User > Select a database in the dropdown (top right) > Type in the Query > Hit Query
 
-    > Once deployed login if your Google Account > Select Business User > Select a database in the dropdown (top right) > Type in the Query > Hit Query
+A successful SQL generated will be show as below with result as below
 
-    A successful SQL generated will be show as below
+<p align="center">
+    <a href="../utilities/imgs/multiturn chat sql.png">
+        <img src="../utilities/imgs/multiturn chat sql.png" alt="aaie image">
+    </a>
+</p>
 
-    <p align="center">
-        <a href="../utilities/imgs/App generate sql .png">
-            <img src="../utilities/imgs/App generate sql .png" alt="aaie image">
-        </a>
-    </p>
+<p align="center">
+    <a href="../utilities/imgs/multiturn chat result.png">
+        <img src="../utilities/imgs/multiturn chat result.png" alt="aaie image">
+    </a>
+</p>
 
-    Hit on Result and then Visualize to see the results and charts as below
+Hit Visualize to see the results and charts as below
 
-    <p align="center">
-        <a href="../utilities/imgs/App Result and Viz.png">
-            <img src="../utilities/imgs/App Result and Viz.png" alt="aaie image">
-        </a>
-    </p>
+<p align="center">
+    <a href="../utilities/imgs/VizV2.png">
+        <img src="../utilities/imgs/VizV2.png" alt="aaie image">
+    </a>
+</p>
 
+----
+----
 
 
 **API Details**

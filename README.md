@@ -67,7 +67,7 @@ A detailed description of the Architecture can be found [`here`](/docs/architect
 Details on the Repository Structure can be found [`here`](/docs/repo_structure.md) in the docs. 
 
 
-🏁 Getting Started: Quick Start   
+<!-- 🏁 Getting Started: Quick Start   
 -------------
 **NOTE: THIS IS STILL v1 - UPDATING THE STANDALONE NOTEBOOK TO v2 IS WIP**
 
@@ -75,7 +75,7 @@ Details on the Repository Structure can be found [`here`](/docs/repo_structure.m
 
 Copy both [Standalone BigQuery Notebook](/notebooks/(standalone)Run_OpenDataQnA.ipynb) and [pyproject.toml](/pyproject.toml)
 
-This notebook offers a streamlined way to experience the core functionality of Open Data QnA using BigQuery as both the data source and vector store. While it doesn't encompass the full flexibility of the repository setup, it's a perfect starting point to quickly test and explore the conversational querying capabilities of Open Data QnA with your own BigQuery datasets. 
+This notebook offers a streamlined way to experience the core functionality of Open Data QnA using BigQuery as both the data source and vector store. While it doesn't encompass the full flexibility of the repository setup, it's a perfect starting point to quickly test and explore the conversational querying capabilities of Open Data QnA with your own BigQuery datasets.  -->
 
 
 🏁 Getting Started: Main Repository 

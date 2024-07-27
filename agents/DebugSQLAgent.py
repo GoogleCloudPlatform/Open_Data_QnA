@@ -81,7 +81,11 @@ class DebugSQLAgent(Agent, ABC):
 
     def init_chat(self,source_type,user_grouping, tables_schema,columns_schema,similar_sql="-No examples provided..-"):
 
-        usecase_context = PROMPTS[f'usecase_{source_type}_{user_grouping}']
+        if f'usecase_{source_type}_{user_grouping}' in PROMPTS:
+            usecase_context = PROMPTS[f'usecase_{source_type}_{user_grouping}']
+        else:
+            usecase_context = "No extra context for the usecase is provided"
+            
         context_prompt = PROMPTS[f'debugsql_{source_type}']
 
         context_prompt = format_prompt(context_prompt,

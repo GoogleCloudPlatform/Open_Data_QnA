@@ -34,25 +34,10 @@
       <app-scenario-list [csvData]="csvData"></app-scenario-list>
     </mat-expansion-panel>
   </mat-list-item>
-  <mat-list-item>
-    <div class="d-flex align-items-center justify-content-center">
-      <div class="d-flex align-items-center justify-content-center" *ngIf="showUploadSection">
-        <button class="file-wrapper">
-          <input type="file" name="file" id="file" #fileInput (change)="onFileChange(fileInput)" accept=".csv"
-            multiple />
-          <label for="file" style="min-width: 146px;cursor: pointer;">
-            <span class="dropLabel">Upload Scenarios</span>
-          </label>
-        </button>
-      </div>
-      <div class="d-flex align-items-center justify-content-center" *ngIf="!showUploadSection">
-        <button class="file-wrapper" style="min-width: 146px;cursor: pointer;" (click)="uploadTemplate()">
-          Scenario Template
-        </button>
-      </div>
-    </div>
+  <!-- <mat-list-item >
+   
 
-  </mat-list-item>
+  </mat-list-item> -->
   <!-- <mat-list-item style="position: absolute;bottom: 15px;">
     <mat-slide-toggle class="example-margin" [color]="color" [checked]="checked" [disabled]="disabled">
     </mat-slide-toggle>
@@ -60,3 +45,25 @@
   </mat-list-item> -->
 
 </mat-nav-list>
+
+<div class="d-flex align-items-center justify-content-center" style="position: absolute; bottom:20px; width: 100%;">
+  <div class="d-flex align-items-center justify-content-center">
+    <button class="file-wrapper">
+      <input type="file" name="file" id="file" #fileInput (change)="onFileChange(fileInput)" accept=".csv"
+        multiple />
+      <label for="file" style="cursor: pointer;">
+        <span class="dropLabel">
+          <span class="material-symbols-outlined">
+            upload
+          </span>Upload Test Scenarios</span>
+      </label>
+    </button>
+  </div>
+  <div class="d-flex align-items-center justify-content-center">
+    <button style="cursor: pointer; background: transparent;border:none; height: 24px;" (click)="uploadTemplate()">
+      <span class="material-symbols-outlined">
+        info
+      </span>
+    </button>
+  </div>
+</div>
