@@ -63,6 +63,8 @@
     ```
     cd Open_Data_QnA/frontend
 
+    rm firebase.json .firebaserc
+
     firebase login --no-localhost
 
     ## Below command can be used re authenticate in case of authentication errors
@@ -70,8 +72,6 @@
     firebase login --reauth --no-localhost 
 
     #If incase there are old firebase files 
-
-    rm firebase.json .firebaserc
 
     ```
 

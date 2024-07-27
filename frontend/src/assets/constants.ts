@@ -1,6 +1,6 @@
 export const firebaseConfig = {
   "projectId": "three-p-o",
-  "appId": "1:978842762722:web:4f8e4fc32f952352414dbb",
+  "appId": "1:978842762722:web:28dfe1566ef70484414dbb",
   "storageBucket": "three-p-o.appspot.com",
   "apiKey": "AIzaSyB-N-AhvSuo21ftLrl9ObX5kbZfOoDRX8c",
   "authDomain": "three-p-o.firebaseapp.com",
