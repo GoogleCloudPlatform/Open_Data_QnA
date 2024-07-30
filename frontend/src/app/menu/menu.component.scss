@@ -66,13 +66,16 @@ input[type="file"] {
 
 .dropLabel {
   text-align: center;
-  font-family: Google Sans;
+  font-family: "Google Sans";
   font-size: 14px;
   font-style: normal;
   font-weight: 400;
   line-height: 20px;
   cursor: pointer;
   display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
 }
 
 .file-wrapper {
@@ -141,4 +144,3 @@ ul,
   /* Safari */
   transform: rotate(90deg);
 }
-

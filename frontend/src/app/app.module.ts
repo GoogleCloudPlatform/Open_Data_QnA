@@ -57,7 +57,7 @@ import { MatStepperModule } from '@angular/material/stepper';
 import { STEPPER_GLOBAL_OPTIONS } from "@angular/cdk/stepper";
 import { AgentChatComponent } from "./agent-chat/agent-chat.component";
 import { AppHttpInterceptor } from "./http.interceptor";
-import { firebaseConfig , FIRESTORE_DATABASE_ID} from "../assets/constants";
+import { firebaseConfig, FIRESTORE_DATABASE_ID } from "../assets/constants";
 import { MatTreeModule } from "@angular/material/tree";
 import { ScenarioListComponent } from "./scenario-list/scenario-list.component";
 
@@ -139,7 +139,7 @@ import { ScenarioListComponent } from "./scenario-list/scenario-list.component";
         const providedFirestore = initializeFirestore(app, {}, FIRESTORE_DATABASE_ID);
         return providedFirestore;
       }),
- 
+
       provideAuth(() => getAuth()),
       LoginService,
       SharedService,

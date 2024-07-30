@@ -33,23 +33,9 @@ export class HomeService {
   }
 
   getAvailableDatabases(): any {
-    const header = {
-      'Content-Type': 'application/json',
-    }
-    const requestOptions = {
-      headers: new HttpHeaders(header),
-    };
-
-    return this.http.get(ENDPOINT_OPENDATAQNA + '/available_databases', requestOptions).pipe(catchError(this.handleError))
+    return this.http.get(ENDPOINT_OPENDATAQNA + '/available_databases').pipe(catchError(this.handleError))
   }
   sqlSuggestionList(grouping: any, dbtype: any) {
-
-    const header = {
-      'Content-Type': 'application/json',
-    }
-    const requestOptions = {
-      headers: new HttpHeaders(header),
-    };
 
     const body =
     {
@@ -57,7 +43,7 @@ export class HomeService {
     }
     this.selectedDBType = dbtype;
 
-    return this.http.post(ENDPOINT_OPENDATAQNA + '/get_known_sql', body, requestOptions)
+    return this.http.post(ENDPOINT_OPENDATAQNA + '/get_known_sql', body)
       .pipe(catchError(this.handleError));
 
   }
@@ -65,13 +51,6 @@ export class HomeService {
     return ENDPOINT_OPENDATAQNA;
   }
   generateSql(userQuestion: any, grouping: any, session_id: any, user_id: any) {
-
-    const header = {
-      'Content-Type': 'application/json',
-    }
-    const requestOptions = {
-      headers: new HttpHeaders(header),
-    };
     const body =
     {
       "user_question": userQuestion,
@@ -81,7 +60,7 @@ export class HomeService {
     }
     let endpoint = ENDPOINT_OPENDATAQNA;
 
-    return this.http.post(endpoint + "/generate_sql", body, requestOptions)
+    return this.http.post(endpoint + "/generate_sql", body)
       .pipe(catchError(this.handleError));
 
   }
@@ -100,7 +79,6 @@ export class HomeService {
     return this.databaseList;
   }
   setSelectedDbGrouping(selectedDBGroup: any) {
-    console.log(selectedDBGroup)
     this.selectedGrouping = selectedDBGroup;
   }
   getSelectedDbGrouping(): string {
@@ -142,12 +120,7 @@ export class HomeService {
   }
 
   runQuery(query: any, grouping: any, user_question: any, session_id: any) {
-    const header = {
-      'Content-Type': 'application/json',
-    }
-    const requestOptions = {
-      headers: new HttpHeaders(header),
-    };
+
     const body =
     {
       "generated_sql": query,
@@ -157,17 +130,10 @@ export class HomeService {
     }
     let endpoint = ENDPOINT_OPENDATAQNA;
 
-    return this.http.post(endpoint + "/run_query", body, requestOptions);
+    return this.http.post(endpoint + "/run_query", body);
   }
 
   thumbsUp(sql: any, user_question: any, selectedGrouping: any, session_id: any) {
-
-    const header = {
-      'Content-Type': 'application/json',
-    }
-    const requestOptions = {
-      headers: new HttpHeaders(header),
-    };
     const body =
     {
       user_grouping: selectedGrouping,
@@ -176,17 +142,12 @@ export class HomeService {
       session_id: this.session_id
     }
     let endpoint = ENDPOINT_OPENDATAQNA;
-    return this.http.post(endpoint + "/embed_sql", body, requestOptions)
+    return this.http.post(endpoint + "/embed_sql", body)
       .pipe(catchError(this.handleError));
   }
 
   generateViz(question: any, query: any, result: any, session_id: any) {
-    const header = {
-      'Content-Type': 'application/json',
-    }
-    const requestOptions = {
-      headers: new HttpHeaders(header),
-    };
+
     const body =
     {
       "user_question": question,
@@ -194,7 +155,7 @@ export class HomeService {
       "sql_results": result,
       "session_id": this.session_id
     }
-    return this.http.post(ENDPOINT_OPENDATAQNA + "/generate_viz", body, requestOptions)
+    return this.http.post(ENDPOINT_OPENDATAQNA + "/generate_viz", body)
       .pipe(catchError(this.handleError));
   }
 }
