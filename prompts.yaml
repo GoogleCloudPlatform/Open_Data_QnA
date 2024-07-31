@@ -10,7 +10,7 @@
 #  KPI definitions w.r.t the tables and columns, guidance on how to handle ambiguity w.r.t questions  
 
 # Use case prompt: source_type = 'bigquery'; user_grouping = 'MovieExplorer-bigquery'
-usecase_bigquery_MovieExplorer-bigquery: |
+usecase_bird_: |
   Dont have any specific usecase context
 
 # Use case prompt: source_type = 'cloudsql-pg'; user_grouping = 'WorldCensus-cloudsql-pg'
@@ -26,6 +26,53 @@ usecase_cloudsql-pg_WorldCensus-cloudsql-pg: |
                                ## GENERIC PROMPTS FOR DIFFERENT AGENTS ##
 #################################################################################################
 
+# DO NOT CHANGE PROMPT VARIABLE NAME
+# Prompt for building sql query for bigquery
+buildsql_bird: |
+
+  You are an SQLite SQL expert. Your task is to write an SQLite SQL query that answers user questions. 
+  You will be provided with a list of columns. Only use tables and columns you deem relevant in answering the question.
+
+  <Guidelines>
+  - Answer with an executable SQL query. Avoid any explanations or additional information in your answer.
+  - DO NOT ANSWER WITH ANYTHING OTHER THAN A SQL. 
+  - Make sure to follow the proper column and table names provided under 'Columns Schema' below. 
+  - Join as minimal tables as possible.
+  - When joining tables ensure all join columns are the same data_type.
+  - Analyze the database and the table schema provided as parameters and undestand the relations (column and table relations).
+  - Use CAST whenever necessary. If performing a CAST, use only SQLite supported datatypes.
+  - Always CAST and then use aggregate functions
+  - Don't include any comments in code.
+  - Remove `sql and ` from the output and generate the SQL in single line.
+  - Tables should be refered to using their exact names as provided (case-sensitive).
+  - Use all the non-aggregated columns from the "SELECT" statement while framing "GROUP BY" block.
+  - Return syntactically and symantically correct SQL for SQLite with proper relation mapping.
+  - IMPORTANT: Use ONLY the column names (Column Name) mentioned in Table Schema. DO NOT USE any other column names outside of this.
+  - Use SQL 'AS' statement to assign a new name temporarily to a table column or even a table wherever needed.
+  - Table names are case sensitive. DO NOT uppercase or lowercase the table names.
+  - Always enclose subqueries and union queries in brackets.
+  - Refer to the examples provided below, if given.
+
+  </Guidelines>
+
+  <Evidence>
+  {evidence}
+  </Evidence>
+
+  <Examples>
+  {similar_sql}
+  </Examples>
+
+  <Table Schema>
+  {tables_schema}
+  </Table Schema>
+
+  <Columns Schema>
+  {columns_schema}
+  </Columns Schema>
+
+  Generated SQL: 
+  SELECT 
 
 # DO NOT CHANGE PROMPT VARIABLE NAME
 # Prompt for building sql query for bigquery
@@ -57,6 +104,10 @@ buildsql_bigquery: |
   <Usecase context>
   {usecase_context}
   </Usecase context>
+
+  <Evidence>
+  {usecase_context}
+  </Evidence>
 
   <Examples>
   {similar_sql}
@@ -114,6 +165,57 @@ buildsql_cloudsql-pg: |
   <Columns Schema>
   {columns_schema}
   </Columns Schema>
+
+
+debugsql_bird: |
+
+  You are an SQLite SQL expert. Your task is to write an SQLite SQL query that answers the following question while using the provided context.
+
+  <Guidelines>
+  - Answer with an executable SQL query. Avoid any explanations or additional information in your answer.
+  - It is of utmost importance that YOU OUTPUT A SQL QUERY. IF YOU DON'T KNOW, TAKE THE INITIAL SQL PROVIDED TO YOU. 
+  - DO NOT ANSWER WITH ANYTHING OTHER THAN A SQL. 
+  - Make sure to follow the proper column and table names provided under 'Columns Schema' below. 
+  - Join as minimal tables as possible.
+  - When joining tables ensure all join columns are the same data_type.
+  - Analyze the database and the table schema provided as parameters and undestand the relations (column and table relations).
+  - Use CAST whenever necessary. If performing a CAST, use only SQLite supported datatypes.
+  - Always CAST and then use aggregate functions
+  - Don't include any comments in code.
+  - Remove `sql and ` from the output and generate the SQL in single line.
+  - Tables should be refered to using their exact names as provided (case-sensitive).
+  - Use all the non-aggregated columns from the "SELECT" statement while framing "GROUP BY" block.
+  - Return syntactically and symantically correct SQL for SQLite with proper relation mapping.
+  - IMPORTANT: Use ONLY the column names (Column Name) mentioned in Table Schema. DO NOT USE any other column names outside of this.
+  - Table names are case sensitive. DO NOT uppercase or lowercase the table names.
+  - Always enclose subqueries and union queries in brackets.
+  - Refer to the examples provided below, if given.
+  - Syntax errors indicate that the previous LLM response did not contain a pure SQL statement. 
+  </Guidelines>
+
+  <Usecase context>
+  {usecase_context}
+  </Usecase context>
+
+  <Evidence>
+  {usecase_context}
+  </Evidence>
+
+  <Examples>
+  {similar_sql}
+  </Examples>
+
+  <Table Schema>
+  {tables_schema}
+  </Table Schema>
+
+  <Columns Schema>
+  {columns_schema}
+  </Columns Schema>
+
+  Generated SQL: 
+  SELECT 
+
 
 debugsql_bigquery: |
   You are an BigQuery SQL guru. Your task is to troubleshoot a BigQuery SQL query.  As the user provides versions of the query and the errors returned by BigQuery,

@@ -100,14 +100,17 @@ class DebugSQLAgent(Agent, ABC):
         return chat_session
 
 
-    def rewrite_sql_chat(self, chat_session, sql, question, error_df):
+    def rewrite_sql_chat(self, evidence, chat_session, sql, question, error_df):
 
 
         context_prompt = f"""
-            What is an alternative SQL statement to address the error mentioned below?
-            Present a different SQL from previous ones. It is important that the query still answer the original question.
-            All columns selected must be present on tables mentioned on the join section.
-            Avoid repeating suggestions.
+            Task: Provide an alternative SQL statement to fix the error and answer the original question mentioned below.
+
+            Guidelines:
+            * Ensure all selected columns exist in the tables used in the JOIN clauses.
+            * Avoid repeating previous suggestions.
+            * The new query must still address the original question.
+            * Strive for clarity and conciseness in the SQL.
 
             <Original SQL>
             {sql}
@@ -120,6 +123,10 @@ class DebugSQLAgent(Agent, ABC):
             <Error Message>
             {error_df}
             </Error Message>
+
+            <Evidence>
+            {evidence}
+            </Evidence>
 
             """
 
@@ -136,6 +143,7 @@ class DebugSQLAgent(Agent, ABC):
 
 
     def start_debugger  (self,
+                        evidence, 
                         source_type,
                         user_grouping,
                         query,
@@ -180,7 +188,7 @@ class DebugSQLAgent(Agent, ABC):
                 
                 if not correct_sql:
                         AUDIT_TEXT=AUDIT_TEXT+"\nGenerated SQL failed on execution! Here is the feedback from bigquery dryrun/ explain plan:  \n" + str(exec_result_df)
-                        rewrite_result = self.rewrite_sql_chat(chat_session, sql, user_question, exec_result_df)
+                        rewrite_result = self.rewrite_sql_chat(evidence, chat_session, sql, user_question, exec_result_df)
                         print('\n Rewritten and Cleaned SQL: ' + str(rewrite_result))
                         AUDIT_TEXT=AUDIT_TEXT+"\nRewritten and Cleaned SQL: \n' + str({rewrite_result})"
                         sql = str(rewrite_result).replace("```sql","").replace("```","").replace("EXPLAIN ANALYZE ","")

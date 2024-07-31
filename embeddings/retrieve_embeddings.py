@@ -180,6 +180,8 @@ def retrieve_embeddings(SOURCE, SCHEMA="public", table_names = None):
     
 
 
+
+
 if __name__ == '__main__':
     SOURCE = 'cloudsql-pg'
     t, c = retrieve_embeddings(SOURCE, SCHEMA="public") 

@@ -77,7 +77,18 @@ class Agent(ABC):
                 HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
                 HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
             }
-        
+
+        elif model_id == 'gemini-1.0-ultra':
+            with telemetry.tool_context_manager('opendataqna'):
+                # print("Model is gemini 1.5 Pro")
+                self.model = GenerativeModel("gemini-1.0-ultra-001")
+                self.safety_settings: Optional[dict] = {
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+            }
+
         else:
             raise ValueError("Please specify a compatible model.")
 
