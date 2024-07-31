@@ -6,7 +6,7 @@ import { MatSidenav } from '@angular/material/sidenav';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { LoginService } from '../shared/services/login.service';
 import { Router } from '@angular/router';
-import { Subject, Subscription, take, takeUntil } from 'rxjs';
+import { Subject, Subscription, switchMap, take, takeUntil, tap } from 'rxjs';
 
 @Component({
   selector: 'app-home',
@@ -47,15 +47,7 @@ export class HomeComponent {
 
   links = ['Business Mode', 'Technical Mode', 'Operational Mode'];
   activeLink = this.links[0];
-  background: ThemePalette = undefined;
 
-  toggleBackground() {
-    this.background = this.background ? undefined : 'primary';
-  }
-
-  addLink() {
-    this.links.push(`Link ${this.links.length + 1}`);
-  }
   async ngOnInit() {
     if (!this.photoURL) {
       this._router.navigate(['']);
@@ -93,14 +85,26 @@ export class HomeComponent {
       }
       this.homeService.setselectedDbName(this.selectedGrouping[1])
       this.homeService.currentSelectedGrouping.next('')
-      this.homeService.currentSelectedGroupingObservable.subscribe((res) => {
-        this.organizationCtrl.setValue(res);
-      })
-      this.homeService.sqlSuggestionList(this.selectedGrouping[0], this.selectedGrouping[1]).subscribe((data: any) => {
-        if (data && data.ResponseCode === 200) {
-          this.homeService.knownSqlFromDb.next(data.KnownSQL);
-        }
-      })
+      // this.homeService.currentSelectedGroupingObservable.subscribe((res) => {
+      //   this.organizationCtrl.setValue(res);
+      // })
+      // this.homeService.sqlSuggestionList(this.selectedGrouping[0], this.selectedGrouping[1]).subscribe((data: any) => {
+      //   if (data && data.ResponseCode === 200) {
+      //     this.homeService.knownSqlFromDb.next(data.KnownSQL);
+      //   }
+      // })
+
+      this.homeService.currentSelectedGroupingObservable
+        .pipe(
+          tap((res) => this.organizationCtrl.setValue(res)),
+          switchMap((grouping) => this.homeService.sqlSuggestionList(this.selectedGrouping[0], this.selectedGrouping[1]))
+        )
+        .subscribe((data: any) => {
+          if (data && data.ResponseCode === 200) {
+            this.homeService.knownSqlFromDb.next(data.KnownSQL);
+          }
+        });
+
     } else {
       this.homeService.getAvailableDatabases().subscribe((res: any) => {
         if (res && res.ResponseCode === 200) {

@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { LoginButtonComponent } from '../login-button/login-button.component';
-import { Subscription } from 'rxjs';
+import { Subscription, take } from 'rxjs';
 import { Auth, User, user } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { LoginService } from '../shared/services/login.service';
@@ -21,7 +21,7 @@ export class UserPhotoComponent {
 
   constructor(private _router: Router, public dialog: Dialog, public loginService: LoginService) {
     this.dialog.closeAll();
-    this.userSubscription = this.user$.subscribe((aUser: User | null) => {
+    this.userSubscription = this.user$.pipe(take(1)).subscribe((aUser: User | null) => {
       //handle user state changes here. Note, that user will be null if there is no currently logged in user
       if (aUser) {
         this.dialog.closeAll();

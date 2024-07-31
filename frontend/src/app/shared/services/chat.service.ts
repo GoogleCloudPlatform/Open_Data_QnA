@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, combineLatestWith, takeUntil } from 'rxjs';
 import { BehaviorSubject } from 'rxjs/internal/BehaviorSubject';
 import { HomeService } from './home.service';
+import { combineLatest } from 'rxjs/internal/operators/combineLatest';
 
 export interface Message {
   author: string
@@ -36,19 +37,33 @@ export class ChatService {
   private _destroy$ = new Subject<void>();
   private currentSessionId: string = '';
   private suggestionList: [] = [];
-  //public agentResponseLoader!: boolean;
   selectedGrouping!: string;
 
   constructor(public homeService: HomeService) {
-    this.homeService.currentSelectedGroupingObservable.pipe(takeUntil(this._destroy$)).subscribe((res) => {
-      this.selectedGrouping = res
-    })
-    this.homeService.knownSqlObservable?.pipe(takeUntil(this._destroy$)).subscribe((response: any) => {
-      if (response && response != null) {
-        this.suggestionList = JSON.parse(response);
-        this.createNewSession()
+    // this.homeService.currentSelectedGroupingObservable.pipe(takeUntil(this._destroy$)).subscribe((res) => {
+    //   this.selectedGrouping = res
+    // })
+    // this.homeService.knownSqlObservable?.pipe(takeUntil(this._destroy$)).subscribe((response: any) => {
+    //   if (response && response != null) {
+    //     this.suggestionList = JSON.parse(response);
+    //     this.createNewSession()
+    //   }
+    // })
+
+    this.homeService.currentSelectedGroupingObservable.pipe(
+      combineLatestWith(this.homeService.knownSqlObservable?.pipe(takeUntil(this._destroy$))),
+      takeUntil(this._destroy$)
+    ).subscribe(([selectedGrouping, knownSql]) => {
+      this.selectedGrouping = selectedGrouping;
+
+      if (knownSql) {
+        console.log("selectedGrouping", selectedGrouping)
+        console.log("knownSql", knownSql)
+        this.suggestionList = JSON.parse(knownSql);
+        this.createNewSession();
       }
-    })
+    });
+
   }
 
   createNewSession() {
@@ -68,8 +83,7 @@ export class ChatService {
     if (desiredSession) {
       desiredSession.chatMsgs.push(message);
       if (message.author == 'agent') {
-       // this.agentResponseLoader = false
-       this.agentResponseLoader.next(false)
+        this.agentResponseLoader.next(false)
       }
       this.currentActiveSession.next(desiredSession);
     }
@@ -103,8 +117,6 @@ export class ChatService {
     //this.agentResponseLoader = true;
     this.agentResponseLoader.next(true)
     this.homeService.generateSql(question, this.homeService.getSelectedDbGrouping(), this.currentSessionId, userId).subscribe((response: any) => {
-      //  this.homeService.generateSql(question, this.selectedGrouping, this.currentSessionId, userId).subscribe((response: any) => {
-
       if (response !== undefined) {
         this.homeService.setSessionId(response.SessionID)
         this.currentSessionId = response.SessionID;
