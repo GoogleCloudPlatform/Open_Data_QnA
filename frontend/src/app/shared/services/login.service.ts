@@ -5,10 +5,12 @@ import { Observable, ReplaySubject } from 'rxjs';
   providedIn: 'root'
 })
 export class LoginService {
-
   constructor() { }
   private userDetails = new ReplaySubject<any>(1);
   userDetails$: Observable<any> = this.userDetails.asObservable();
+
+  private idToken = new ReplaySubject<any>(1);
+  idToken$: Observable<any> = this.idToken.asObservable();
   loginErrorMsg: any = new ReplaySubject<any>(1);
   getLoginError(): any {
     return this.loginErrorMsg;
@@ -22,5 +24,13 @@ export class LoginService {
 
   sendUserDetails(message: any) {
     this.userDetails.next(message);
+  }
+
+  getIdToken(): Observable<any> {
+    return this.idToken$;
+  }
+
+  setIdToken(token: any) {
+    this.idToken.next(token);
   }
 }
