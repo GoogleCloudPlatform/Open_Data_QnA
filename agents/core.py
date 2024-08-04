@@ -83,7 +83,7 @@ class Agent(ABC):
 
     def generate_llm_response(self,prompt):
         context_query = self.model.generate_content(prompt,safety_settings=self.safety_settings,stream=False)
-        return str(context_query.candidates[0].text).replace("```sql", "").replace("```", "")
+        return str(context_query.candidates[0].text).replace("```sql", "").replace("```", "").rstrip("\n")
 
 
     def rewrite_question(self,question,session_history):

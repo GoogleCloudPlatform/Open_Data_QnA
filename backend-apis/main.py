@@ -16,7 +16,9 @@
 # limitations under the License.
 
 
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, Response
+import asyncio
+from collections.abc import Callable
 import logging as log
 import json
 import datetime
@@ -28,6 +30,11 @@ import pandas as pd
 from flask_cors import CORS
 import os
 import sys
+import firebase_admin
+from firebase_admin import credentials, auth
+from functools import wraps
+
+firebase_admin.initialize_app()
 
 from opendataqna import get_all_databases,get_kgq,generate_sql,embed_sql,get_response,get_results,visualize
 
@@ -35,6 +42,28 @@ from opendataqna import get_all_databases,get_kgq,generate_sql,embed_sql,get_res
 module_path = os.path.abspath(os.path.join('.'))
 sys.path.append(module_path)
 
+
+def jwt_authenticated(func: Callable[..., int]) -> Callable[..., int]:
+    @wraps(func)
+    async def decorated_function(*args, **kwargs):
+        header = request.headers.get("Authorization", None)
+        if header:
+            token = header.split(" ")[1]
+            try:
+                
+                print("TOKEN::"+str(token))
+                decoded_token = firebase_admin.auth.verify_id_token(token)
+            except Exception as e:
+                log.exception(e)
+                return Response(status=403, response=f"Error with authentication: {e}")
+        else:
+            return Response(status=401)
+        
+        request.uid = decoded_token["uid"]
+        print("USER:: "+str(request.uid))
+        return await func(*args, **kwargs) if asyncio.iscoroutinefunction(func) else func(*args, **kwargs)
+    
+    return decorated_function
 
 RUN_DEBUGGER = True
 DEBUGGING_ROUNDS = 2 
@@ -57,6 +86,7 @@ cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 
 @app.route("/available_databases", methods=["GET"])
+@jwt_authenticated
 def getBDList():
 
     result,invalid_response=get_all_databases()
@@ -80,6 +110,7 @@ def getBDList():
 
 
 @app.route("/embed_sql", methods=["POST"])
+@jwt_authenticated
 async def embedSql():
 
     envelope = str(request.data.decode('utf-8'))
@@ -112,6 +143,7 @@ async def embedSql():
 
 
 @app.route("/run_query", methods=["POST"])
+@jwt_authenticated
 def getSQLResult():
     
     envelope = str(request.data.decode('utf-8'))
@@ -159,6 +191,7 @@ def getSQLResult():
 
 
 @app.route("/get_known_sql", methods=["POST"])
+@jwt_authenticated
 def getKnownSQL():
     print("Extracting the known SQLs from the example embeddings.")
     envelope = str(request.data.decode('utf-8'))
@@ -187,10 +220,11 @@ def getKnownSQL():
 
 
 @app.route("/generate_sql", methods=["POST"])
+@jwt_authenticated
 async def generateSQL():
-  
+    print("Here is the request payload ")
     envelope = str(request.data.decode('utf-8'))
-    #    print("Here is the request payload " + envelope)
+    print("Here is the request payload " + envelope)
     envelope=json.loads(envelope)
 
     user_question = envelope.get('user_question')
@@ -234,6 +268,7 @@ async def generateSQL():
 
 
 @app.route("/generate_viz", methods=["POST"])
+@jwt_authenticated
 async def generateViz():
     envelope = str(request.data.decode('utf-8'))
     # print("Here is the request payload " + envelope)
@@ -277,6 +312,7 @@ async def generateViz():
         return jsonify(responseDict)
 
 @app.route("/summarize_results", methods=["POST"])
+@jwt_authenticated
 async def getSummary():
     envelope = str(request.data.decode('utf-8'))
     envelope=json.loads(envelope)
@@ -305,6 +341,7 @@ async def getSummary():
 
 
 @app.route("/natural_response", methods=["POST"])
+@jwt_authenticated
 async def getNaturalResponse():
    envelope = str(request.data.decode('utf-8'))
    #print("Here is the request payload " + envelope)
