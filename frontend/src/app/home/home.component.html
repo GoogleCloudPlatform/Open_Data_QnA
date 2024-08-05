@@ -10,10 +10,10 @@
     <span class="flex-expand"></span>
 
     <form>
-      <select class="form-control-sm mr-10" name="selectAction" (change)="changeDb($event)"
-        [formControl]="organizationCtrl" style="cursor: pointer;background: #FFF;">
+      <select class="form-control-sm mr-10" name="selectAction" (change)="changeGrouping($event)"
+        [formControl]="groupingCtrl" style="cursor: pointer;background: #FFF;">
         <option value="">Select Grouping</option>
-        <option *ngFor="let op of organisation" [value]="op.table_schema">
+        <option *ngFor="let op of groupings" [value]="op.table_schema">
           {{op.table_schema}}
         </option>
       </select>
@@ -35,13 +35,13 @@
           <div *ngIf="checkSideNav === 'Query'" style="height:100%">
             <app-business-user *ngIf="checkSideNav === 'Query'" (updateStyleEvent)="updateBackgroundStyle($event)"
               [checkSideNav]="checkSideNav" [selectedHistory]="selectedHistory"
-              [selectedGrouping]="organizationCtrl.value"></app-business-user>
+              [selectedGrouping]="groupingCtrl.value"></app-business-user>
           </div>
           <div *ngIf="checkSideNav === 'History'|| checkSideNav ==='New Query' || checkSideNav ==='Scenarios'"
             style="height:100%">
             <app-business-user (updateStyleEvent)="updateBackgroundStyle($event)" [checkSideNav]="checkSideNav"
               [selectedHistory]="selectedHistory" [userSessions]="userSessions"
-              [selectedGrouping]="organizationCtrl.value" [selectedScenario]="selectedScenario"></app-business-user>
+              [selectedGrouping]="groupingCtrl.value" [selectedScenario]="selectedScenario"></app-business-user>
           </div>
           <router-outlet></router-outlet>
         </mat-sidenav-content>

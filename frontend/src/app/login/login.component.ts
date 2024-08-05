@@ -1,4 +1,4 @@
-import { Component, ElementRef } from '@angular/core';
+import { Component } from '@angular/core';
 import { LoginButtonComponent } from '../login-button/login-button.component';
 import { Subscription } from 'rxjs';
 import { Router } from '@angular/router';
@@ -7,7 +7,6 @@ import { LoginService } from '../shared/services/login.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
-  // standalone: true,
   selector: 'app-login',
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'

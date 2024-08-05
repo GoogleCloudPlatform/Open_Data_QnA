@@ -24,7 +24,7 @@ export class UserPhotoComponent {
   constructor(private _router: Router, public dialog: Dialog, public loginService: LoginService) {
     this.dialog.closeAll();
     this.idTokenSubscription = this.idToken$.subscribe((token: string | null) => {
-      this.loginService.setIdToken(token)
+      //this.loginService.setIdToken(token)
       //handle idToken changes here. Note, that user will be null if there is no currently logged in user.
       console.log(token);
     })

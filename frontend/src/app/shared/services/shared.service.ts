@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { LoginService } from './login.service';
 import { Firestore } from '@angular/fire/firestore';
-import { GoogleAuthProvider, signInWithPopup } from '@firebase/auth';
+import { GoogleAuthProvider, signInWithPopup} from '@firebase/auth';
 import { Auth } from '@angular/fire/auth';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
 
@@ -23,6 +23,12 @@ export class SharedService {
 
     return await signInWithPopup(this.auth, provider)
       .then((result) => {
+        const token = this.auth.currentUser?.getIdToken().then((res)=>{
+          console.log("token", res)
+          this.loginservice.setIdToken(res)
+        })
+        //this.auth.
+      
         return result.user
       }).
       catch((error) => {

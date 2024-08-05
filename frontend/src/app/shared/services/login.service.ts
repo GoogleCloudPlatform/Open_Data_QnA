@@ -26,7 +26,7 @@ export class LoginService {
     this.userDetails.next(message);
   }
 
-  getIdToken(): Observable<any> {
+  getIdToken(): any {
     return this.idToken$;
   }
 

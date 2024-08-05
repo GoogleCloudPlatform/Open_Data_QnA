@@ -16,11 +16,11 @@ import { Subject, Subscription, switchMap, take, takeUntil, tap } from 'rxjs';
 export class HomeComponent {
   title = 'material-responsive-sidenav';
   isCollapsed = true;
-  organizationCtrl = new FormControl<string>('');
+  groupingCtrl = new FormControl<string>('');
 
   private _destroy$ = new Subject<void>();
-  organisation: any;
-  organizationString: any;
+  groupings: any;
+  availableDBstrings: any;
   checkStyle: boolean | undefined;
   userType: String | undefined;
   color: ThemePalette = 'accent';
@@ -42,6 +42,9 @@ export class HomeComponent {
     this.loginService.getUserDetails().subscribe(message => {
       this.userId = message.uid;
       this.photoURL = message?.photoURL
+      if (!this.photoURL) {
+        this._router.navigate(['']);
+      }
     });
   }
 
@@ -49,9 +52,7 @@ export class HomeComponent {
   activeLink = this.links[0];
 
   async ngOnInit() {
-    if (!this.photoURL) {
-      this._router.navigate(['']);
-    }
+
     this.observer.observe(['(max-width: 800px)']).subscribe((screenSize) => {
       if (screenSize.matches) {
         this.isMobile = true;
@@ -75,18 +76,18 @@ export class HomeComponent {
         })
     }
     this.homeService.setSelectedDbGrouping("");
-    this.organizationString = this.homeService.getAvailableDBList();
-    console.log(this.organizationString)
-    if (this.organizationString !== null && this.organizationString !== undefined) {
-      this.organisation = JSON.parse(this.organizationString);
-      this.selectedGrouping = this.organisation[0].table_schema.split("-")
+    this.availableDBstrings = this.homeService.getAvailableDBList();
+    console.log(this.availableDBstrings)
+    if (this.availableDBstrings !== null && this.availableDBstrings !== undefined) {
+      this.groupings = JSON.parse(this.availableDBstrings);
+      this.selectedGrouping = this.groupings[0].table_schema.split("-")
       if (this.selectedGrouping.length === 3) {
         this.selectedGrouping[1] = this.selectedGrouping.slice(1).join("-"); // Merge elements from index 1 onwards
       }
       this.homeService.setselectedDbName(this.selectedGrouping[1])
       this.homeService.currentSelectedGrouping.next('')
       // this.homeService.currentSelectedGroupingObservable.subscribe((res) => {
-      //   this.organizationCtrl.setValue(res);
+      //   this.groupingCtrl.setValue(res);
       // })
       // this.homeService.sqlSuggestionList(this.selectedGrouping[0], this.selectedGrouping[1]).subscribe((data: any) => {
       //   if (data && data.ResponseCode === 200) {
@@ -96,7 +97,7 @@ export class HomeComponent {
 
       this.homeService.currentSelectedGroupingObservable
         .pipe(
-          tap((res) => this.organizationCtrl.setValue(res)),
+          tap((res) => this.groupingCtrl.setValue(res)),
           switchMap((grouping) => this.homeService.sqlSuggestionList(this.selectedGrouping[0], this.selectedGrouping[1]))
         )
         .subscribe((data: any) => {
@@ -108,13 +109,13 @@ export class HomeComponent {
     } else {
       this.homeService.getAvailableDatabases().subscribe((res: any) => {
         if (res && res.ResponseCode === 200) {
-          this.organisation = JSON.parse(res.KnownDB);
+          this.groupings = JSON.parse(res.KnownDB);
         }
       });
     }
   }
 
-  changeDb(dbtype: any) {
+  changeGrouping(dbtype: any) {
     let selectedDbtype = dbtype.target.value.split("-");
     this.homeService.setSelectedDbGrouping(dbtype.target.value);
     this.homeService.setSessionId('');
