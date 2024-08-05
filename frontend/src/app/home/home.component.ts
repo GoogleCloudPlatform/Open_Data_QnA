@@ -80,6 +80,7 @@ export class HomeComponent {
     console.log(this.availableDBstrings)
     if (this.availableDBstrings !== null && this.availableDBstrings !== undefined) {
       this.groupings = JSON.parse(this.availableDBstrings);
+      
       this.selectedGrouping = this.groupings[0].table_schema.split("-")
       if (this.selectedGrouping.length === 3) {
         this.selectedGrouping[1] = this.selectedGrouping.slice(1).join("-"); // Merge elements from index 1 onwards

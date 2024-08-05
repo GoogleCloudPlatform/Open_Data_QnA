@@ -151,17 +151,4 @@ export class ChatService {
       // this.sessionId = this.homeService.getSessionId()
     }
   }
-
-  updateSuggestions() {
-    let selectedDbtype = this.selectedGrouping?.split("-");
-    this.homeService.setSelectedDbGrouping(this.selectedGrouping);
-    this.homeService.setSessionId('');
-    this.homeService.setselectedDbName(selectedDbtype[1])
-    // this.homeService.currentSelectedGrouping.next(this.selectedGrouping)
-    this.homeService.sqlSuggestionList(this.selectedGrouping, selectedDbtype[1]).subscribe((data: any) => {
-      if (data && data.ResponseCode === 200) {
-        this.homeService.knownSqlFromDb.next(data.KnownSQL);
-      }
-    })
-  }
 }
