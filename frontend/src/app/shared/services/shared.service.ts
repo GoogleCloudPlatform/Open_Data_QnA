@@ -22,14 +22,10 @@ export class SharedService {
     const provider = new GoogleAuthProvider();
 
     return await signInWithPopup(this.auth, provider)
-      .then((result) => {
-        const token = this.auth.currentUser?.getIdToken().then((res) => {
-          console.log("token", res)
-          this.loginservice.setIdToken(res)
-        })
-        console.log(result.user)
-
-        return result.user
+      .then(async (result) => {
+        const token = await this.auth.currentUser?.getIdToken();
+        this.loginservice.setIdToken(token);
+        return result.user;
       }).
       catch((error) => {
         if (error.message.indexOf('Cloud Function') === 15) {

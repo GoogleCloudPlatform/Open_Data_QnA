@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpHeaders, HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { catchError, throwError, BehaviorSubject } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { catchError, BehaviorSubject, take } from 'rxjs';
 import { ENDPOINT_OPENDATAQNA } from '../../../assets/constants';
-import { Firestore, collection, collectionData, doc, docData, orderBy, query, updateDoc, where } from '@angular/fire/firestore';
+import { Firestore, collection, collectionData, orderBy, query, where } from '@angular/fire/firestore';
 
 @Injectable({
   providedIn: 'root'
@@ -36,7 +36,6 @@ export class HomeService {
     return this.http.get(ENDPOINT_OPENDATAQNA + '/available_databases').pipe(catchError(this.handleError))
   }
   sqlSuggestionList(grouping: any, dbtype: any) {
-
     const body =
     {
       "user_grouping": grouping
@@ -65,19 +64,20 @@ export class HomeService {
 
   }
   private handleError(error: HttpErrorResponse) {
-    if (error.error instanceof ErrorEvent) {
+    if (error.error instanceof HttpErrorResponse) {
       console.error('An error occurred:', error.error);
     } else {
     }
-    return throwError(
-      error);
+    return ""
   }
+  
   setAvailableDBList(databaseList: string) {
     this.databaseList = databaseList;
   }
   getAvailableDBList(): string {
     return this.databaseList;
   }
+
   setSelectedDbGrouping(selectedDBGroup: any) {
     this.selectedGrouping = selectedDBGroup;
   }
@@ -102,7 +102,6 @@ export class HomeService {
   getChatMsgs(): any[] {
     return this.chatMsgs
   }
-
   updateChatMsgs(chatMsgs: any) {
     this.chatMsgs = chatMsgs;
   }
@@ -110,7 +109,6 @@ export class HomeService {
   getSelectedHistory() {
     return this.selectedHistory
   }
-
   updateSelectedHistory(selectedHistory: any) {
     this.selectedHistory = selectedHistory
   }

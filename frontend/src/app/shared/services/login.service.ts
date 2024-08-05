@@ -12,6 +12,7 @@ export class LoginService {
   private idToken = new ReplaySubject<any>(1);
   idToken$: Observable<any> = this.idToken.asObservable();
   loginErrorMsg: any = new ReplaySubject<any>(1);
+
   getLoginError(): any {
     return this.loginErrorMsg;
   }
@@ -21,15 +22,12 @@ export class LoginService {
   getUserDetails(): Observable<any> {
     return this.userDetails$;
   }
-
   sendUserDetails(message: any) {
     this.userDetails.next(message);
   }
-
   getIdToken(): any {
     return this.idToken$;
   }
-
   setIdToken(token: any) {
     this.idToken.next(token);
   }
