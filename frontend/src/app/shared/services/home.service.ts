@@ -70,7 +70,7 @@ export class HomeService {
     } else {
     }
     return throwError(
-      'Something bad happened; please try again later.');
+      error);
   }
   setAvailableDBList(databaseList: string) {
     this.databaseList = databaseList;

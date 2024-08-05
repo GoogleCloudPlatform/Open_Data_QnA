@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { LoginButtonComponent } from '../login-button/login-button.component';
 import { Subscription, take } from 'rxjs';
-import { Auth, User, idToken, user } from '@angular/fire/auth';
+import { Auth, User, user } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { LoginService } from '../shared/services/login.service';
 import { Dialog } from '@angular/cdk/dialog';
@@ -18,24 +18,15 @@ export class UserPhotoComponent {
   private auth: Auth = inject(Auth);
   user$ = user(this.auth);
   userSubscription: Subscription;
-  idToken$ = idToken(this.auth);
-  idTokenSubscription!: Subscription;
 
   constructor(private _router: Router, public dialog: Dialog, public loginService: LoginService) {
     this.dialog.closeAll();
-    this.idTokenSubscription = this.idToken$.subscribe((token: string | null) => {
-      //this.loginService.setIdToken(token)
-      //handle idToken changes here. Note, that user will be null if there is no currently logged in user.
-      console.log(token);
-    })
-
     this.userSubscription = this.user$.pipe(take(1)).subscribe((aUser: User | null) => {
       //handle user state changes here. Note, that user will be null if there is no currently logged in user
       if (aUser) {
         this.dialog.closeAll();
         this.userLoggedIn = true;
-        console.log(aUser)
-        // this.loginService.sendUserDetails(aUser)
+        this.loginService.sendUserDetails(aUser)
         if (aUser.photoURL) {
           this.photoURL = aUser.photoURL;
         }
@@ -65,7 +56,6 @@ export class UserPhotoComponent {
     this.dialog.closeAll();
     // when manually subscribing to an observable remember to unsubscribe in ngOnDestroy
     this.userSubscription.unsubscribe();
-    this.idTokenSubscription.unsubscribe();
-
+    // this.idTokenSubscription.unsubscribe();
   }
 }
