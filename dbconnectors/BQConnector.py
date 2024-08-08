@@ -123,7 +123,7 @@ class BQConnector(DBConnector, ABC):
         auth_user=get_auth_user()
 
         PROJECT_ID = self.project_id
-        # print('\nInside the Append to BQ block\n')
+
         table_id= PROJECT_ID+ '.' + self.opendataqna_dataset + '.' + self.audit_log_table_name
         now = datetime.now()
 
@@ -185,19 +185,19 @@ class BQConnector(DBConnector, ABC):
 
         try:
             client.get_table(table_id)  # Make an API request.
-            #print("Table {} already exists.".format(table_id))
+            # print("Table {} already exists.".format(table_id))
             table_exists=True
         except NotFound:
-            print("Table {} is not found.".format(table_id))
+            print("Table {} is not found. Will create this log table".format(table_id))
             table_exists=False
 
         if table_exists is True:
             # print('Performing streaming insert')
             errors = client.insert_rows_from_dataframe(table=table_id, dataframe=df1, selected_fields=db_schema)  # Make an API request.
-            #if errors == []:
-                #    print("New rows have been added.")
-            #else:
-                #    print("Encountered errors while inserting rows: {}".format(errors))
+            if errors == [[]]:
+                   print("Logged the run")
+            else:
+                   print("Encountered errors while inserting rows: {}".format(errors))
         else:
             job_config = bigquery.LoadJobConfig(schema=db_schema,write_disposition="WRITE_TRUNCATE")
             # pandas_gbq.to_gbq(df1, table_id, project_id=PROJECT_ID)  # replace to replace table; append to append to a table
@@ -207,7 +207,7 @@ class BQConnector(DBConnector, ABC):
         # df1.loc[len(df1)] = new_row
         # pandas_gbq.to_gbq(df1, table_id, project_id=PROJECT_ID, if_exists='append')  # replace to replace table; append to append to a table
             # print('\n Query added to BQ log table \n')
-        return 'Log Row added'
+        return 'Completed the logging step'
 
     def create_vertex_connection(self, connection_id : str):
         client=bq_connection.ConnectionServiceClient()
@@ -232,22 +232,25 @@ class BQConnector(DBConnector, ABC):
         matches = []
 
         if mode == 'table':
-            sql = '''select base.content as tables_content from vector_search(TABLE `{}.table_details_embeddings`, "embedding", 
+            sql = '''select base.content as tables_content from vector_search(
+                 (SELECT * FROM `{}.table_details_embeddings` WHERE user_grouping = '{}'), "embedding", 
             (SELECT {} as qe), top_k=> {},distance_type=>"COSINE") where 1-distance > {} '''
         
         elif mode == 'column':
-            sql='''select base.content as columns_content from vector_search(TABLE `{}.tablecolumn_details_embeddings`, "embedding",
+            sql='''select base.content as columns_content from vector_search(
+                 (SELECT * FROM `{}.tablecolumn_details_embeddings` WHERE user_grouping = '{}'), "embedding",
             (SELECT {} as qe), top_k=> {}, distance_type=>"COSINE") where 1-distance > {} '''
 
         elif mode == 'example': 
-            sql='''select base.example_user_question, base.example_generated_sql from vector_search ( TABLE `{}.example_prompt_sql_embeddings`, "embedding",
+            sql='''select base.example_user_question, base.example_generated_sql from vector_search ( 
+                (SELECT * FROM `{}.example_prompt_sql_embeddings` WHERE user_grouping = '{}'), "embedding",
             (select {} as qe), top_k=> {}, distance_type=>"COSINE") where 1-distance > {} '''
     
         else: 
             ValueError("No valid mode. Must be either table, column, or example")
             name_txt = ''
 
-        results=self.client.query_and_wait(sql.format('{}.{}'.format(self.project_id,self.opendataqna_dataset),qe,limit,similarity_threshold)).to_dataframe()
+        results=self.client.query_and_wait(sql.format('{}.{}'.format(self.project_id,self.opendataqna_dataset),user_grouping,qe,limit,similarity_threshold)).to_dataframe()
         # CHECK RESULTS 
         if len(results) == 0:
             print(f"Did not find any results for {mode}. Adjust the query parameters.")
@@ -303,7 +306,7 @@ class BQConnector(DBConnector, ABC):
     def getExactMatches(self, query):
         """Checks if the exact question is already present in the example SQL set"""
         check_history_sql=f"""SELECT example_user_question,example_generated_sql FROM {self.project_id}.{self.opendataqna_dataset}.example_prompt_sql_embeddings
-                          WHERE lower(example_user_question) = lower('{query}') LIMIT 1; """
+                          WHERE lower(example_user_question) = lower("{query}") LIMIT 1; """
 
         exact_sql_history = self.client.query_and_wait(check_history_sql).to_dataframe()
 
