@@ -1,0 +1,51 @@
+[
+  {
+    "name": "source_type",
+    "mode": "REQUIRED",
+    "type": "STRING",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "user_grouping",
+    "mode": "REQUIRED",
+    "type": "STRING",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "table_schema",
+    "mode": "REQUIRED",
+    "type": "STRING",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "table_name",
+    "mode": "REQUIRED",
+    "type": "STRING",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "column_name",
+    "mode": "REQUIRED",
+    "type": "STRING",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "content",
+    "mode": "",
+    "type": "STRING",
+    "description": "",
+    "fields": []
+  },
+  {
+    "name": "embedding",
+    "mode": "REPEATED",
+    "type": "FLOAT",
+    "description": "",
+    "fields": []
+  }
+]
