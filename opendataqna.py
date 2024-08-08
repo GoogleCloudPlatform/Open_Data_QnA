@@ -295,7 +295,7 @@ async def generate_sql(session_id,
                 AUDIT_TEXT = AUDIT_TEXT + "\nNo tables have been found in the Vector DB. The question cannot be answered with the provide data source!"
 
         # print(f'\n\n AUDIT_TEXT: \n {AUDIT_TEXT}')
-    
+
         if LOGGING: 
             bqconnector.make_audit_entry(DATA_SOURCE, user_grouping, SQLBuilder_model, user_question, final_sql, found_in_vector, "", process_step, error_msg,AUDIT_TEXT)  
 
@@ -305,7 +305,10 @@ async def generate_sql(session_id,
         final_sql="Error generating the SQL Please check the logs. "+str(e)
         invalid_response=True
         AUDIT_TEXT="Exception at SQL generation"
-    
+        print("Error :: "+str(error_msg))
+        if LOGGING: 
+            bqconnector.make_audit_entry(DATA_SOURCE, user_grouping, SQLBuilder_model, user_question, final_sql, found_in_vector, "", process_step, error_msg,AUDIT_TEXT)  
+
     if not invalid_response:
         firestoreconnector.log_chat(session_id,user_question,final_sql,user_id)
         print("Session history persisted")  
