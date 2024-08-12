@@ -20,36 +20,43 @@ variable "project_id" {
 
 variable "embedding_model" {
   type = string
+  default = "vertex"
   description = "name of the model that you want to use to create embeddings. Options: 'vertex' or 'vertex-lang'"
 }
 
 variable "description_model" {
   type = string
+  default = "gemini-1.5-pro"
   description = "name of the model that you want to use to generate missing description for tables and columns. Options: 'gemini-1.0-pro', 'gemini-1.5-pro', 'text-bison-32k', 'gemini-1.5-flash'"
 }
 
 variable "vector_store" {
   type = string
+  default = "cloudsql-pgvector"
   description = "name of the datastore you want to use to store text embeddings of your meta data. Options: bigquery-vector, cloudsql-pgvector"
 }
 
 variable "debugging" {
   type = string
+  default = "yes"
   description = "yes, if you want to enable debugging. No, otherwise"
 }
 
 variable "logging" {
   type = string
+  default = "yes"
   description = "yes, if you want to enable application logging. No, otherwise"
 }
 
 variable "kgq_examples" {
   type = string
+  default = "no"
   description = "yes, if you want to use known good sqls for few shot prompting and creating cache. No, otherwise"
 }
 
 variable "use_column_samples" {
   type = string
+  default = "no"
   description = "yes, if you want to add some sample column values to the embeddings to enrich it with more information. No, otherwise"
 }
 
@@ -80,19 +87,19 @@ variable "pg_user" {
 
 variable "pg_password" {
   type        = string
-  default     = "pg123"
+  default     = "Pguser@!12345"
   description = "password for pg_user"
 }
 
 variable "bq_opendataqna_dataset" {
   type        = string
-  default     = "genai_marketing"
+  default     = "opendataqna2"
   description = "This dataset will be used to store text embeddings and application logs. If pg-vector is chosen as vector db, only application logs will be stored here."
 }
 
 variable "bq_dataset_region" {
   type    = string
-  default = "opendataqna"
+  default = "us-central1"
   description = "Location of bq_opendataqna_dataset."
 }
 
@@ -104,7 +111,7 @@ variable "bq_log_table" {
 
 variable "firestore_region" {
   type        = string
-  default     = "genai_marketing"
+  default     = "us-central1"
   description = "Location of the firestore database."
 }
 
