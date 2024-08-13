@@ -10,7 +10,9 @@ export class AppHttpInterceptor implements HttpInterceptor {
     idToken!: string;
 
     constructor(public loginService: LoginService) {
-        this.loginService.getUserDetails().subscribe((res: any) => { this.userDetails = res });
+        this.loginService.getUserDetails().subscribe((res: any) => { 
+            console.log("Access Token", res.accessToken)
+            this.userDetails = res });
         this.loginService.getIdToken().subscribe((res: string) => {
             this.idToken = res
         });
@@ -19,7 +21,8 @@ export class AppHttpInterceptor implements HttpInterceptor {
     intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
         req = req.clone({ headers: req.headers.append('Content-Type', 'application/x-www-form-urlencoded') });
         req = req.clone({ headers: req.headers.append('Access-Control-Allow-Origin', '*') });
-        req = req.clone({ headers: req.headers.append('Authorization', `Bearer ${this.userDetails?.accessToken || this.idToken}`) });
+        req = req.clone({ headers: req.headers.append('Access-Control-Allow-Headers', '*') });
+        req = req.clone({ headers: req.headers.append('Authorization', `Bearer ${this.userDetails.accessToken || this.idToken}`) });
         const started = Date.now();
         return next.handle(req).pipe(tap((event: any) => {
             const elapsed = Date.now() - started;

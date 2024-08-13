@@ -3,7 +3,7 @@ import { HttpHeaders, HttpClient, HttpErrorResponse } from '@angular/common/http
 import { catchError, throwError, BehaviorSubject } from 'rxjs';
 import { ENDPOINT_OPENDATAQNA } from '../../../assets/constants';
 import { Firestore, collection, collectionData, doc, docData, orderBy, query, updateDoc, where } from '@angular/fire/firestore';
-
+import {environment} from '../../../../environment'
 @Injectable({
   providedIn: 'root'
 })
@@ -21,6 +21,8 @@ export class HomeService {
   selectedHistory: any
   private firestore: Firestore = inject(Firestore);
   session_id: any = '';
+  private baseUrl = environment.apiUrl;
+
   constructor(public http: HttpClient) { }
 
   ngOnInit() { }
@@ -39,8 +41,9 @@ export class HomeService {
     const requestOptions = {
       headers: new HttpHeaders(header),
     };
+    console.log(this.baseUrl);
 
-    return this.http.get(ENDPOINT_OPENDATAQNA + '/available_databases', requestOptions).pipe(catchError(this.handleError))
+    return this.http.get(`${this.baseUrl}/available_databases`, requestOptions).pipe(catchError(this.handleError))
   }
   sqlSuggestionList(grouping: any, dbtype: any) {
 
@@ -57,7 +60,7 @@ export class HomeService {
     }
     this.selectedDBType = dbtype;
 
-    return this.http.post(ENDPOINT_OPENDATAQNA + '/get_known_sql', body, requestOptions)
+    return this.http.post(`${this.baseUrl}/get_known_sql`, body, requestOptions)
       .pipe(catchError(this.handleError));
 
   }
@@ -81,7 +84,7 @@ export class HomeService {
     }
     let endpoint = ENDPOINT_OPENDATAQNA;
 
-    return this.http.post(endpoint + "/generate_sql", body, requestOptions)
+    return this.http.post(`${this.baseUrl}/generate_sql`, body, requestOptions)
       .pipe(catchError(this.handleError));
 
   }
@@ -157,7 +160,7 @@ export class HomeService {
     }
     let endpoint = ENDPOINT_OPENDATAQNA;
 
-    return this.http.post(endpoint + "/run_query", body, requestOptions);
+    return this.http.post(`${this.baseUrl}/run_query`, body, requestOptions);
   }
 
   thumbsUp(sql: any, user_question: any, selectedGrouping: any, session_id: any) {
@@ -176,7 +179,7 @@ export class HomeService {
       session_id: this.session_id
     }
     let endpoint = ENDPOINT_OPENDATAQNA;
-    return this.http.post(endpoint + "/embed_sql", body, requestOptions)
+    return this.http.post(`${this.baseUrl}/embed_sql`, body, requestOptions)
       .pipe(catchError(this.handleError));
   }
 
@@ -194,7 +197,7 @@ export class HomeService {
       "sql_results": result,
       "session_id": this.session_id
     }
-    return this.http.post(ENDPOINT_OPENDATAQNA + "/generate_viz", body, requestOptions)
+    return this.http.post(`${this.baseUrl}/generate_viz`, body, requestOptions)
       .pipe(catchError(this.handleError));
   }
 }

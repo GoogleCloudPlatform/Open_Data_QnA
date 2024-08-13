@@ -9,3 +9,4 @@ export const firebaseConfig = {
 export const ENDPOINT_OPENDATAQNA = 'https://opendataqna-kdr33rftkq-uc.a.run.app'
 
 export const FIRESTORE_DATABASE_ID = 'opendataqna-session-logs'
+

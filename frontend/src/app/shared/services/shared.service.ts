@@ -24,6 +24,7 @@ export class SharedService {
     return await signInWithPopup(this.auth, provider)
       .then(async (result) => {
         const token = await this.auth.currentUser?.getIdToken(); 
+        console.log("idToken", token)
         this.loginservice.setIdToken(token); 
         return result.user;
       }).

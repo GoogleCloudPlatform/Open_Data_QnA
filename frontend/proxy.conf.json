@@ -1,0 +1,11 @@
+{
+    "/mp/**": {
+        "target": "https://opendataqna-kdr33rftkq-uc.a.run.app",
+        "secure": false,
+        "logLevel": "debug",
+        "changeOrigin": true,
+        "pathRewrite": {
+            "^/mp": ""
+        }
+    }
+}
