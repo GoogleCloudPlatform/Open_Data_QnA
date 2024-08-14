@@ -6,7 +6,6 @@ from streamlit.logger import get_logger
 from opendataqna import  generate_uuid, get_all_databases, run_pipeline, get_kgq
 import asyncio
 
-
 logger = get_logger(__name__)
 
 # Initialize session state variables if they don't exist
@@ -134,7 +133,6 @@ st.markdown("""
 
 st.title("Open Data QnA")
 
-
 with st.sidebar:
   st.session_state.user_grouping = st.selectbox(
     'Select Table Groupings',
@@ -143,9 +141,7 @@ with st.sidebar:
      st.session_state.session_id = generate_uuid()
      st.session_state.messages.clear()
      st.rerun() 
-     
-     
-    
+       
 if "messages" not in st.session_state:
     st.session_state["messages"] = [{"role": "assistant", "content": "Frequently Asked Questions"}]
 if st.session_state.user_grouping is not None:
@@ -154,28 +150,5 @@ if st.session_state.user_grouping is not None:
       url = text = row["example_user_question"]
       st.session_state.kgq.append(text)
 
-
-
 if prompt := st.chat_input():
    generate_response(prompt)
-
-   
-
-  
-  
-
-    
- 
-
-
-
-
-   
-
-  
-  
-
-    
- 
-
-
