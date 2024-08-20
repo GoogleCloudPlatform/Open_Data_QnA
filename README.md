@@ -228,22 +228,19 @@ python opendataqna.py --help
 ```
 
 
+🖥️ Build a angular based frontend for this solution   
+---------------------------------------------------
+Deploy backend apis for the solution, refer to the README.md under [`/backend-apis`](/backend-apis/). This APIs are designed with work with the frontend and provide access to run the solution.
+
+Once the backend APIs deployed successfully deploy the frontend for the solution, refer to the README.md under [`/frontend`](/frontend/).
+
+
 📗 FAQs and Best Practices  
 -------------
 If you successfully set up the solution accelerator and want to start optimizing to your needs, you can follow the tips in the [`Best Practice doc`](/docs/best_practices.md).
 Additionally, if you stumble across any problems, take a look into the [`FAQ`](/docs/faq.md).
 
 If neither of these resources helps, feel free to reach out to us directly by raising an Issue. 
-
-⌨️ Backend APIs  
--------------
-If you are looking to deploy backend apis for the solution, refer to the README.md under [`/backend-apis`](/backend-apis/).
-
-
-🖥️ Frontend  
--------------
-If you are looking to deploy the frontend for the solution, refer to the README.md under [`/frontend`](/frontend/).
-
 
 
 📄 Documentation
