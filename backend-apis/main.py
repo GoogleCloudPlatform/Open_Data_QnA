@@ -86,7 +86,7 @@ cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 
 @app.route("/available_databases", methods=["GET"])
-@jwt_authenticated
+# @jwt_authenticated
 def getBDList():
 
     result,invalid_response=get_all_databases()
@@ -110,7 +110,7 @@ def getBDList():
 
 
 @app.route("/embed_sql", methods=["POST"])
-@jwt_authenticated
+# @jwt_authenticated
 async def embedSql():
 
     envelope = str(request.data.decode('utf-8'))
@@ -143,7 +143,7 @@ async def embedSql():
 
 
 @app.route("/run_query", methods=["POST"])
-@jwt_authenticated
+# @jwt_authenticated
 def getSQLResult():
     
     envelope = str(request.data.decode('utf-8'))
@@ -191,7 +191,7 @@ def getSQLResult():
 
 
 @app.route("/get_known_sql", methods=["POST"])
-@jwt_authenticated
+# @jwt_authenticated
 def getKnownSQL():
     print("Extracting the known SQLs from the example embeddings.")
     envelope = str(request.data.decode('utf-8'))
@@ -220,7 +220,7 @@ def getKnownSQL():
 
 
 @app.route("/generate_sql", methods=["POST"])
-@jwt_authenticated
+# @jwt_authenticated
 async def generateSQL():
     print("Here is the request payload ")
     envelope = str(request.data.decode('utf-8'))
@@ -268,7 +268,7 @@ async def generateSQL():
 
 
 @app.route("/generate_viz", methods=["POST"])
-@jwt_authenticated
+# @jwt_authenticated
 async def generateViz():
     envelope = str(request.data.decode('utf-8'))
     # print("Here is the request payload " + envelope)
@@ -312,7 +312,7 @@ async def generateViz():
         return jsonify(responseDict)
 
 @app.route("/summarize_results", methods=["POST"])
-@jwt_authenticated
+# @jwt_authenticated
 async def getSummary():
     envelope = str(request.data.decode('utf-8'))
     envelope=json.loads(envelope)
@@ -341,7 +341,7 @@ async def getSummary():
 
 
 @app.route("/natural_response", methods=["POST"])
-@jwt_authenticated
+# @jwt_authenticated
 async def getNaturalResponse():
    envelope = str(request.data.decode('utf-8'))
    #print("Here is the request payload " + envelope)

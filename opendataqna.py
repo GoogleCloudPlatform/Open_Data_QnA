@@ -274,7 +274,7 @@ async def generate_sql(session_id,
                 
                 if 'unrelated_answer' in generated_sql :
                     invalid_response=True
-                    final_sql="This is an unrelated question for this dataset"
+                    final_sql="This is an unrelated question or you are not asking a valid query"
 
                 # If agent assessment is valid, proceed with checks  
                 else:
