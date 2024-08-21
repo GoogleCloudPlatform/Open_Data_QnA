@@ -1,7 +1,7 @@
 .list-css {
   background-image: radial-gradient(grey, black);
   min-width: 100%;
-  min-height: 100%
+  min-height: 100%;
 }
 
 .search {
@@ -140,7 +140,7 @@
 }
 
 .list-group {
-  margin-top: 140px;
+  margin-top: 100px;
 }
 
 .demoBtn {
@@ -171,4 +171,27 @@
 .loading-spinner {
   margin-left: 25px;
   margin-top: 5px;
+}
+
+.demoPage {
+  font-size: 18px;
+  font-family: 'Google Sans';
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap : 20px;
+  margin : 10px
+}
+
+.videoContent {
+  font-family: Google Sans;
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 27px;
+  letter-spacing: 0.10000000149011612px;
+  text-align: left;
+  color: #FFFFFF;
+
 }

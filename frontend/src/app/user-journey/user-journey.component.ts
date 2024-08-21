@@ -18,6 +18,7 @@ export class UserJourneyComponent {
   color: ThemePalette = 'accent';
   loginError = false;
   loginErrorMessage: any;
+  demoVideo = false;
   constructor(public _router: Router, public loginService: LoginService, public homeService: HomeService) {
     this.subscription = this.loginService.getUserDetails().subscribe(message => {
       this.photoURL = message?.photoURL;
@@ -25,6 +26,10 @@ export class UserJourneyComponent {
         this._router.navigate(['']);
       }
     });
+  }
+
+  onDemoVideoClick(){
+    this.demoVideo = true;
   }
   ngOnInit() {
 
