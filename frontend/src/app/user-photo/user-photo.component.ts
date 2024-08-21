@@ -26,7 +26,6 @@ export class UserPhotoComponent {
       if (aUser) {
         this.dialog.closeAll();
         this.userLoggedIn = true;
-        console.log(aUser)
         this.loginService.sendUserDetails(aUser)
         if (aUser.photoURL) {
           this.photoURL = aUser.photoURL;

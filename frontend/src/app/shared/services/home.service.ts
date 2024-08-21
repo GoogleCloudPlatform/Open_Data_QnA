@@ -100,7 +100,6 @@ export class HomeService {
     return this.databaseList;
   }
   setSelectedDbGrouping(selectedDBGroup: any) {
-    console.log(selectedDBGroup)
     this.selectedGrouping = selectedDBGroup;
   }
   getSelectedDbGrouping(): string {

@@ -78,7 +78,6 @@ export class MenuComponent {
               return b.chatThread[0].timestamp - a.chatThread[0].timestamp
             });
             this.userHistory = sessionToDisplayQuery;
-            console.log(this.userHistory)
             this.recentHistory = this.userHistory.slice(0, 5);
           }
             break;
@@ -108,9 +107,7 @@ export class MenuComponent {
       this.homeService.updateChatMsgs(chatThread)
       this.chatService.createNewSession()
       this.homeService.setSessionId(chatThread[0].session_id)
-      console.log(chatThread)
       this.homeService.updateSelectedHistory(chatThread)
-      console.log(this.selectedHistory)
       this.chatService.addQuestion(chatThread[chatThread?.length - 1]?.user_question, this.userId, 'history', chatThread)
       // this.sessionId = this.homeService.getSessionId()
 
@@ -128,7 +125,6 @@ export class MenuComponent {
     });
 
     dialogRef.afterClosed().subscribe(result => {
-      console.log(`Dialog result: ${result}`);
     });
   }
 

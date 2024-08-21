@@ -13,7 +13,7 @@ const routes: Routes = [
   { path: 'home-page', component: HomeComponent },
   { path: 'business-mode', component: BusinessUserComponent },
   { path: 'operations-mode', component: OperationalUserComponent },
-  { path: 'technical-mode', component: TechnicalUserComponent }
+  { path: 'technical-mode', component: TechnicalUserComponent },
 ]
 
 @NgModule({
