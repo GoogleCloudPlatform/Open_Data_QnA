@@ -1,6 +1,6 @@
 
 # Infrastructure deployment
-Terraform deployment simplifies the deployment of this solution and can be used as blueprint of the solution. The terraform script acts a one-time single click deployment solution. This does not offer CI / CD capabilites and should be should be solely used for the purpose of a one time single click deployment.
+The provided terraform streamlines the setup of this solution and serves as a blueprint for deployment. The script provides a one-click, one-time deployment option. However, it doesn't include CI/CD capabilities and is intended solely for initial setup.
 
 *Note*: Current version of the Terraform Google Cloud provider does not support deployment of a few resources, this soultion uses null_resource to create those resources using Google Cloud SDK.
 
@@ -107,7 +107,7 @@ gcloud auth application-default set-quota-project <your_project_id>
 #### Terraform deployment
 
 1. Install [terraform 1.7 or higher](https://developer.hashicorp.com/terraform/install).
-1. [OPTIONAL] Update default values of variables in [variables.tf] according to your preferences. You can find the description for each variable inside the file. This file will be used by terraform to get information about the resources it needs to deploy. If you do not update these, terraform will use the already specified default values in the file.
+1. [OPTIONAL] Update default values of variables in [variables.tf](variables.tf) according to your preferences. You can find the description for each variable inside the file. This file will be used by terraform to get information about the resources it needs to deploy. If you do not update these, terraform will use the already specified default values in the file.
 1. Move to the terraform directory in the terminal: ```Open_Data_QnA/infra```.
 1. There are 2 ways to deploy this application: 
     * **[One-click deployment](#step-1-one-click-deployment)** : Use this method when you want to do a single click deployment i.e execute terraform and shell scripts for frontend & backend services deployment all at once.
@@ -165,7 +165,7 @@ sh scripts/backend-deployment.sh --servicename <cloudrun_service_name> --project
 ```
 To deploy the frontent of the application, you need to execute the below command:
 ```
-sh scripts/frontend-deployment.sh --project <your_project_id>
+sh scripts/frontend-deployment.sh --project <your_project_id> --region <region>
 ```
 
 ## Step 2: Review your environment
@@ -193,13 +193,15 @@ This deployment creates all the resources described in the main [README.md](../R
         - **Column Embeddings table**: Created only when Bigquery is chosen as the vector db. This will contain all column meta data and its text embeddings.
         - **Example SQL table**: Created only when Bigquery is chosen as the vector db and marked kgq_examples='yes' in tfvars. This contains all the known good sqls and their respective text embeddings. You need to populate the [known_good_sql.csv](../scripts/known_good_sql.csv) before deployment. Terraform will take care of creation of embeddings in the destination.
 - **CloudSQL instance**: Created if cloudsql-pgvector is chosen as the vector store.
-- **pg-vector database**: Created if cloudsql-pgvector is chosen as the vector store. This database will store all text embeddings
-    - Tables:
-        - Table Metadata Embeddings table: Created only when cloudsql-pgvector is chosen as the vector db. This will contain all table meta data and its text embeddings.
-        - Column Embeddings table: Created only when cloudsql-pgvector is chosen as the vector db. This will contain all column meta data and its text embeddings.
-        - Example SQL table: Created only when cloudsql-pgvector is chosen as the vector db and marked kgq_examples='yes' in tfvars. This contains all the known good sqls and their respective text embeddings.
-    > [!NOTE]  
-    > The above mentioned tables are created via the python script [create-and-store-embeddings.py](scripts/create-and-store-embeddings.py)
+- **pg-vector database**: Created if cloudsql-pgvector is chosen as the vector store. This database will store all text embeddings.
+    - **Tables**:
+        - **Table Metadata Embeddings table**: Created only when cloudsql-pgvector is chosen as the vector db. This will contain all table meta data and its text embeddings.
+        - **Column Embeddings table**: Created only when cloudsql-pgvector is chosen as the vector db. This will contain all column meta data and its text embeddings.
+        - **Example SQL table**: Created only when cloudsql-pgvector is chosen as the vector db and marked kgq_examples='yes' in tfvars. This contains all the known good sqls and their respective text embeddings.
+> [!NOTE]  
+> The below mentioned tables are created via the python script [create-and-store-embeddings.py](scripts/create-and-store-embeddings.py)
+
+
 > [!IMPORTANT]  
 > If you have an existing CloudSQL instance that you want to use for storing vector embeddings, then update the variable - **use_existing_cloudsql_instance = "yes"**. Terraform will not create any new cloudsql instance, database or user name & password. It will be assumed that these resources already exist.
 - A backend service account for cloud run service with the required permissions
@@ -216,12 +218,12 @@ This deployment creates all the resources described in the main [README.md](../R
     * If you encounter this error, you can try replacing the above command with `export PATH="$PATH:$(python3 -m site --user-base)/bin"`. This command is specifically designed to return the path to the user-specific site-packages directory and add to PATH temporarily.
     * If the above step also fails, you will need to manually find the PATH where pipx is installed. Once you know the location, just replace `export PATH="$PATH:$(python3 -c "import sysconfig; print(sysconfig.get_paths()['scripts'])")"` inside [install-dependencies.sh](./scripts/install-dependencies.sh) with `export PATH="$PATH:/path/to/pipx/directory"`. Replace /path/to/pipx/directory with the actual path you found.
 
-1. `poetry: command not found` -
+1. `poetry: command not found`
     * This error will be caused by execution of [install-dependencies.sh](./scripts/install-dependencies.sh) file.
     * The error indicates that even though you've installed poetry, your shell isn't aware of its location. This usually means the directory where pipx is installed hasn't been added to your system's PATH environment variable.
     * Although we have ensured that poetry will automatically get added to PATH via commands `pipx ensurepath` and `source ~/.bashrc`, if the script still fails with this error, you need to find the path where poetry is installed manually and add to ~/.bashrc file and source it before re-running the script again. 
 
-1. Cloudsql connection failure 
+1. `aiohttp.client_exceptions.ClientConnectorCertificateError`
     * `aiohttp.client_exceptions.ClientConnectorCertificateError: Cannot connect to host sqladmin.googleapis.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]`
     * SSL/TLS and Certificates: Secure connections over the internet (HTTPS) rely on SSL/TLS protocols. These protocols use digital certificates to verify the identity of the server you're connecting to. Your system needs a set of trusted root certificates to validate these server certificates.
     * Missing Root Certificates: If your system lacks the necessary root certificates or they are outdated, it can't establish trust with the server, leading to the CERTIFICATE_VERIFY_FAILED error.
@@ -240,13 +242,8 @@ This deployment creates all the resources described in the main [README.md](../R
         
         3. Retry your code
 
-1. `Firebase project number not found`
-Error: Error creating WebApp: googleapi: Error 404: Firebase project 443017449062 not found.
-│ 
-│   with google_firebase_web_app.app_frontend,
-│   on frontend.tf line 24, in resource "google_firebase_web_app" "app_frontend":
-│   24: resource "google_firebase_web_app" "app_frontend" {
-
+1. `Firebase project not found`
+    * Error creating WebApp: googleapi: Error 404: Firebase project XXXXXXXXX not found.
     * This error is encountered when you fail to add firebase to your project before execution of the scripts.
     * Follow the instructions for [enabling firebase](#enable-firebase) under [pre-requisites](#prerequisites) section of the README
 
