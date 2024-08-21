@@ -17,8 +17,8 @@ const routes: Routes = [
   { path: 'business-mode', component: BusinessUserComponent },
   { path: 'operations-mode', component: OperationalUserComponent },
   { path: 'technical-mode', component: TechnicalUserComponent },
-   { path: 'dashboard', component: DashboardComponent },
-   { path: 'login', component: SigninComponent },
+  //  { path: 'dashboard', component: DashboardComponent },
+  //  { path: 'login', component: SigninComponent },
 
 ]
 

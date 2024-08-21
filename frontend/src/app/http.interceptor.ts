@@ -1,18 +1,34 @@
-import { Injectable } from "@angular/core";
+import { Injectable, inject } from "@angular/core";
 import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest, HttpResponse } from "@angular/common/http";
-import { Observable, tap } from "rxjs";
+import { Observable, Subscription, tap } from "rxjs";
 import { LoginService } from "./shared/services/login.service";
+import { Auth, User, user } from "@angular/fire/auth";
+import { Dialog } from "@angular/cdk/dialog";
 
 @Injectable()
 export class AppHttpInterceptor implements HttpInterceptor {
 
     userDetails: any;
     idToken!: string;
+    private auth: Auth = inject(Auth);
+    user$ = user(this.auth);
+    userSubscription: Subscription;
 
-    constructor(public loginService: LoginService) {
-        this.loginService.getUserDetails().subscribe((res: any) => { 
+
+    constructor(public loginService: LoginService, public dialog: Dialog) {
+        this.userSubscription = this.user$.subscribe((aUser: User | null) => {
+            //handle user state changes here. Note, that user will be null if there is no currently logged in user
+            if (aUser) {
+                this.dialog.closeAll();
+                console.log(aUser)
+                this.loginService.sendUserDetails(aUser)
+            }
+
+        })
+        this.loginService.getUserDetails().subscribe((res: any) => {
             console.log("Access Token", res.accessToken)
-            this.userDetails = res });
+            this.userDetails = res
+        });
         this.loginService.getIdToken().subscribe((res: string) => {
             this.idToken = res
         });

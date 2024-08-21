@@ -141,7 +141,7 @@
     cd Open_Data_QnA/frontend
     ```
     ```
-    gcloud builds submit . --config frontend.yaml --substitutions _FIREBASE_PROJECT_ID=$PROJECT_ID --project=$PROJECT_ID
+    gcloud builds submit . --config frontend.yaml --substitutions _FIREBASE_PROJECT_ID=three-p-o --project=three-p-o
 
     ```
     

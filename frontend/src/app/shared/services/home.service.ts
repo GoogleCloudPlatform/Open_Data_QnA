@@ -3,7 +3,7 @@ import { HttpHeaders, HttpClient, HttpErrorResponse } from '@angular/common/http
 import { catchError, throwError, BehaviorSubject } from 'rxjs';
 import { ENDPOINT_OPENDATAQNA } from '../../../assets/constants';
 import { Firestore, collection, collectionData, doc, docData, orderBy, query, updateDoc, where } from '@angular/fire/firestore';
-import {environment} from '../../../../environment'
+import { environment } from '../../../../environment'
 @Injectable({
   providedIn: 'root'
 })
@@ -89,7 +89,7 @@ export class HomeService {
 
   }
   private handleError(error: HttpErrorResponse) {
-    if (error.error instanceof ErrorEvent) {
+    if (error.error) {
       console.error('An error occurred:', error.error);
     } else {
     }

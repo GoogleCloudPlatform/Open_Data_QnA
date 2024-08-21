@@ -83,8 +83,8 @@ import { SigninComponent } from "./signin/signin.component";
     SavedQueriesComponent,
     AgentChatComponent,
     ScenarioListComponent,
-    DashboardComponent,
-SigninComponent
+//     DashboardComponent,
+// SigninComponent
   ],
   imports: [
     CommonModule,

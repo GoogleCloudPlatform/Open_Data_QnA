@@ -1,5 +1,5 @@
 export const environment = {
     production: false,
-    apiUrl: '/mp'
+    apiUrl: 'https://opendataqna-kdr33rftkq-uc.a.run.app'
   };
   
