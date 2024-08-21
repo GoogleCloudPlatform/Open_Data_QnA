@@ -47,7 +47,7 @@ export class UserJourneyComponent {
     userId: "User journey 1",
     userTitle: "Business User",
     userContent: [
-      "Natural language questions to the database.",
+      "This demo will help you to ask the questions in natural language, view the SQL, get results and visualize data",
     ]
   }];
 

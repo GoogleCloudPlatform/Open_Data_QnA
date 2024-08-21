@@ -11,19 +11,12 @@
     </div>
 
     <div class="list-group list-group-checkable d-grid gap-2 align-items-center justify-content-center">
-        <div class="demoBtn" *ngIf="!demoVideo">
-           <span class="videoContent"> Click OpenData QnA Demo button to view the demo </span>
+        <!-- <div class="demoBtn" *ngIf="!demoVideo">
+           <span class="videoContent"> For first time users  </span>
             <button class="user-journey-btn btn" (click)="onDemoVideoClick()">
-              OpenData QnA Demo
+              Watch the UI Walkthrough Video
             </button>
-        </div>
-        <div class="demoPage" *ngIf="demoVideo">
-            <video height="600" width="1000" controls>
-                <source src="assets/images/demo/ODQnA UI Walkthrough.mp4" type="video/mp4">
-                Your browser does not support the video tag.
-            </video>
-        </div>
-
+        </div> -->
         <div class="container gap-10 mt-3">
 
             <div *ngFor="let user of userJourneyList ; index as i; "
@@ -52,11 +45,22 @@
                                 <mat-spinner diameter="20"></mat-spinner>
                             </div>
                         </div>
+                        
                     </div>
 
                 </div>
             </div>
         </div>
+        
+        <div class="demoPage">
+            <h3 class="video-title">Watch the UI Walkthrough below</h3>
+            <video height="600" width="1000" controls>
+                <source src="assets/images/demo/ODQnA UI Walkthrough.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+
+       
         <!-- </div> -->
         <!-- </div> -->
     </div>
