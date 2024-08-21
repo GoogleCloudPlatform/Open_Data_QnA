@@ -1,5 +1,5 @@
 resource "google_sql_database_instance" "pg15_opendataqna" {
-  count = var.vector_store=="cloudsql-pgvector"? 1:0
+  count = var.vector_store=="cloudsql-pgvector" && var.use_existing_cloudsql_instance=="no"? 1:0
   name                = var.pg_instance
   project             = var.project_id
   region              = var.pg_region
@@ -17,8 +17,8 @@ resource "google_sql_database_instance" "pg15_opendataqna" {
     }
     ip_configuration {
       authorized_networks {
-        name  = "testnetwork"
-        value = "0.0.0.0/0"
+        name  = var.pg_network_name
+        value = var.pg_authorised_ip_range
       }
       ipv4_enabled = true
     }
@@ -28,7 +28,7 @@ resource "google_sql_database_instance" "pg15_opendataqna" {
 }
 
 resource "google_sql_database" "pg_db" {
-  count = var.vector_store=="cloudsql-pgvector"? 1:0
+  count = var.vector_store=="cloudsql-pgvector" && var.use_existing_cloudsql_instance=="no"? 1:0
   name            = var.pg_database
   project         = var.project_id
   instance        = google_sql_database_instance.pg15_opendataqna[count.index].name
@@ -36,7 +36,7 @@ resource "google_sql_database" "pg_db" {
 }
 
 resource "google_sql_user" "pguser" {
-  count = var.vector_store=="cloudsql-pgvector"? 1:0
+  count = var.vector_store=="cloudsql-pgvector" && var.use_existing_cloudsql_instance=="no"? 1:0
   name     = var.pg_user
   project  = var.project_id
   instance = google_sql_database_instance.pg15_opendataqna[count.index].name
@@ -44,23 +44,9 @@ resource "google_sql_user" "pguser" {
   depends_on = [
     google_sql_database_instance.pg15_opendataqna,
   ]
-
-  provisioner "local-exec" {
+  # provisioner "local-exec" {
     
-    working_dir = "${path.module}"
-    command = "sh ${path.module}/scripts/execute-sql.sh ${google_sql_database_instance.pg15_opendataqna[count.index].public_ip_address} 5432 ${google_sql_user.pguser[count.index].name} ${google_sql_user.pguser[count.index].password} ${google_sql_database.pg_db[count.index].name} ${path.module}/pg-schemas/pg-vector-create-tables.sql"
-  }
+  #   working_dir = "${path.module}"
+  #   command = "sh ${path.module}/scripts/execute-sql.sh ${google_sql_database_instance.pg15_opendataqna[count.index].public_ip_address} 5432 ${google_sql_user.pguser[count.index].name} ${google_sql_user.pguser[count.index].password} ${google_sql_database.pg_db[count.index].name} ${path.module}/pg-schemas/pg-vector-create-tables.sql"
+  # }
 }
-
-# resource "null_resource" "table_setup" {
-#   depends_on = [google_sql_database.pg_db]
-#   count = var.vector_store=="cloudsql-pgvector"? 1:0
-#   triggers = {
-#     always_run = "${timestamp()}"
-#   }
-#   provisioner "local-exec" {
-    
-#     working_dir = "${path.module}"
-#     command = "sh ${path.module}/scripts/execute-sql.sh ${google_sql_database_instance.pg15_opendataqna[count.index].public_ip_address} 5432 ${google_sql_user.pguser[count.index].name} ${google_sql_user.pguser[count.index].password} ${google_sql_database.pg_db[count.index].name} ${path.module}/pg-schemas/pg-vector-create-tables.sql"
-#   }
-# }

@@ -37,9 +37,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 main(){
-
+    pwd
     cd ../frontend
-
     gcloud builds submit . --config frontend.yaml --substitutions _FIREBASE_PROJECT_ID=$PROJECT_ID --project=$PROJECT_ID
 }
 

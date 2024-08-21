@@ -2,30 +2,34 @@ output "project_number" {
   value = data.google_project.project.number
 }
 
+output "project_id" {
+  value = var.project_id
+}
+
 output "instance_name" {
-  value       = var.vector_store == "cloudsql-pgvector" ? google_sql_database_instance.pg15_opendataqna[0].name : null
+  value       = var.vector_store=="cloudsql-pgvector" && var.use_existing_cloudsql_instance=="no" ? google_sql_database_instance.pg15_opendataqna[0].name : null
   description = "The instance name for the master instance"
 }
 
 output "public_ip_address" {
   description = "The first public (PRIMARY) IPv4 address assigned for the master instance"
-  value       = var.vector_store == "cloudsql-pgvector" ? google_sql_database_instance.pg15_opendataqna[0].public_ip_address : null
+  value       = var.vector_store=="cloudsql-pgvector" && var.use_existing_cloudsql_instance=="no" ? google_sql_database_instance.pg15_opendataqna[0].public_ip_address : null
 }
 
 output "postgres_db" {
   description = "database name"
-  value       = var.vector_store == "cloudsql-pgvector" ? google_sql_database.pg_db[0].name : null
+  value       = var.vector_store=="cloudsql-pgvector" && var.use_existing_cloudsql_instance=="no" ? google_sql_database.pg_db[0].name : null
 }
 
 output "sql_user" {
   description = "user name generated for the instance"
-  value       = var.vector_store == "cloudsql-pgvector" ? google_sql_user.pguser[0] : null
+  value       = var.vector_store=="cloudsql-pgvector" && var.use_existing_cloudsql_instance=="no" ? google_sql_user.pguser[0] : null
   sensitive = true
 }
 
 output "sql_user_password" {
   description = "user name generated for the instance"
-  value       = var.vector_store == "cloudsql-pgvector" ? google_sql_user.pguser[0].password : null
+  value       = var.vector_store=="cloudsql-pgvector" && var.use_existing_cloudsql_instance=="no" ? google_sql_user.pguser[0].password : null
   sensitive   = true
 }
 
@@ -70,4 +74,12 @@ output "firebase_measurementId" {
 
 output "hosting_url" {
   value = google_firebase_web_app.app_frontend.app_urls
+}
+
+output "service_account"{
+  value = module.genai_cloudrun_service_account.email
+}
+
+output "deploy_region" {
+  value = var.deploy_region
 }

@@ -60,6 +60,23 @@ variable "use_column_samples" {
   description = "yes, if you want to add some sample column values to the embeddings to enrich it with more information. No, otherwise"
 }
 
+variable "use_existing_cloudsql_instance" {
+  default = "no"
+  type    = string
+  description = "If you want to use an existing cloudsql instance to store the vector embeddings, then choose 'yes' else choose 'no'. Terraform will create a new cloudsql instance if 'no' is chosen."
+}
+
+variable "pg_network_name" {
+  default = "default"
+  type = string
+  description = "Name of the network with which you want to associate your cloudsql instance."
+}
+
+variable "pg_authorised_ip_range" {
+  default = "0.0.0.0/0"
+  type = string
+  description = "authorized IP ranges that are allowed to make a connection with cloudsql instance"
+}
 variable "pg_instance" {
   default     = "pg15-opendataqna"
   type        = string
