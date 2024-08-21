@@ -84,7 +84,6 @@ export class HomeComponent {
     }
     this.homeService.setSelectedDbGrouping("");
     this.organizationString = this.homeService.getAvailableDBList();
-    console.log(this.organizationString)
     if (this.organizationString !== null && this.organizationString !== undefined) {
       this.organisation = JSON.parse(this.organizationString);
       this.selectedGrouping = this.organisation[0].table_schema.split("-")
