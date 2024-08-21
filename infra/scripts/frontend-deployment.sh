@@ -1,7 +1,7 @@
 
 
 usage() {
-    echo "Usage: $0 --project <your_project_id>"
+    echo "Usage: $0 --project <your_project_id> --region <region>"
     exit 1  # Indicate an error
 }
 
@@ -17,7 +17,7 @@ validate_param() {
 }
 
 # Check if enough arguments are provided
-if [[ $# -lt 2 ]]; then  
+if [[ $# -lt 4 ]]; then  
     echo "Error: Insufficient arguments."
     usage
 fi
@@ -29,6 +29,11 @@ while [[ $# -gt 0 ]]; do
             PROJECT_ID=$2
             shift 2  # Move to the next parameter
             ;;
+        --region)
+            validate_param "$1" "$2"
+            REGION=$2
+            shift 2
+            ;;
         *)  
             echo "Error: Unknown parameter '$1'."
             usage
@@ -38,7 +43,14 @@ done
 
 main(){
     pwd
-    cd ../frontend
+    cd ../..
+    pwd
+    git clone https://github.com/GoogleCloudPlatform/cloud-builders-community.git
+    cd cloud-builders-community/firebase 
+    gcloud builds submit --region=$REGION . --project=$PROJECT_ID
+    cd ../..
+    rm -rf cloud-builders-community/
+    cd Open_Data_QnA/frontend
     gcloud builds submit . --config frontend.yaml --substitutions _FIREBASE_PROJECT_ID=$PROJECT_ID --project=$PROJECT_ID
 }
 
