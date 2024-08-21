@@ -52,7 +52,7 @@ done
 
 # Deploys backend to Cloud Run using the provided region and service account
 main(){
-
+    pwd
     cd ../backend-apis
 
     echo "Setting orgpolicy to allow all IAM domains"
@@ -62,7 +62,7 @@ main(){
     cd ../
     
     echo "Deploying cloud run service.."
-
+    pwd
     gcloud beta run deploy $SERVICE_NAME --region $DEPLOY_REGION --source . --service-account=$SERVICE_ACCOUNT --service-min-instances=1  --allow-unauthenticated --project=$PROJECT_ID 
 
     echo "Deleting the previously create dorg policy.."

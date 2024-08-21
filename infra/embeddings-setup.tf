@@ -51,7 +51,7 @@ resource "null_resource" "install_dependencies" {
 }
 
 resource "null_resource" "create_and_store_embeddings" {
-  depends_on = [local_file.config_ini, null_resource.install_dependencies,module.bigquery]
+  depends_on = [local_file.config_ini, null_resource.install_dependencies,module.bigquery, google_sql_database_instance.pg15_opendataqna[0]]
   triggers = {
     always_run = "${timestamp()}"
   }
