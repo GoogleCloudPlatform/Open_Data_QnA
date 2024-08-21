@@ -16,4 +16,4 @@ sh scripts/backend-deployment.sh --servicename $cloudrun_service_name --project 
 
 cd "$original_dir"
 
-sh scripts/frontend-deployment.sh --project $project_id
+sh scripts/frontend-deployment.sh --project $project_id --region $deploy_region
