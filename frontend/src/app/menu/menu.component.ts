@@ -38,7 +38,7 @@ export class MenuComponent {
   showUploadSection: boolean = false;
 
   constructor(public _router: Router, public homeService: HomeService, public chatService: ChatService, public loginService: LoginService) {
-    this.clickedMenuItem = 'Query';
+    this.clickedMenuItem = 'New Query';
   }
   ngOnInit() {
     this.loginService.getUserDetails().subscribe((res: any) => {

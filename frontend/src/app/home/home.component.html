@@ -32,11 +32,11 @@
         </mat-sidenav>
         <!-- <mat-sidenav-content [ngStyle]="checkStyle?{'background-color': '#FFF'} : {'background-color': '#F3F6FC'}"> -->
         <mat-sidenav-content style="background-color: #FFF; min-height: 100vh;">
-          <div *ngIf="checkSideNav === 'Query'" style="height:100%">
+          <!-- <div *ngIf="checkSideNav === 'Query'" style="height:100%">
             <app-business-user *ngIf="checkSideNav === 'Query'" (updateStyleEvent)="updateBackgroundStyle($event)"
               [checkSideNav]="checkSideNav" [selectedHistory]="selectedHistory"
               [selectedGrouping]="groupingsListCtrl.value"></app-business-user>
-          </div>
+          </div> -->
           <div *ngIf="checkSideNav === 'History'|| checkSideNav ==='New Query' || checkSideNav ==='Scenarios'"
             style="height:100%">
             <app-business-user (updateStyleEvent)="updateBackgroundStyle($event)" [checkSideNav]="checkSideNav"

@@ -17,14 +17,12 @@ export class HomeComponent {
   title = 'material-responsive-sidenav';
   isCollapsed = true;
   groupingsListCtrl = new FormControl<string>('');
-
   private _destroy$ = new Subject<void>();
   groupingsList: any;
   groupingString: any;
   checkStyle: boolean | undefined;
   userType: String | undefined;
-  color: ThemePalette = 'accent';
-  checkSideNav: string = 'Query';
+  checkSideNav: string = 'New Query';
   @ViewChild(MatSidenav)
   sidenav!: MatSidenav;
   isMobile = true;
@@ -45,17 +43,6 @@ export class HomeComponent {
     });
   }
 
-  links = ['Business Mode', 'Technical Mode', 'Operational Mode'];
-  activeLink = this.links[0];
-  background: ThemePalette = undefined;
-
-  toggleBackground() {
-    this.background = this.background ? undefined : 'primary';
-  }
-
-  addLink() {
-    this.links.push(`Link ${this.links.length + 1}`);
-  }
   async ngOnInit() {
     if (!this.photoURL) {
       this._router.navigate(['']);
