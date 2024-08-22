@@ -16,11 +16,11 @@ import { Subject, Subscription, take, takeUntil } from 'rxjs';
 export class HomeComponent {
   title = 'material-responsive-sidenav';
   isCollapsed = true;
-  organizationCtrl = new FormControl<string>('');
+  groupingsListCtrl = new FormControl<string>('');
 
   private _destroy$ = new Subject<void>();
-  organisation: any;
-  organizationString: any;
+  groupingsList: any;
+  groupingString: any;
   checkStyle: boolean | undefined;
   userType: String | undefined;
   color: ThemePalette = 'accent';
@@ -82,33 +82,32 @@ export class HomeComponent {
           }
         })
     }
+    this.groupingValAndKnownSql()
+  }
+  groupingValAndKnownSql() {
     this.homeService.setSelectedDbGrouping("");
-    this.organizationString = this.homeService.getAvailableDBList();
-    if (this.organizationString !== null && this.organizationString !== undefined) {
-      this.organisation = JSON.parse(this.organizationString);
-      this.selectedGrouping = this.organisation[0].table_schema.split("-")
-      if (this.selectedGrouping.length === 3) {
-        this.selectedGrouping[1] = this.selectedGrouping.slice(1).join("-"); // Merge elements from index 1 onwards
-      }
-      this.homeService.setselectedDbName(this.selectedGrouping[1])
-      this.homeService.currentSelectedGrouping.next('')
+    this.groupingString = this.homeService.getAvailableDBList();
+    if (this.groupingString !== null && this.groupingString !== undefined) {
+      this.groupingsList = JSON.parse(this.groupingString);
+      this.homeService.currentSelectedGrouping.next('');
       this.homeService.currentSelectedGroupingObservable.subscribe((res) => {
-        this.organizationCtrl.setValue(res);
-      })
-      this.homeService.sqlSuggestionList(this.selectedGrouping[0], this.selectedGrouping[1]).subscribe((data: any) => {
-        if (data && data.ResponseCode === 200) {
-          this.homeService.knownSqlFromDb.next(data.KnownSQL);
+        this.groupingsListCtrl.setValue(res);
+        if (!res) {
+          this.homeService.sqlSuggestionList("", "").subscribe((data: any) => {
+            if (data && data.ResponseCode === 200) {
+              this.homeService.knownSqlFromDb.next(data.KnownSQL);
+            }
+          })
         }
       })
     } else {
       this.homeService.getAvailableDatabases().subscribe((res: any) => {
         if (res && res.ResponseCode === 200) {
-          this.organisation = JSON.parse(res.KnownDB);
+          this.groupingsList = JSON.parse(res.KnownDB);
         }
       });
     }
   }
-
   changeDb(dbtype: any) {
     let selectedDbtype = dbtype.target.value.split("-");
     this.homeService.setSelectedDbGrouping(dbtype.target.value);

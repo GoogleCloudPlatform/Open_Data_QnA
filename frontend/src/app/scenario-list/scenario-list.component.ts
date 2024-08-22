@@ -109,8 +109,6 @@ export class ScenarioListComponent {
       this.chatService.createNewSession()
       this.chatService.addQuestion(question.name, this.userId, 'scenario')
       this.chatService.agentResponseLoader.next(true)
-     // this.chatService.setAgentResponseLoader(true)
-     // this.chatService.agentResponseLoader = true;
     }
     this.homeService.currentSelectedGroupingObservable.subscribe((res) => {
       this.selectedGrouping = res
