@@ -38,12 +38,9 @@ export class MenuComponent {
   showUploadSection: boolean = false;
 
   constructor(public _router: Router, public homeService: HomeService, public chatService: ChatService, public loginService: LoginService) {
-    this.clickedMenuItem = 'Query';
+    this.clickedMenuItem = 'New Query';
   }
   ngOnInit() {
-    // this.homeService.currentSelectedGroupingObservable.subscribe((res) => {
-    //   this.selectedGrouping = res
-    // })
     this.loginService.getUserDetails().subscribe((res: any) => {
       this.userId = res.uid;
     });
@@ -55,32 +52,34 @@ export class MenuComponent {
       if (changes.hasOwnProperty(propName)) {
         switch (propName) {
           case 'userSessions': {
-            //group user sessions based on session id
-            let grouped = this.userSessions?.reduce(
-              (result: any, currentValue: any) => {
-                (result[currentValue['session_id']] = result[currentValue['session_id']] || []).push(currentValue);
-                return result;
-              }, {});
-            //map the grouped user sessions as a chatThread , sort and display in side nav
-            let sessionToDisplayQuery: any = []
-            Object.keys(grouped).map(function (sessionId: string) {
-              let chatThreadArray: any[] = grouped[sessionId];
-              let obj = {
-                'sessionId': sessionId,
-                'question': chatThreadArray[chatThreadArray.length - 1].user_question,
-                'chatThread': chatThreadArray,
-                'timestamp': chatThreadArray[chatThreadArray.length - 1].timestamp.seconds
-              }
-              sessionToDisplayQuery.push(obj);
-            });
+            if (this.userSessions.length > 0) {
+              //group user sessions based on session id
+              let grouped = this.userSessions?.reduce(
+                (result: any, currentValue: any) => {
+                  (result[currentValue['session_id']] = result[currentValue['session_id']] || []).push(currentValue);
+                  return result;
+                }, {});
+              //map the grouped user sessions as a chatThread , sort and display in side nav
+              let sessionToDisplayQuery: any = []
+              Object.keys(grouped).map(function (sessionId: string) {
+                let chatThreadArray: any[] = grouped[sessionId];
+                let obj = {
+                  'sessionId': sessionId,
+                  'question': chatThreadArray[chatThreadArray.length - 1].user_question,
+                  'chatThread': chatThreadArray,
+                  'timestamp': chatThreadArray[chatThreadArray.length - 1].timestamp.seconds
+                }
+                sessionToDisplayQuery.push(obj);
+              });
 
-            sessionToDisplayQuery?.sort((a: any, b: any) => {
-              return b.chatThread[0].timestamp - a.chatThread[0].timestamp
-            });
-            this.userHistory = sessionToDisplayQuery;
-            this.recentHistory = this.userHistory.slice(0, 5);
-          }
+              sessionToDisplayQuery?.sort((a: any, b: any) => {
+                return b.chatThread[0].timestamp - a.chatThread[0].timestamp
+              });
+              this.userHistory = sessionToDisplayQuery;
+              this.recentHistory = this.userHistory.slice(0, 5);
+            }
             break;
+          }
         }
       }
     }
@@ -93,7 +92,9 @@ export class MenuComponent {
     this.selectedGrouping = this.homeService.getSelectedDbGrouping();
 
     if (this.clickedMenuItem == 'New Query') {
+
       this.chatService.createNewSession();
+      this.homeService.currentSelectedGrouping.next('')
       this.homeService.setSessionId('')
       this.child?.resetSelectedScenario()
     }
@@ -149,7 +150,7 @@ export class MenuComponent {
         let csv: any = reader.result;
         csv = csv.split('\n')
         for (let i = 0; i < csv.length; i++) {
-         csv[i] = csv[i].replace(/(\r\n|\n|\r)/gm,"");
+          csv[i] = csv[i].replace(/(\r\n|\n|\r)/gm, "");
           csv[i] = csv[i].split(',');
           if (i != 0) { // 0th element has the column header 
             csv[i] = this.arrToObject(csv[i], csv[0]);

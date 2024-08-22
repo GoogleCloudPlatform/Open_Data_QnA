@@ -11,12 +11,6 @@
     </div>
 
     <div class="list-group list-group-checkable d-grid gap-2 align-items-center justify-content-center">
-        <!-- <div class="demoBtn" *ngIf="!demoVideo">
-           <span class="videoContent"> For first time users  </span>
-            <button class="user-journey-btn btn" (click)="onDemoVideoClick()">
-              Watch the UI Walkthrough Video
-            </button>
-        </div> -->
         <div class="container gap-10 mt-3">
 
             <div *ngFor="let user of userJourneyList ; index as i; "
@@ -52,15 +46,11 @@
             </div>
         </div>
         
-        <div class="demoPage">
+        <div class="video-demo">
             <h3 class="video-title">Watch the UI Walkthrough below</h3>
             <video height="600" width="1000" controls>
                 <source src="assets/images/demo/ODQnA UI Walkthrough.mp4" type="video/mp4">
                 Your browser does not support the video tag.
             </video>
         </div>
-
-       
-        <!-- </div> -->
-        <!-- </div> -->
     </div>

@@ -79,8 +79,8 @@
         <input type="text" #followUpQuery [ngClass]="{'name-err' : setErrorCSS, 'name':!setErrorCSS}"
           class="form-control" id="name" placeholder="Type" formControlName="name" required
           (keydown.enter)="followUp(followUpQuery.value , $event)">
-        <img class="cursor-ref" src="assets/images/q-search-icon.svg" (click)="followUp(followUpQuery.value , $event)"
-          class="ml-2" alt="suggestion">
+        <img class="followUp ml-2" src="assets/images/q-search-icon.svg"
+          (click)="followUp(followUpQuery.value , $event)" alt="follow up query">
       </div>
     </form>
   </div>

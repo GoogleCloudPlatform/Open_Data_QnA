@@ -38,10 +38,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { ClipboardModule } from '@angular/cdk/clipboard';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { OperationalUserComponent } from './operational-user/operational-user.component';
 import { NgChartsModule } from 'ng2-charts';
-import { ReportsComponent } from './reports/reports.component';
-import { TechnicalUserComponent } from './technical-user/technical-user.component';
 import { AngularFireModule } from '@angular/fire/compat';
 import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
 import { AngularFireAuth, AngularFireAuthModule } from '@angular/fire/compat/auth';
@@ -50,17 +47,15 @@ import { PrismComponent } from "./prism/prism.component";
 import 'prismjs/components/prism-sql';
 import { MatPaginatorModule } from "@angular/material/paginator";
 import { OverlayModule } from "@angular/cdk/overlay";
-import { SavedQueriesComponent } from './saved-queries/saved-queries.component';
 import { GoogleChartsModule } from "angular-google-charts";
 import { MatRadioModule } from '@angular/material/radio';
 import { MatStepperModule } from '@angular/material/stepper';
 import { STEPPER_GLOBAL_OPTIONS } from "@angular/cdk/stepper";
 import { AgentChatComponent } from "./agent-chat/agent-chat.component";
 import { AppHttpInterceptor } from "./http.interceptor";
-import { firebaseConfig , FIRESTORE_DATABASE_ID} from "../assets/constants";
+import { firebaseConfig, FIRESTORE_DATABASE_ID } from "../assets/constants";
 import { MatTreeModule } from "@angular/material/tree";
 import { ScenarioListComponent } from "./scenario-list/scenario-list.component";
-import { DemoComponent } from "./demo/demo.component";
 
 @NgModule({
   declarations: [
@@ -68,19 +63,14 @@ import { DemoComponent } from "./demo/demo.component";
     LoginComponent,
     LoginButtonComponent,
     UserJourneyComponent,
+    UserPhotoComponent,
     HomeComponent,
     HeaderComponent,
     MenuComponent,
     BusinessUserComponent,
-    OperationalUserComponent,
-    ReportsComponent,
-    TechnicalUserComponent,
-    UserPhotoComponent,
     PrismComponent,
-    SavedQueriesComponent,
     AgentChatComponent,
-    ScenarioListComponent,
-    DemoComponent
+    ScenarioListComponent
   ],
   imports: [
     CommonModule,
@@ -141,7 +131,7 @@ import { DemoComponent } from "./demo/demo.component";
         const providedFirestore = initializeFirestore(app, {}, FIRESTORE_DATABASE_ID);
         return providedFirestore;
       }),
- 
+
       provideAuth(() => getAuth()),
       LoginService,
       SharedService,
