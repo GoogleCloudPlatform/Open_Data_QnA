@@ -1,6 +1,4 @@
 #!/bin/bash
-
-# Check if Poetry is already installed and on the PATH
 pwd
 
 pip3 install pipx

@@ -8,20 +8,20 @@ validate_param() {
     local param_name="$1"
     local param_value="$2"
 
-    if [[ -z "$param_value" ]]; then
+    if [ -z "$param_value" ]; then
         echo "Error: Parameter '$param_name' cannot be empty."
         usage  # Show usage and exit if the value is empty
     fi
 }
 
 # Check if enough arguments are provided
-if [[ $# -lt 8 ]]; then  
+if [ $# -lt 8 ]; then  
     echo "Error: Insufficient arguments."
     usage
 fi
 
 # Parse and validate named parameters
-while [[ $# -gt 0 ]]; do
+while [ $# -gt 0 ]; do
     case "$1" in
         --servicename)
             validate_param "$1" "$2"
