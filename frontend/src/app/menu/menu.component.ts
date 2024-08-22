@@ -93,6 +93,7 @@ export class MenuComponent {
     this.selectedGrouping = this.homeService.getSelectedDbGrouping();
 
     if (this.clickedMenuItem == 'New Query') {
+      this.homeService.currentSelectedGrouping.next('')
       this.chatService.createNewSession();
       this.homeService.setSessionId('')
       this.child?.resetSelectedScenario()

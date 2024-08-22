@@ -173,7 +173,7 @@
   margin-top: 5px;
 }
 
-.demoPage {
+.video-demo {
   font-size: 18px;
   font-family: 'Google Sans';
   display: flex;
@@ -184,19 +184,8 @@
   margin : 10px
 }
 
-.videoContent {
-  font-family: Google Sans;
-  font-size: 18px;
-  font-style: normal;
-  font-weight: 400;
-  line-height: 27px;
-  letter-spacing: 0.10000000149011612px;
-  text-align: left;
-  color: #FFFFFF;
-
-}
-
 .video-title {
+  font-family: "Google Sans";
   text-align: center;
   margin-bottom: 10px; /* Add a margin to separate the title from the video */
   color: white; 

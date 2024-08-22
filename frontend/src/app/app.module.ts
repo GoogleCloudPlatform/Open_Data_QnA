@@ -60,7 +60,6 @@ import { AppHttpInterceptor } from "./http.interceptor";
 import { firebaseConfig , FIRESTORE_DATABASE_ID} from "../assets/constants";
 import { MatTreeModule } from "@angular/material/tree";
 import { ScenarioListComponent } from "./scenario-list/scenario-list.component";
-import { DemoComponent } from "./demo/demo.component";
 
 @NgModule({
   declarations: [
@@ -79,8 +78,7 @@ import { DemoComponent } from "./demo/demo.component";
     PrismComponent,
     SavedQueriesComponent,
     AgentChatComponent,
-    ScenarioListComponent,
-    DemoComponent
+    ScenarioListComponent
   ],
   imports: [
     CommonModule,

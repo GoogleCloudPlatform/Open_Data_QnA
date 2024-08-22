@@ -95,15 +95,12 @@ export class BusinessUserComponent {
   loadInitialChat() {
     this.chatService.chatSessionObservable.pipe(takeUntil(this._destroy$)).subscribe((res) => {
       this.chatMsgs = res.chatMsgs
-      console.log("chatMsgs", this.chatMsgs)
       this.dataSet = this.homeService.getSelectedDbGrouping();
       this.dataSetName = this.homeService.getselectedDbName();
       this.sub = this.chatService.agentResponseLoader$.pipe(takeUntil(this._destroy$)).subscribe((res) => {
         this.resultLoader = res
-        console.log("resultLoader", this.resultLoader)
       })
       this.sessionId = this.homeService.getSessionId()
-      console.log("sess", this.sessionId)
     })
   }
   followUp(query: any, event?: any) {
@@ -126,7 +123,7 @@ export class BusinessUserComponent {
       });
 
       dialogRef.afterClosed().subscribe(result => {
-        console.log(`Dialog result`);
+        
       });
 
     }
