@@ -44,9 +44,4 @@ resource "google_sql_user" "pguser" {
   depends_on = [
     google_sql_database_instance.pg15_opendataqna,
   ]
-  # provisioner "local-exec" {
-    
-  #   working_dir = "${path.module}"
-  #   command = "sh ${path.module}/scripts/execute-sql.sh ${google_sql_database_instance.pg15_opendataqna[count.index].public_ip_address} 5432 ${google_sql_user.pguser[count.index].name} ${google_sql_user.pguser[count.index].password} ${google_sql_database.pg_db[count.index].name} ${path.module}/pg-schemas/pg-vector-create-tables.sql"
-  # }
 }

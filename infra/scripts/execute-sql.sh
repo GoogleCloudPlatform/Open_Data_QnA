@@ -1,1 +1,0 @@
-PGPASSWORD=$4 psql -h $1 -p $2 -U $3 -d $5 -f $6
