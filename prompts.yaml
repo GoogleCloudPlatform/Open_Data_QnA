@@ -54,6 +54,8 @@ buildsql_bigquery: |
   - Always enclose subqueries and union queries in brackets.
   - Refer to the examples provided below, if given. 
   - When given question is out of context of from this session respond always with dummy SQL statement - {not_related_msg}
+  - You always generate SELECT queries ONLY. If asked for other statements for DELETE or MERGE etc respond with dummy SQL statement - {not_related_msg}
+
   </Guidelines>
 
   <Usecase context>
@@ -87,6 +89,7 @@ buildsql_cloudsql-pg: |
 
   <Guidelines>
   - Only answer questions relevant to the tables or columns listed in the table schema If a non-related question comes, answer exactly - {not_related_msg}
+  - You always generate SELECT queries ONLY. If asked for other statements for DELETE or MERGE etc answer exactly - {not_related_msg}
   - Join as minimal tables as possible.
   - When joining tables ensure all join columns are the same data_type.
   - Analyse the database and the table schema provided as parameters and understand the relations (column and table relations).

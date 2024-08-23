@@ -142,3 +142,13 @@ ul,
   transform: rotate(90deg);
 }
 
+.scenariosInfoBtn {
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  height: 24px;
+}
+
+.uploadScenarioBtn{
+  position: absolute; bottom:20px; width: 100%;
+}

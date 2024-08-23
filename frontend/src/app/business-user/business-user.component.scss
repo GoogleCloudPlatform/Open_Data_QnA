@@ -186,7 +186,7 @@ mat-cell,
   border-radius: 10px;
 }
 
-.cursor-ref {
+.followUp {
   cursor: pointer;
   flex: 0 1 8em;
 }
@@ -560,7 +560,7 @@ li.received p {
   border-radius: 11.5px;
   border: 1px solid #B6CEFF;
   background: #DBE7FF;
-  max-width : 500px;
+  max-width: 500px;
   text-align: left;
 }
 
@@ -892,10 +892,12 @@ li.sent .caption_span {
     fill: rgb(66, 133, 244);
   }
 }
+
 .svg-elem-1 {
   -webkit-animation: animate-svg-stroke-1 2s ease 0.8s both, animate-svg-fill-1 2s ease 0.8s both;
   animation: animate-svg-stroke-1 2s ease 0.8s both, animate-svg-fill-1 2s ease 0.8s both;
 }
+
 .svg-elem-3 {
   -webkit-animation: animate-svg-stroke-3 2s ease 2.8s both, animate-svg-fill-3 2s ease 2.8s both;
   animation: animate-svg-stroke-3 2s ease 2.8s both, animate-svg-fill-3 2s ease 2.8s both;

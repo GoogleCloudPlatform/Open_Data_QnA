@@ -48,7 +48,6 @@ export class LoginComponent {
 
 
   showLogIn(): void {
-    console.log("this.photoURL", this.photoURL)
     const dialogRef = this.dialog.open(LoginButtonComponent, {
       disableClose: true,
       width: '350px',

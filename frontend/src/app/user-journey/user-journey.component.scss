@@ -1,7 +1,7 @@
 .list-css {
   background-image: radial-gradient(grey, black);
   min-width: 100%;
-  min-height: 100%
+  min-height: 100%;
 }
 
 .search {
@@ -140,7 +140,7 @@
 }
 
 .list-group {
-  margin-top: 140px;
+  margin-top: 100px;
 }
 
 .demoBtn {
@@ -171,4 +171,22 @@
 .loading-spinner {
   margin-left: 25px;
   margin-top: 5px;
+}
+
+.video-demo {
+  font-size: 18px;
+  font-family: 'Google Sans';
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap : 20px;
+  margin : 10px
+}
+
+.video-title {
+  font-family: "Google Sans";
+  text-align: center;
+  margin-bottom: 10px; /* Add a margin to separate the title from the video */
+  color: white; 
 }

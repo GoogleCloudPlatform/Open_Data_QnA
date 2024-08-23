@@ -203,6 +203,7 @@ async def generate_sql(session_id,
         process_step='Not Started'
         error_msg=''
         corrected_sql = ''
+        DATA_SOURCE = 'Yet to determine'
 
         DATA_SOURCE,src_invalid = get_source_type(user_grouping)
 
@@ -274,7 +275,7 @@ async def generate_sql(session_id,
                 
                 if 'unrelated_answer' in generated_sql :
                     invalid_response=True
-                    final_sql="This is an unrelated question for this dataset"
+                    final_sql="This is an unrelated question or you are not asking a valid query"
 
                 # If agent assessment is valid, proceed with checks  
                 else:
@@ -295,7 +296,7 @@ async def generate_sql(session_id,
                 AUDIT_TEXT = AUDIT_TEXT + "\nNo tables have been found in the Vector DB. The question cannot be answered with the provide data source!"
 
         # print(f'\n\n AUDIT_TEXT: \n {AUDIT_TEXT}')
-    
+
         if LOGGING: 
             bqconnector.make_audit_entry(DATA_SOURCE, user_grouping, SQLBuilder_model, user_question, final_sql, found_in_vector, "", process_step, error_msg,AUDIT_TEXT)  
 
@@ -304,8 +305,11 @@ async def generate_sql(session_id,
         error_msg=str(e)
         final_sql="Error generating the SQL Please check the logs. "+str(e)
         invalid_response=True
-        AUDIT_TEXT="Exception at SQL generation"
-    
+        AUDIT_TEXT=AUDIT_TEXT+ "\nException at SQL generation"
+        print("Error :: "+str(error_msg))
+        if LOGGING: 
+            bqconnector.make_audit_entry(DATA_SOURCE, user_grouping, SQLBuilder_model, user_question, final_sql, found_in_vector, "", process_step, error_msg,AUDIT_TEXT)  
+
     if not invalid_response:
         firestoreconnector.log_chat(session_id,user_question,final_sql,user_id)
         print("Session history persisted")  

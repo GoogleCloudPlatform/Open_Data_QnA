@@ -11,9 +11,9 @@
 
     <form>
       <select class="form-control-sm mr-10" name="selectAction" (change)="changeDb($event)"
-        [formControl]="organizationCtrl" style="cursor: pointer;background: #FFF;">
+        [formControl]="groupingsListCtrl" style="cursor: pointer;background: #FFF;">
         <option value="">Select Grouping</option>
-        <option *ngFor="let op of organisation" [value]="op.table_schema">
+        <option *ngFor="let op of groupingsList" [value]="op.table_schema">
           {{op.table_schema}}
         </option>
       </select>
@@ -32,16 +32,16 @@
         </mat-sidenav>
         <!-- <mat-sidenav-content [ngStyle]="checkStyle?{'background-color': '#FFF'} : {'background-color': '#F3F6FC'}"> -->
         <mat-sidenav-content style="background-color: #FFF; min-height: 100vh;">
-          <div *ngIf="checkSideNav === 'Query'" style="height:100%">
+          <!-- <div *ngIf="checkSideNav === 'Query'" style="height:100%">
             <app-business-user *ngIf="checkSideNav === 'Query'" (updateStyleEvent)="updateBackgroundStyle($event)"
               [checkSideNav]="checkSideNav" [selectedHistory]="selectedHistory"
-              [selectedGrouping]="organizationCtrl.value"></app-business-user>
-          </div>
+              [selectedGrouping]="groupingsListCtrl.value"></app-business-user>
+          </div> -->
           <div *ngIf="checkSideNav === 'History'|| checkSideNav ==='New Query' || checkSideNav ==='Scenarios'"
             style="height:100%">
             <app-business-user (updateStyleEvent)="updateBackgroundStyle($event)" [checkSideNav]="checkSideNav"
               [selectedHistory]="selectedHistory" [userSessions]="userSessions"
-              [selectedGrouping]="organizationCtrl.value" [selectedScenario]="selectedScenario"></app-business-user>
+              [selectedGrouping]="groupingsListCtrl.value" [selectedScenario]="selectedScenario"></app-business-user>
           </div>
           <router-outlet></router-outlet>
         </mat-sidenav-content>

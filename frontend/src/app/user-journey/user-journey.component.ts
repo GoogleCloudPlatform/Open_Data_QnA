@@ -18,6 +18,7 @@ export class UserJourneyComponent {
   color: ThemePalette = 'accent';
   loginError = false;
   loginErrorMessage: any;
+  demoVideo = false;
   constructor(public _router: Router, public loginService: LoginService, public homeService: HomeService) {
     this.subscription = this.loginService.getUserDetails().subscribe(message => {
       this.photoURL = message?.photoURL;
@@ -25,6 +26,10 @@ export class UserJourneyComponent {
         this._router.navigate(['']);
       }
     });
+  }
+
+  onDemoVideoClick(){
+    this.demoVideo = true;
   }
   ngOnInit() {
 
@@ -42,7 +47,7 @@ export class UserJourneyComponent {
     userId: "User journey 1",
     userTitle: "Business User",
     userContent: [
-      "Natural language questions to the database.",
+      "This demo will help you to ask the questions in natural language, view the SQL, get results and visualize data",
     ]
   }];
 

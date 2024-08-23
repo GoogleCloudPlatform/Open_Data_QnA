@@ -11,33 +11,6 @@
     </div>
 
     <div class="list-group list-group-checkable d-grid gap-2 align-items-center justify-content-center">
-        <!-- <div class= "container"> -->
-        <div class="d-flex gap-2 w-100 ">
-            <p class="left-text">
-                How to use this functional solution demo
-            </p>
-            <span class="right-text">
-                This demo consists of user journeys that are powered by Google Cloud products.
-                <br> User journeys consist of:
-                <ul class="mt-2">
-                    <li>
-                        <span class="mb-0 content">Architecture diagram</span>
-                    </li>
-                    <li>
-                        <span class="mb-0 content"> Natural language to SQL conversion model powered by Google Cloud
-                            products.</span>
-                    </li>
-                </ul>
-                <!-- <mat-radio-group   aria-label="Select Database Type :" [color]="color"  (change)="radioChange($event)">
-                <mat-radio-button value="Postgress" [checked]="true">Postgress</mat-radio-button>
-                <mat-radio-button value="BigQuery"> BigQuery</mat-radio-button>
-                <mat-radio-button value="Oracle"> Oracle</mat-radio-button>
-
-              </mat-radio-group> -->
-
-            </span>
-        </div>
-
         <div class="container gap-10 mt-3">
 
             <div *ngFor="let user of userJourneyList ; index as i; "
@@ -66,11 +39,18 @@
                                 <mat-spinner diameter="20"></mat-spinner>
                             </div>
                         </div>
+                        
                     </div>
 
                 </div>
             </div>
         </div>
-        <!-- </div> -->
-        <!-- </div> -->
+        
+        <div class="video-demo">
+            <h3 class="video-title">Watch the UI Walkthrough below</h3>
+            <video height="600" width="1000" controls>
+                <source src="assets/images/demo/ODQnA UI Walkthrough.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
     </div>

@@ -64,15 +64,15 @@ async def store_schema_embeddings(table_details_embeddings,
             for index, row in table_details_embeddings.iterrows():
                 await conn.execute(
                     f"""
-                    DELETE FROM table_details_embeddings
-                    WHERE
-                    user_grouping = '{row["user_grouping"]}'
-                    and
-                    table_name = '{row["table_name"]}';
-                    """
-                )
-                await conn.execute(
-                    "INSERT INTO table_details_embeddings (source_type,user_grouping, table_schema, table_name, content, embedding) VALUES ($1, $2, $3, $4, $5, $6)",
+                    MERGE INTO table_details_embeddings AS target
+                    USING (SELECT $1::text AS source_type, $2::text AS user_grouping, $3::text AS table_schema, $4::text AS table_name, $5::text AS content, $6::vector AS embedding) AS source
+                    ON target.user_grouping = source.user_grouping AND target.table_name = source.table_name
+                    WHEN MATCHED THEN 
+                        UPDATE SET source_type = source.source_type, table_schema = source.table_schema, content = source.content, embedding = source.embedding
+                    WHEN NOT MATCHED THEN
+                        INSERT (source_type, user_grouping, table_schema, table_name, content, embedding) 
+                        VALUES (source.source_type, source.user_grouping, source.table_schema, source.table_name, source.content, source.embedding);
+                    """,
                     row["source_type"],
                     row["user_grouping"],
                     row["table_schema"],
@@ -98,16 +98,18 @@ async def store_schema_embeddings(table_details_embeddings,
             for index, row in tablecolumn_details_embeddings.iterrows():
                 await conn.execute(
                     f"""
-                    DELETE FROM tablecolumn_details_embeddings
-                    WHERE user_grouping = '{row["user_grouping"]}'
-                    and
-                    table_name = '{row["table_name"]}'
-                    and 
-                    column_name = '{row["column_name"]}';
-                    """
-                )
-                await conn.execute(
-                    "INSERT INTO tablecolumn_details_embeddings (source_type,user_grouping,table_schema, table_name, column_name, content, embedding) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+                    MERGE INTO tablecolumn_details_embeddings AS target
+                    USING (SELECT $1::text AS source_type, $2::text AS user_grouping, $3::text AS table_schema, 
+                                $4::text AS table_name, $5::text AS column_name, $6::text AS content, $7::vector AS embedding) AS source
+                    ON target.user_grouping = source.user_grouping 
+                    AND target.table_name = source.table_name 
+                    AND target.column_name = source.column_name
+                    WHEN MATCHED THEN 
+                        UPDATE SET source_type = source.source_type, table_schema = source.table_schema, content = source.content, embedding = source.embedding
+                    WHEN NOT MATCHED THEN
+                        INSERT (source_type, user_grouping, table_schema, table_name, column_name, content, embedding) 
+                        VALUES (source.source_type, source.user_grouping, source.table_schema, source.table_name, source.column_name, source.content, source.embedding);
+                    """,
                     row["source_type"],
                     row["user_grouping"],
                     row["table_schema"],
@@ -139,10 +141,16 @@ async def store_schema_embeddings(table_details_embeddings,
         client.query_and_wait(f'''CREATE TABLE IF NOT EXISTS `{project_id}.{schema}.table_details_embeddings` (
             source_type string NOT NULL, user_grouping string NOT NULL, table_schema string NOT NULL, table_name string NOT NULL, content string, embedding ARRAY<FLOAT64>)''')
         #job_config = bigquery.LoadJobConfig(write_disposition="WRITE_TRUNCATE")
-        for _, row in table_details_embeddings.iterrows():
-            client.query_and_wait(f'''DELETE FROM `{project_id}.{schema}.table_details_embeddings`
-                    WHERE user_grouping= '{row["user_grouping"]}' and table_name= '{row["table_name"]}' '''
-                        )
+
+        delete_conditions = table_details_embeddings[['user_grouping', 'table_name']].apply(tuple, axis=1).tolist()
+        where_clause = " OR ".join([f"(user_grouping = '{cond[0]}' AND table_name = '{cond[1]}')" for cond in delete_conditions])
+
+        delete_query = f"""
+        DELETE FROM `{project_id}.{schema}.table_details_embeddings`
+        WHERE {where_clause}
+        """
+        client.query_and_wait(delete_query)
+        
         client.load_table_from_dataframe(table_details_embeddings,f'{project_id}.{schema}.table_details_embeddings')
 
 
@@ -151,10 +159,16 @@ async def store_schema_embeddings(table_details_embeddings,
             source_type string NOT NULL,user_grouping string NOT NULL, table_schema string NOT NULL, table_name string NOT NULL, column_name string NOT NULL,
             content string, embedding ARRAY<FLOAT64>)''')
         #job_config = bigquery.LoadJobConfig(write_disposition="WRITE_TRUNCATE")
-        for _, row in tablecolumn_details_embeddings.iterrows():
-            client.query_and_wait(f'''DELETE FROM `{project_id}.{schema}.tablecolumn_details_embeddings`
-                    WHERE user_grouping= '{row["user_grouping"]}' and table_name= '{row["table_name"]}' and column_name= '{row["column_name"]}' '''
-                        )
+
+        delete_conditions = tablecolumn_details_embeddings[['user_grouping', 'table_name', 'column_name']].apply(tuple, axis=1).tolist()
+        where_clause = " OR ".join([f"(user_grouping = '{cond[0]}' AND table_name = '{cond[1]}' AND column_name = '{cond[2]}')" for cond in delete_conditions])
+
+        delete_query = f"""
+            DELETE FROM `{project_id}.{schema}.tablecolumn_details_embeddings`
+            WHERE {where_clause}
+            """
+        client.query_and_wait(delete_query)
+
         client.load_table_from_dataframe(tablecolumn_details_embeddings,f'{project_id}.{schema}.tablecolumn_details_embeddings')
 
         client.query_and_wait(f'''CREATE TABLE IF NOT EXISTS `{project_id}.{schema}.example_prompt_sql_embeddings` (
@@ -165,6 +179,7 @@ async def store_schema_embeddings(table_details_embeddings,
     return "Embeddings are stored successfully"
 
 async def add_sql_embedding(user_question, generated_sql, database):
+        
         
         emb=embedder.create(user_question)
 
