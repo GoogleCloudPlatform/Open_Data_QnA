@@ -76,12 +76,18 @@ class DebugSQLAgent(Agent, ABC):
         super().__init__(model_id=model_id) 
 
 
-    def init_chat(self,source_type,user_grouping, tables_schema,columns_schema,similar_sql="-No examples provided..-"):
+    def init_chat(self,source_type, user_grouping, tables_schema,columns_schema,similar_sql="-No examples provided..-"):
 
         usecase_context = PROMPTS[f'usecase_{source_type}_{user_grouping}']
         context_prompt = PROMPTS[f'debugsql_{source_type}']
 
-        context_prompt = format_prompt(context_prompt,
+        if source_type == 'bird': 
+              context_prompt = format_prompt(context_prompt,
+                                       similar_sql=similar_sql, 
+                                       columns_schema = columns_schema)      
+
+        else:
+            context_prompt = format_prompt(context_prompt,
                                        usecase_context = usecase_context,
                                        similar_sql=similar_sql, 
                                        tables_schema=tables_schema, 
@@ -108,9 +114,14 @@ class DebugSQLAgent(Agent, ABC):
 
             Guidelines:
             * Ensure all selected columns exist in the tables used in the JOIN clauses.
+            * If you see an error indicating that a table or column doesn't exist, change these tables and columns according to what is retrieved in the schema. 
             * Avoid repeating previous suggestions.
             * The new query must still address the original question.
             * Strive for clarity and conciseness in the SQL.
+            * If the error says "Incomplete Input", finish the SQL Input provided or generate a new one to answer the user question. 
+            
+            !IMPORTANT: IF THE ERROR SAYS "NO SUCH COLUMN", DO NOT USE THIS COLUMN! 
+
 
             <Original SQL>
             {sql}

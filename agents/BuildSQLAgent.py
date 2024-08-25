@@ -41,8 +41,8 @@ class BuildSQLAgent(Agent, ABC):
             context_prompt = format_prompt(context_prompt,
                                         evidence = evidence, 
                                         similar_sql=similar_sql, 
-                                        tables_schema=tables_schema, 
-                                        columns_schema = columns_schema)
+                                        columns_schema = columns_schema,
+                                        user_question = user_question)
             
         else: 
             context_prompt = format_prompt(context_prompt,
@@ -91,46 +91,54 @@ class BuildSQLAgent(Agent, ABC):
             )
             with telemetry.tool_context_manager('opendataqna-buildsql-v2'):
                 chat_session = self.model.start_chat(history=chat_history,response_validation=False)
-                chat_session.send_message(context_prompt)
+                response = chat_session.send_message(context_prompt)
         else:
             raise ValueError('Invalid Model Specified')
         
 
-        if session_history is None or not session_history:
-            concated_questions = None
-            re_written_qe = None
-            previous_question = None
-            previous_sql = None
+        if source_type == 'bird':
+            generated_sql = (str(response.text)).replace("```sql", "").replace("```", "")
+            return generated_sql, context_prompt
+
+
 
         else:
-            concated_questions,re_written_qe=self.rewrite_question(user_question,session_history)
-            previous_question, previous_sql = self.get_last_sql(session_history)
+
+            if session_history is None or not session_history:
+                concated_questions = None
+                re_written_qe = None
+                previous_question = None
+                previous_sql = None
+
+            else:
+                concated_questions,re_written_qe=self.rewrite_question(user_question,session_history)
+                previous_question, previous_sql = self.get_last_sql(session_history)
 
 
-        build_context_prompt=f"""
+            build_context_prompt=f"""
 
-        Below is the previous user question from this conversation and its generated sql. 
+            Below is the previous user question from this conversation and its generated sql. 
 
-        Previous Question:  {previous_question} 
+            Previous Question:  {previous_question} 
 
-        Previous Generated SQL : {previous_sql}
+            Previous Generated SQL : {previous_sql}
 
-        Respond with 
+            Respond with 
 
-        Generate SQL for User Question : {user_question}
+            Generate SQL for User Question : {user_question}
 
-        """
+            """
 
-        # print("BUILD CONTEXT ::: "+str(build_context_prompt))
+            # print("BUILD CONTEXT ::: "+str(build_context_prompt))
 
-        with telemetry.tool_context_manager('opendataqna-buildsql-v2'):
+            with telemetry.tool_context_manager('opendataqna-buildsql-v2'):
 
-            response = chat_session.send_message(build_context_prompt, stream=False)
+                response = chat_session.send_message(build_context_prompt, stream=False)
+                generated_sql = (str(response.text)).replace("```sql", "").replace("```", "")
+
             generated_sql = (str(response.text)).replace("```sql", "").replace("```", "")
-
-        generated_sql = (str(response.text)).replace("```sql", "").replace("```", "")
-        # print(generated_sql)
-        return generated_sql, context_prompt
+            # print(generated_sql)
+            return generated_sql, context_prompt
     
 
 

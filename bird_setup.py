@@ -65,7 +65,7 @@ def get_sample_values(db_path, table_name, column_name, num_samples=5):
 
     query = f"""
         SELECT `{column_name}` 
-        FROM {table_name}
+        FROM `{table_name}`
         WHERE `{column_name}` IS NOT NULL
         GROUP BY `{column_name}`
         ORDER BY COUNT(*) DESC
@@ -124,7 +124,10 @@ except google.api_core.exceptions.NotFound:
 base_dir = 'eval/dev/dev_databases/'
 
 # List of datasets to process
-datasets = ['california_schools']
+# datasets = ['european_football_2','formula_1','thrombosis_prediction']
+
+# Had to skip 'formula_1' because the database does not contain the column 'wins' in table 'constructors', though it is asked against
+datasets = ['student_club']
 
 for dataset in datasets:
     print(f"Processing dataset: {dataset}")
@@ -147,64 +150,76 @@ for dataset in datasets:
 
     # Loop over the tables in the dataset 
     for filename in os.listdir(database_dir):
-        if os.path.isfile(os.path.join(database_dir, filename)):
-            table_name, _ = os.path.splitext(filename)  # Split filename and extension
- 
-            # Read the csv for the table 
-            df = pd.read_csv(os.path.join(database_dir, filename))
+        
+        if "csv" in str(filename):
 
-            print("Loaded csv for table: ", table_name)
+            if os.path.isfile(os.path.join(database_dir, filename)):
+                table_name, _ = os.path.splitext(filename)  # Split filename and extension
+    
+                # Read the csv for the table 
+                try: 
+                    df = pd.read_csv(os.path.join(database_dir, filename))
 
-            # Concatenate the two description fields for embedding creation 
-            df['concatenated_description'] = df['column_description'].astype(str) + ' ' + df['value_description'].astype(str)
-            df['concatenated_description'] = df['concatenated_description'].astype(str).str.replace('nan', '', regex=False)
-
-            
-            embeddings = list() 
-
-            # Embed the concatenated description field 
-            for element in df['concatenated_description']: 
-                embedding = embedder.create(element)
-                embeddings.append(embedding)
-
-            # df['description_embeddings'] = embeddings
-
-            # Create original ODQnA descriptions for comparison 
-            column_details_chunked = []
-
-            for index, row in df.iterrows():
-
-                column_name = str(row['original_column_name'])
-                column_name = column_name.strip() 
-                column_descr = str(row['concatenated_description'])
-                data_type = str(row['data_format'])
-
-                print("Grabbing sample values.")
-                top5_sample_values = get_sample_values(db_dir, table_name, column_name)
-
-                column_detailed_description=f"""
-                Column Name: {column_name} |
-                Table Name : {table_name} |
-                Data type: {data_type} |
-                Column description: {column_descr} |
-                Column sample values: {top5_sample_values}
-                """
-
-
-                r = {"table_schema": dataset,"table_name": table_name,"column_name": column_name, "description": column_descr, "content": column_detailed_description}
-                column_details_chunked.append(r)
-
-            print("Creating embeddings.")
-            column_details_embeddings = get_embedding_chunked(column_details_chunked, 10)
-
-            column_details_embeddings['description_embeddings'] = embeddings
-
-
-            print("done")
-            
-            # Load Dataframe to BQ Vector Store 
-            client.load_table_from_dataframe(column_details_embeddings,f'{PROJECT_ID}.{schema}.{dataset}')
+                except: 
+                    try:
+                        df = pd.read_csv(os.path.join(database_dir, filename), encoding='latin-1')
+                    except: 
+                        print("An error occured. The CSV format could not be read.")
 
 
 
+                print("Loaded csv for table: ", table_name)
+
+                # Concatenate the two description fields for embedding creation 
+                df['concatenated_description'] = df['column_description'].astype(str) + ' ' + df['value_description'].astype(str)
+                df['concatenated_description'] = df['concatenated_description'].astype(str).str.replace('nan', '', regex=False)
+
+                
+                embeddings = list() 
+
+                # Embed the concatenated description field 
+                for element in df['concatenated_description']: 
+                    embedding = embedder.create(element)
+                    embeddings.append(embedding)
+
+                # df['description_embeddings'] = embeddings
+
+                # Create original ODQnA descriptions for comparison 
+                column_details_chunked = []
+
+                for index, row in df.iterrows():
+
+                    column_name = str(row['original_column_name'])
+                    column_name = column_name.strip() 
+                    column_descr = str(row['concatenated_description'])
+                    data_type = str(row['data_format'])
+
+                    print("Grabbing sample values.")
+                    top5_sample_values = get_sample_values(db_dir, table_name, column_name)
+
+                    column_detailed_description=f"""
+                    Column Name: {column_name} |
+                    Table Name : {table_name} |
+                    Data type: {data_type} |
+                    Column description: {column_descr} |
+                    Column sample values: {top5_sample_values}
+                    """
+
+
+                    r = {"table_schema": dataset,"table_name": table_name,"column_name": column_name, "description": column_descr, "content": column_detailed_description}
+                    column_details_chunked.append(r)
+
+                print("Creating embeddings.")
+                column_details_embeddings = get_embedding_chunked(column_details_chunked, 10)
+
+                column_details_embeddings['description_embeddings'] = embeddings
+
+
+                
+                # Load Dataframe to BQ Vector Store 
+                client.load_table_from_dataframe(column_details_embeddings,f'{PROJECT_ID}.{schema}.{dataset}')
+
+
+
+    print("done")
 

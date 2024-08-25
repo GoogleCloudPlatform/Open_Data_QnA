@@ -23,25 +23,13 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 from dbconnectors import bqconnector, pgconnector
 from agents import DebugSQLAgent
-
+from bird_kgq_context import retrieve_kgq_examples
 
 from utilities import PROJECT_ID
 import sqlite3
 import json
 from agents import EmbedderAgent, BuildSQLAgent, DebugSQLAgent, ValidateSQLAgent, ResponseAgent,VisualizeAgent
 
-
-
-Embedder_model='vertex'
-SQLBuilder_model= 'gemini-1.5-pro'
-num_column_matches = 100 
-num_example_matches = 10 
-example_similarity_threshold = 0.8 
-column_similarity_threshold = 0.1
-user_grouping = ''
-temp = 0
-top_p = 0.1
-top_k = 30  
 
 
 
@@ -128,7 +116,7 @@ def generate_sql(user_question,
 
 
     try:
-        opendataqna_dataset = 'ODQnA_Bird_Eval'
+        opendataqna_dataset = 'ODQnA_Eval'
         DATA_SOURCE = 'bird'
 
 
@@ -145,75 +133,61 @@ def generate_sql(user_question,
         embedded_question = embedder.create(user_question)
 
 
-        # Look for exact matches in known questions IF kgq is enabled 
         if EXAMPLES: 
-            exact_sql_history = bqconnector.getExactMatches(user_question) 
+            similar_sql = retrieve_kgq_examples(dataset)
 
-        else: exact_sql_history = None 
+        else: similar_sql = "No similar SQLs provided..."
 
-        # If exact user query has been found, retrieve the SQL and skip Generation Pipeline 
-        if exact_sql_history is not None:
-            final_sql = exact_sql_history
-            print("\nExact match has been found! Going to retreive the SQL query from cache and serve!") 
+        print("\n\nGet Table and Column Schema: ")
+
+        # Retrieve matching tables and columns
+        column_matches =  retrieve_matches(PROJECT_ID, dataset, opendataqna_dataset, 'column', embedded_question, column_similarity_threshold, num_column_matches)
+        column_matches = column_matches[0]
+
+        print("\nRetrieved Similar Known Good Queries, Table Schema and Column Schema: \n" + '\n\nRetrieved Columns: \n' + str(column_matches) + '\n\nRetrieved Known Good Queries: \n' + str(similar_sql))
+        
+        
+        # If similar table and column schemas found: 
+        if len(column_matches.replace('Column name(type):','').replace(' ','')) > 0 :
+
+            # GENERATE SQL
+            print("\n\nBuild SQL: ")
+            generated_sql, context_prompt = SQLBuilder.build_sql(DATA_SOURCE,evidence, user_grouping,user_question, None,"",column_matches,similar_sql,temperature=temp, top_p=top_p, top_k=top_k)
+            final_sql=generated_sql
+            final_sql = final_sql.split("SELECT ")[1]
+            final_sql = "SELECT " + final_sql
+
+            final_sql = final_sql.split("</FINAL_ANSWER>")[0]
+
+            print("\nGenerated SQL : " + str(final_sql))
+            
+            # if 'unrelated_answer' in generated_sql :
+            #     invalid_response=True
+            #     final_sql="This is an unrelated question for this dataset"
+
+            # # If agent assessment is valid, proceed with checks  
+            # else:
+            #     invalid_response=False
+
+            #     if RUN_DEBUGGER: 
+            #         generated_sql, invalid_response, AUDIT_TEXT = SQLDebugger.start_debugger(DATA_SOURCE,evidence, user_grouping, generated_sql, user_question, SQLChecker, '', column_matches, '', similar_sql, DEBUGGING_ROUNDS, LLM_VALIDATION) 
+
+            #     final_sql=generated_sql
 
 
+        # No matching table found 
         else:
-            # No exact match found. Proceed looking for similar entries in db IF kgq is enabled 
-            if EXAMPLES: 
-                print("\nNo exact match found in query cache, retreiving revelant schema and known good queries for few shot examples using similarity search....")
-                print("\n\nGet Similar Match: ")
-                
-                match_result= retrieve_matches(PROJECT_ID, dataset, opendataqna_dataset, 'example', embedded_question, example_similarity_threshold, num_example_matches)
-                match_result = match_result[0]
-
-            else: similar_sql = "No similar SQLs provided..."
-
-            print("\n\nGet Table and Column Schema: ")
-
-            # Retrieve matching tables and columns
-            column_matches =  retrieve_matches(PROJECT_ID, dataset, opendataqna_dataset, 'column', embedded_question, column_similarity_threshold, num_column_matches)
-            column_matches = column_matches[0]
-
-            print("\nRetrieved Similar Known Good Queries, Table Schema and Column Schema: \n" + '\n\nRetrieved Columns: \n' + str(column_matches) + '\n\nRetrieved Known Good Queries: \n' + str(similar_sql))
-            
-            
-            # If similar table and column schemas found: 
-            if len(column_matches.replace('Column name(type):','').replace(' ','')) > 0 :
-
-                # GENERATE SQL
-                print("\n\nBuild SQL: ")
-                generated_sql, context_prompt = SQLBuilder.build_sql(DATA_SOURCE,evidence, user_grouping,user_question, None,"",column_matches,similar_sql,temperature=temp, top_p=top_p, top_k=top_k)
-                final_sql=generated_sql
-                print("\nGenerated SQL : " + str(generated_sql))
-                
-                # if 'unrelated_answer' in generated_sql :
-                #     invalid_response=True
-                #     final_sql="This is an unrelated question for this dataset"
-
-                # # If agent assessment is valid, proceed with checks  
-                # else:
-                #     invalid_response=False
-
-                #     if RUN_DEBUGGER: 
-                #         generated_sql, invalid_response, AUDIT_TEXT = SQLDebugger.start_debugger(DATA_SOURCE,evidence, user_grouping, generated_sql, user_question, SQLChecker, '', column_matches, '', similar_sql, DEBUGGING_ROUNDS, LLM_VALIDATION) 
-
-                #     final_sql=generated_sql
-
-
-            # No matching table found 
-            else:
-                invalid_response=True
-                print('No columns found in Vector ...')
+            invalid_response=True
+            print('No columns found in Vector ...')
 
 
     except Exception as e:
         final_sql="Error generating the SQL Please check the logs. "+str(e)
         invalid_response=True
+        print("An Error occurred: ", e)
     
 
     return final_sql, column_matches, context_prompt
-
-
 
 
 
@@ -274,10 +248,9 @@ def compare_results(df1, df2):
 
 
 
-def evaluate_for_db(bird_data, db_id):
+def evaluate_for_db(bird_data, db_id, SQLDebugger, loops, use_examples):
     """Evaluates SQL queries in BIRD benchmark for a given database ID."""
     results = []
-    loops = 3
     i = 0 
 
     # Embedder_model='vertex'
@@ -292,8 +265,6 @@ def evaluate_for_db(bird_data, db_id):
     # top_k = 32  
 
 
-
-    SQLDebugger = DebugSQLAgent('gemini-1.5-pro')
 
     base_dir = 'eval/dev/dev_databases/'
     database_dir = os.path.join(base_dir, db_id, db_id+'.sqlite')
@@ -323,8 +294,7 @@ def evaluate_for_db(bird_data, db_id):
                 "final_sql_valid": None,
                 "execution_accuracy": None,      # Placeholder for accuracy
                 "error_msg": None, 
-                "debugged_sql": None, 
-                "prompt": None
+                "debugged_sql": None
             }
 
             question = example["question"]
@@ -355,10 +325,12 @@ def evaluate_for_db(bird_data, db_id):
                                                 temp = temp, 
                                                 top_p = top_p,
                                                 top_k = top_k,  
-                                                EXAMPLES = False)
+                                                EXAMPLES = use_examples)
                 
                 result_entry["generated_sql"] = final_sql
-                result_entry["prompt"] = context_prompt
+
+
+                # result_entry["prompt"] = context_prompt
 
                 odqna_result = execute_sql_on_sqlite(database_dir, final_sql)
 
@@ -375,6 +347,11 @@ def evaluate_for_db(bird_data, db_id):
                     result_entry["ran_debugger"] = True 
                     result_entry["debugging_rounds"] = debug_runs 
                     odqna_result = SQLDebugger.rewrite_sql_chat(evidence, chat_session, final_sql, question, odqna_result)
+
+                    odqna_result = odqna_result.split("SELECT ")[1]
+                    odqna_result = "SELECT " + odqna_result
+
+                    odqna_result = odqna_result.split("</FINAL_ANSWER>")[0]
 
                     print(odqna_result)
                     result_entry["debugged_sql"] = odqna_result
@@ -441,23 +418,85 @@ def evaluate_for_db(bird_data, db_id):
 
 
 
-# Load the BIRD benchmark data
-with open("eval/dev/dev.json", "r") as f:
-    bird_data = json.load(f)
+### CONFIGS 
+Embedder_model='vertex'
+# models = ['gemini-1.5-pro', 'gemini-1.5-flash']
+models = ['gemini-1.5-pro']
 
-dataset = 'california_schools'  # Change to your desired DB
-
-evaluation_results = evaluate_for_db(bird_data, dataset)
-
-# Save results to CSV
-
-run = f'{SQLBuilder_model}_{num_column_matches}_{column_similarity_threshold}_{temp}_{top_p}_{top_k}_contentEmbeddings'
+# SQLBuilder_model= 'gemini-1.5-pro'
+# SQLDebugger = DebugSQLAgent('gemini-1.5-pro')
 
 
-csv_file_path = f"eval/results/{run}.csv"
-df = pd.DataFrame(evaluation_results)
+num_column_matches = 500
+num_example_matches = 10 
+example_similarity_threshold = 0 
+column_similarity_threshold = 0
+user_grouping = ''
 
-if os.path.isfile(csv_file_path):
-    df.to_csv(csv_file_path, mode="a", header=False, index=False)
-else:
-    df.to_csv(csv_file_path, index=False)
+temp = 0.5
+top_p = 0.3
+top_k = 10  
+
+loops = 3
+
+use_examples = True 
+
+# settings = {
+#     "topP1": {
+#         "top_p": 0.3, 
+#         "top_k": 30
+#     },
+#     "topP2": {
+#         "top_p": 0.6, 
+#         "top_k": 30
+#     },
+#     "topP3": {
+#         "top_p": 0.9, 
+#         "top_k": 30
+#     },
+#     "topK1": {
+#         "top_p": 0.1, 
+#         "top_k": 1
+#     },
+#     "topK2": {
+#         "top_p": 0.1, 
+#         "top_k": 10
+#     },
+#     "topK3": {
+#         "top_p": 0.1, 
+#         "top_k": 60
+#     }
+# }
+
+# for setting in settings: 
+#     top_p = settings[setting]["top_p"]
+#     top_k = settings[setting]["top_k"]  
+
+for model in models: 
+    SQLBuilder_model= model
+    SQLDebugger = DebugSQLAgent(model)
+
+    # Load the BIRD benchmark data
+    with open("eval/dev/dev.json", "r") as f:
+        bird_data = json.load(f)
+
+    datasets = ['california_schools','card_games', 'codebase_community', 'debit_card_specializing', 'financial', 'superhero', 'toxicology', 'european_football_2', 'formula_1', 'thrombosis_prediction', 'student_club']  
+    # datasets = ['superhero', 'student_club']
+
+    for dataset in datasets:
+        evaluation_results = evaluate_for_db(bird_data, dataset, SQLDebugger, loops, use_examples)
+
+        # Save results to CSV
+
+        run = f'FINAL_{dataset}_{SQLBuilder_model}_{num_column_matches}_{column_similarity_threshold}_{temp}_{top_p}_{top_k}_contentEmbeddings'
+
+
+        csv_file_path = f"eval/results/{run}.csv"
+        df = pd.DataFrame(evaluation_results)
+
+        if os.path.isfile(csv_file_path):
+            df.to_csv(csv_file_path, mode="a", header=False, index=False)
+        else:
+            df.to_csv(csv_file_path, index=False)
+
+        print(f"Finished eval for {dataset}")
