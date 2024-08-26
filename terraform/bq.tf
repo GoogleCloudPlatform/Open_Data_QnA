@@ -23,6 +23,5 @@ module "bigquery" {
   location                    = var.bq_dataset_region
   default_table_expiration_ms = null
 
-  tables     = local.bq_tables
   depends_on = [module.project_services]
 }
