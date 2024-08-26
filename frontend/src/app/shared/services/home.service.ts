@@ -42,6 +42,7 @@ export class HomeService {
 
     return this.http.get(ENDPOINT_OPENDATAQNA + '/available_databases', requestOptions).pipe(catchError(this.handleError))
   }
+
   sqlSuggestionList(grouping: any, dbtype: any) {
 
     const header = {
@@ -61,9 +62,7 @@ export class HomeService {
       .pipe(catchError(this.handleError));
 
   }
-  returnEndpointURL() {
-    return ENDPOINT_OPENDATAQNA;
-  }
+  
   generateSql(userQuestion: any, grouping: any, session_id: any, user_id: any) {
 
     const header = {
@@ -83,8 +82,8 @@ export class HomeService {
 
     return this.http.post(endpoint + "/generate_sql", body, requestOptions)
       .pipe(catchError(this.handleError));
-
   }
+
   private handleError(error: HttpErrorResponse) {
     if (error.error instanceof ErrorEvent) {
       console.error('An error occurred:', error.error);
@@ -93,6 +92,7 @@ export class HomeService {
     return throwError(
       'Something bad happened; please try again later.');
   }
+  
   setAvailableDBList(databaseList: string) {
     this.databaseList = databaseList;
   }

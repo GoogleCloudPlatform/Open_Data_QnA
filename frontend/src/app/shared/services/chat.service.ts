@@ -32,11 +32,9 @@ export class ChatService {
   chatSessionObservable = this.currentActiveSession.asObservable();
   public agentResponseLoader = new BehaviorSubject<boolean>(false);
   agentResponseLoader$ = this.agentResponseLoader.asObservable();
-
   private _destroy$ = new Subject<void>();
   private currentSessionId: string = '';
   private suggestionList: [] = [];
-  //public agentResponseLoader!: boolean;
   selectedGrouping!: string;
 
   constructor(public homeService: HomeService) {
@@ -68,7 +66,6 @@ export class ChatService {
     if (desiredSession) {
       desiredSession.chatMsgs.push(message);
       if (message.author == 'agent') {
-       // this.agentResponseLoader = false
        this.agentResponseLoader.next(false)
       }
       this.currentActiveSession.next(desiredSession);
@@ -100,11 +97,8 @@ export class ChatService {
 
   generate_sql(question: string, userId: string) {
     this.currentSessionId = this.homeService.getSessionId()
-    //this.agentResponseLoader = true;
     this.agentResponseLoader.next(true)
     this.homeService.generateSql(question, this.homeService.getSelectedDbGrouping(), this.currentSessionId, userId).subscribe((response: any) => {
-      //  this.homeService.generateSql(question, this.selectedGrouping, this.currentSessionId, userId).subscribe((response: any) => {
-
       if (response !== undefined) {
         this.homeService.setSessionId(response.SessionID)
         this.currentSessionId = response.SessionID;
@@ -136,20 +130,6 @@ export class ChatService {
       }
       this.homeService.setSessionId(selectedHistory[i]?.session_id)
       this.addToSessionThread(newAgentMsg);
-      // this.sessionId = this.homeService.getSessionId()
     }
-  }
-
-  updateSuggestions() {
-    let selectedDbtype = this.selectedGrouping?.split("-");
-    this.homeService.setSelectedDbGrouping(this.selectedGrouping);
-    this.homeService.setSessionId('');
-    this.homeService.setselectedDbName(selectedDbtype[1])
-    // this.homeService.currentSelectedGrouping.next(this.selectedGrouping)
-    this.homeService.sqlSuggestionList(this.selectedGrouping, selectedDbtype[1]).subscribe((data: any) => {
-      if (data && data.ResponseCode === 200) {
-        this.homeService.knownSqlFromDb.next(data.KnownSQL);
-      }
-    })
   }
 }

@@ -12,7 +12,6 @@ export class SharedService {
   userData: any;
   private auth: Auth = inject(Auth);
 
-
   constructor(private fs: Firestore, public loginservice: LoginService,
     private afAuth: AngularFireAuth
   ) { }
