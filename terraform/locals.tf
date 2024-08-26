@@ -33,32 +33,4 @@ locals {
     "firestore.googleapis.com"
   ]
 
-  # tables = [
-  #   {
-  #     name   = var.bq_log_table,
-  #     schema = "${path.module}/bq-schemas/audit_log_table.json"
-  #   },
-  #   {
-  #     name   = "table_details_embeddings",
-  #     schema = "${path.module}/bq-schemas/table_details_embeddings.json"
-  #   },
-  #   {
-  #     name   = "tablecolumn_details_embeddings",
-  #     schema = "${path.module}/bq-schemas/tablecolumn_details_embeddings.json"
-  #   },
-  #   {
-  #     name   = "example_prompt_sql_embeddings",
-  #     schema = "${path.module}/bq-schemas/example_prompt_sql_embeddings.json"
-  #   }
-  # ]
-
-  # bq_tables = [for t in local.tables : {
-  #   table_id           = t.name,
-  #   schema             = file(t.schema),
-  #   time_partitioning  = null,
-  #   range_partitioning = null,
-  #   expiration_time    = null,
-  #   clustering         = [],
-  #   labels             = {},
-  # } if var.vector_store=="bigquery-vector" || t.name == var.bq_log_table]  
 }

@@ -1,4 +1,4 @@
-project_id = "testproject-340909"
+project_id = "projectv1-340909"
 vector_store = "cloudsql-pgvector"
 embedding_model = "vertex"
 description_model = "gemini-1.5-pro"
