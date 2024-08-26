@@ -30,7 +30,6 @@ export class LoginService {
     this.idToken.next(token);
   }
 
-
   sendUserDetails(message: any) {
     this.userDetails.next(message);
   }

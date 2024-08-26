@@ -33,7 +33,7 @@ export class MenuComponent {
   selectedGrouping: string = '';
   csvData: any;
   @ViewChild(ScenarioListComponent)
-  child!: ScenarioListComponent;
+  childComponent!: ScenarioListComponent;
   userId: any;
   showUploadSection: boolean = false;
 
@@ -92,17 +92,15 @@ export class MenuComponent {
     this.selectedGrouping = this.homeService.getSelectedDbGrouping();
 
     if (this.clickedMenuItem == 'New Query') {
-
       this.chatService.createNewSession();
       this.homeService.currentSelectedGrouping.next('')
       this.homeService.setSessionId('')
-      this.child?.resetSelectedScenario()
+      this.childComponent?.resetSelectedScenario()
     }
     this.selectedTab.emit(this.clickedMenuItem);
   }
   onClickHistory(chatThread: any) {
-    this.child?.resetSelectedScenario()
-
+    this.childComponent?.resetSelectedScenario()
     this.selectedGrouping = this.homeService.getSelectedDbGrouping();
     if (this.selectedGrouping) {
       this.homeService.updateChatMsgs(chatThread)
@@ -110,8 +108,6 @@ export class MenuComponent {
       this.homeService.setSessionId(chatThread[0].session_id)
       this.homeService.updateSelectedHistory(chatThread)
       this.chatService.addQuestion(chatThread[chatThread?.length - 1]?.user_question, this.userId, 'history', chatThread)
-      // this.sessionId = this.homeService.getSessionId()
-
       this.selectedHistory.emit(chatThread);
     } else {
       this.openDialog();
@@ -119,12 +115,10 @@ export class MenuComponent {
   }
 
   openDialog() {
-    this.panelOpenState = signal(false);
     let dialogRef = this.dialog.open(GroupingModalComponent, {
       disableClose: true,
       width: '450px',
     });
-
     dialogRef.afterClosed().subscribe(result => {
     });
   }
@@ -137,7 +131,6 @@ export class MenuComponent {
 
     dialogRef.afterClosed().subscribe(result => {
       this.showUploadSection = result
-      console.log(`Dialog result: ${result}`);
     });
 
   }
@@ -156,7 +149,6 @@ export class MenuComponent {
             csv[i] = this.arrToObject(csv[i], csv[0]);
           }
         }
-        this.panelOpenState = signal(false)
         this.csvData = csv.slice(1);
       }
     }
