@@ -15,13 +15,6 @@ resource "google_sql_database_instance" "pg15_opendataqna" {
       password_change_interval    = "30s"
       enable_password_policy      = true
     }
-    # ip_configuration {
-    #   authorized_networks {
-    #     name  = var.pg_network_name
-    #     value = var.pg_authorised_ip_range
-    #   }
-    #   ipv4_enabled = true
-    # }
   }
   deletion_protection = false
   depends_on = [ module.project_services ]

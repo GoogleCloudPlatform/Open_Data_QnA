@@ -39,7 +39,6 @@ resource "local_file" "config_ini" {
 }
 
 resource "null_resource" "install_dependencies" {
-  # depends_on = [local_file.config_ini]
   triggers = {
     always_run = "${timestamp()}"
   }
