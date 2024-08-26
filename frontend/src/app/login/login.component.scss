@@ -39,23 +39,6 @@
     color: #6750A4;
 }
 
-.welcome {
-    padding-left: 75px;
-    margin-top: 1.5em;
-    color: #FFFFFF;
-    height: 40px;
-    left: 159px;
-    top: 213px;
-
-    font-family: 'Google Sans';
-    font-style: normal;
-    font-weight: 400;
-    font-size: 40px;
-    line-height: 40px;
-    display: flex;
-    align-items: center;
-    letter-spacing: 0.5px;
-}
 
 .login-page-background {
     background-image: radial-gradient(grey, black) !important;
@@ -63,7 +46,7 @@
     min-height: 100%
 }
 
-.csm {
+.title {
     /* Customer Service Modernization */
     padding-left: 75px;
     color: #FFFFFF;

@@ -1,9 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { LoginService } from './login.service';
-import { Firestore } from '@angular/fire/firestore';
 import { GoogleAuthProvider, signInWithPopup } from '@firebase/auth';
 import { Auth } from '@angular/fire/auth';
-import { AngularFireAuth } from '@angular/fire/compat/auth';
 
 @Injectable({
   providedIn: 'root'
@@ -12,10 +10,7 @@ export class SharedService {
   userData: any;
   private auth: Auth = inject(Auth);
 
-  constructor(private fs: Firestore, public loginservice: LoginService,
-    private afAuth: AngularFireAuth
-  ) { }
-
+  constructor(public loginservice: LoginService) { }
 
   async googleSignin() {
     const provider = new GoogleAuthProvider();
@@ -28,8 +23,6 @@ export class SharedService {
       }).
       catch((error) => {
         if (error.message.indexOf('Cloud Function') === 15) {
-          // console.log(error.message.indexOf('Cloud Function'))
-          // console.log(error.message)
           const jsonStart = error.message.indexOf('{');
           const jsonEnd = error.message.lastIndexOf('}');
           const jsonString = error.message.substring(jsonStart, jsonEnd + 1);

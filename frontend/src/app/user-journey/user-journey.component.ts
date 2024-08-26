@@ -1,24 +1,29 @@
-import { Component } from '@angular/core';
+import { AfterViewInit, Component } from '@angular/core';
 import { LoginService } from '../shared/services/login.service';
 import { Subscription } from 'rxjs';
 import { Router } from '@angular/router';
 import { HomeService } from '../shared/services/home.service';
-import { ThemePalette } from '@angular/material/core';
 
 @Component({
   selector: 'app-user-journey',
-  // standalone: true,
   templateUrl: './user-journey.component.html',
   styleUrl: './user-journey.component.scss'
 })
-export class UserJourneyComponent {
+export class UserJourneyComponent implements AfterViewInit  {
   photoURL: string | undefined;
   subscription: Subscription | undefined;
   showProgress: boolean = false
-  color: ThemePalette = 'accent';
   loginError = false;
   loginErrorMessage: any;
   demoVideo = false;
+  userJourneyList: any = [{
+    userId: "User journey 1",
+    userTitle: "Business User",
+    userContent: [
+      "This demo will help you to ask the questions in natural language, view the SQL, get results and visualize data",
+    ]
+  }];
+
   constructor(public _router: Router, public loginService: LoginService, public homeService: HomeService) {
     this.subscription = this.loginService.getUserDetails().subscribe(message => {
       this.photoURL = message?.photoURL;
@@ -40,16 +45,11 @@ export class UserJourneyComponent {
     //     this._router.navigate(['']);
     //   }
     // });
-
   }
 
-  userJourneyList: any = [{
-    userId: "User journey 1",
-    userTitle: "Business User",
-    userContent: [
-      "This demo will help you to ask the questions in natural language, view the SQL, get results and visualize data",
-    ]
-  }];
+  ngAfterViewInit(){
+    window.scroll(0, 0);
+  }
 
   async navigateToHome(userTitle: String) {
 

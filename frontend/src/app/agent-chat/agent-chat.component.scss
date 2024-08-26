@@ -68,18 +68,11 @@
       color: #575757;
   }
 
-  .spinner_loading-preview-table {
-      left: 50%;
-      margin-left: -4em;
-      position: absolute;
-      margin-top: 75px;
-  }
-
   .mat-tab-body-content {
       overflow: hidden !important
   }
 
-  .spinner_loading-result-table {
+  .spinner-loading-result-table {
       margin: 10px;
   }
 
@@ -99,17 +92,6 @@
       font-weight: 600;
       text-align: center;
       margin-bottom: 50px;
-  }
-
-  .voice-ref {
-      position: absolute;
-      right: 15%;
-      transform: translateY(49%);
-      pointer-events: none;
-      color: #3a4247;
-      flex: 1 1 30em;
-      /* 20em * 16px = 320px */
-
   }
 
   .container-fluid {
@@ -138,10 +120,6 @@
       font-weight: 500;
       line-height: 20px;
       letter-spacing: -0.154px;
-  }
-
-  ._color {
-      color: #525252;
   }
 
   .datasource-prep {
@@ -261,6 +239,7 @@
       border: 1px solid #cdc8c8;
       padding-bottom: 20px;
       padding-top: 20px;
+      margin-bottom: 15px;
   }
 
   .example-list {
@@ -329,35 +308,6 @@
 
   .g-container {
       position: relative;
-  }
-
-  fieldset {
-      border: 10px solid transparent;
-      border-top-color: #000;
-  }
-
-  legend {
-      padding: 0 10px;
-  }
-
-  fieldset:nth-of-type(1) {
-      transform: rotate(180deg);
-  }
-
-  fieldset:nth-of-type(1)>legend {
-      transform: rotate(180deg);
-  }
-
-  fieldset:nth-of-type(1)>div>label {
-      transform: rotate(180deg);
-  }
-
-  fieldset:nth-of-type(1)>div>mat-icon {
-      transform: rotate(180deg);
-  }
-
-  fieldset:nth-of-type(1)>div>div {
-      transform: rotate(180deg);
   }
 
   //-----chat------\\
@@ -463,6 +413,6 @@
       --mat-tab-animation-duration: 500ms;
   }
 
-  mat-expansion-panel{
-    box-shadow: none !important;
+  mat-expansion-panel {
+      box-shadow: none !important;
   }

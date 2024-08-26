@@ -2,9 +2,6 @@
   <div *ngIf="isSuggestions" class="summarize-results">
     <div class="insight-results-err text-danger" *ngIf="setErrorCSS"> Access restricted: you dont have sufficient
       permissions to access this data source</div>
-    <!-- <div *ngIf="showProgressPreviewBar" class="spinner_loading-preview-table">
-      <mat-spinner [diameter]="70"></mat-spinner>
-    </div> -->
   </div>
 
   <div class="chat-body">
@@ -21,23 +18,20 @@
                 <span class='promptTitle'>Prompt Suggestion</span>
               </div>
               <p *ngFor="let res of msg.message?.slice(0, 10); let ind = index" style="margin-bottom: 0;">
-                <a href="javascript:void(0);" style="border-radius: 11.5px;background: #D3E3FD;"
-                  (click)="suggestionResult(res)">
+                <a href="javascript:void(0);" class="suggestion-ref" (click)="suggestionResult(res)">
                   {{res.example_user_question}}</a>
               </p>
             </div>
           </div>
           <ng-template #linkTemplate>
-            <!-- (chatMsgsEvent)="recieveUpdatedChatMsgs($event)" -->
             <app-agent-chat [example_user_question]="generatedSql.example_user_question" [ind]="ind"
               [suggestionList]="suggestionList" [sessionId]="sessionId">
             </app-agent-chat>
-
           </ng-template>
+
           <div *ngIf="resultLoader && ind == chatMsgs.length-1"
             style="background: transparent; margin-left: 20px;width:600px">
-            <span style="margin-top: 8px;
-            position: absolute; left: 20px;">
+            <span style="margin-top: 8px;position: absolute; left: 20px;">
               <svg width="49" height="27" viewBox="0 0 49 27" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <g id="Group 1739327752">
                   <circle id="Ellipse 6309" cx="4.5" cy="22.5" r="4.5" fill="#4285F4" class="svg-elem-1"></circle>

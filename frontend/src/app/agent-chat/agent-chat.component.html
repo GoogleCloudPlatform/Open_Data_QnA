@@ -51,7 +51,7 @@
             </mat-tab>
             <mat-tab label="Result">
                 <div class="result-content mt-4 d-flex flex-column justify-content-center align-items-center">
-                    <div *ngIf="resultLoader" class="spinner_loading-result-table">
+                    <div *ngIf="resultLoader" class="spinner-loading-result-table">
                         <mat-spinner diameter="20"></mat-spinner>
                     </div>
                     <div *ngIf="msg.run_query" style="width:90%">
@@ -59,8 +59,9 @@
                     </div>
                     <div *ngIf="!resultLoader" style="max-width: 90%;word-break: break-word;">
                         <mat-expansion-panel (opened)="panelOpenState.set(true)" (closed)="panelOpenState.set(false)"
-                            disableRipple *ngIf="msg.dataSource && msg.displayedColumns && msg.run_query.ResponseCode === 200">
-                            <mat-expansion-panel-header>
+                            disableRipple
+                            *ngIf="msg.dataSource && msg.displayedColumns && msg.run_query.ResponseCode === 200">
+                            <mat-expansion-panel-header style="background: #F3F6FC;padding : 0 24px">
                                 <mat-panel-title><span>Table View</span></mat-panel-title>
                             </mat-expansion-panel-header>
                             <div class="table-prep">
