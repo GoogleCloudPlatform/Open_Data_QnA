@@ -365,6 +365,7 @@ def get_results(user_grouping, final_sql, invalid_response=False, EXECUTE_FINAL_
                 else:  # Do not execute final SQL
                         print("Not executing final SQL since EXECUTE_FINAL_SQL variable is False\n ")
                         result_df = "Please enable the Execution of the final SQL so I can provide an answer" 
+                        invalid_response = True
                         
             except ValueError: 
                 result_df= "Error has been encountered :: " + str(e)
@@ -621,13 +622,12 @@ def visualize(session_id,user_question,generated_sql,sql_results):
 ############################
 if __name__ == '__main__': 
     # user_question = "How many movies have review ratings above 5?"
-    # user_question="What are the top 5 cities with highest recalls?"
-    # user_grouping='fda_food' #user database is BQ_DATASET_NAME for BQ Source or PG_SCHEMA for PostgreSQL as source, add the value accordingly
+    # user_grouping='MovieExplorer-bigquery'
 
     parser = argparse.ArgumentParser(description="Open Data QnA SQL Generation")
     parser.add_argument("--session_id", type=str, required=True, help="Session Id")
     parser.add_argument("--user_question", type=str, required=True, help="The user's question.")
-    parser.add_argument("--user_grouping", type=str, required=True, help="The user database to query (BQ_DATASET_NAME for BQ Source or PG_SCHEMA for PostgreSQL as source, add the value accordingly)")
+    parser.add_argument("--user_grouping", type=str, required=True, help="The user grouping specificed in the source list CSV file")
 
     # Optional Arguments for run_pipeline Parameters
     parser.add_argument("--run_debugger", action="store_true", help="Enable the debugger (default: False)")
@@ -635,10 +635,10 @@ if __name__ == '__main__':
     parser.add_argument("--debugging_rounds", type=int, default=2, help="Number of debugging rounds (default: 2)")
     parser.add_argument("--llm_validation", action="store_true", help="Enable LLM validation (default: False)")
     parser.add_argument("--embedder_model", type=str, default='vertex', help="Embedder model name (default: 'vertex')")
-    parser.add_argument("--sqlbuilder_model", type=str, default='gemini-1.0-pro', help="SQL builder model name (default: 'gemini-1.0-pro')")
-    parser.add_argument("--sqlchecker_model", type=str, default='gemini-1.0-pro', help="SQL checker model name (default: 'gemini-1.0-pro')")
-    parser.add_argument("--sqldebugger_model", type=str, default='gemini-1.0-pro', help="SQL debugger model name (default: 'gemini-1.0-pro')")
-    parser.add_argument("--responder_model", type=str, default='gemini-1.0-pro', help="Responder model name (default: 'gemini-1.0-pro')")
+    parser.add_argument("--sqlbuilder_model", type=str, default='gemini-1.5-pro', help="SQL builder model name (default: 'gemini-1.0-pro')")
+    parser.add_argument("--sqlchecker_model", type=str, default='gemini-1.5-pro', help="SQL checker model name (default: 'gemini-1.0-pro')")
+    parser.add_argument("--sqldebugger_model", type=str, default='gemini-1.5-pro', help="SQL debugger model name (default: 'gemini-1.0-pro')")
+    parser.add_argument("--responder_model", type=str, default='gemini-1.5-pro', help="Responder model name (default: 'gemini-1.0-pro')")
     parser.add_argument("--num_table_matches", type=int, default=5, help="Number of table matches (default: 5)")
     parser.add_argument("--num_column_matches", type=int, default=10, help="Number of column matches (default: 10)")
     parser.add_argument("--table_similarity_threshold", type=float, default=0.1, help="Threshold for table similarity (default: 0.1)")

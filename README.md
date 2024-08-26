@@ -154,6 +154,9 @@ Authenticate your credentials
 
 ```
 gcloud auth login
+
+or 
+
 gcloud auth application-default login
 ```
 ```
@@ -191,7 +194,7 @@ python env_setup.py
 The Open Data QnA SQL Generation tool can be conveniently used from your terminal or command prompt using a simple CLI interface. Here's how:
 
 ```
-python opendataqna.py --session_id "122133131f--ade-eweq" --user_question "What are the top 5 cities with highest recalls?" --user_grouping "fda_food"
+python opendataqna.py --session_id "122133131f--ade-eweq" --user_question "What is most 5 common genres we have?" --user_grouping "MovieExplorer-bigquery"
 ```
 
 Where
@@ -242,6 +245,29 @@ Additionally, if you stumble across any problems, take a look into the [`FAQ`](/
 
 If neither of these resources helps, feel free to reach out to us directly by raising an Issue. 
 
+🧹 CleanUp Resources 
+-------------
+To clean up the resources provisioned in this solution, use commands below to remove them using gcloud/bq: 
+
+For cloudsql-pgvector as vector store : [Delete SQL Instance](<https://cloud.google.com/sql/docs/mysql/delete-instance#delete-cloud-sql-instance>)
+
+```
+gcloud sql instances delete <CloudSQL Instance Name> -q
+```
+
+Delete BigQuery Dataset Created for Logs and Vector Store : [Remove BQ Dataset](<https://cloud.google.com/bigquery/docs/reference/bq-cli-reference#bq_rm>)
+
+```
+bq rm -r -f -d <BigQuery Dataset Name for OpenDataQnA>
+```
+
+(For Backend APIs)Remove the Cloud Run service : [Delete Service](<https://cloud.google.com/run/docs/managing/services#delete>)
+
+```
+gcloud run services delete <Cloud Run Service Name>
+```
+
+For frontend, based on firebase: [Remove the firebase app](<https://support.google.com/firebase/answer/7047853?sjid=6757651181596811904-AP#how-to-remove>)
 
 📄 Documentation
 -------------
