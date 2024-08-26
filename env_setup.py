@@ -8,7 +8,7 @@ from embeddings import retrieve_embeddings, store_schema_embeddings, setup_kgq_t
 from utilities import ( PG_REGION, PG_INSTANCE, PG_DATABASE, PG_USER, PG_PASSWORD, 
                         BQ_REGION, 
                        EXAMPLES, LOGGING, VECTOR_STORE, PROJECT_ID, 
-                       BQ_OPENDATAQNA_DATASET_NAME) 
+                       BQ_OPENDATAQNA_DATASET_NAME,FIRESTORE_REGION) 
 import subprocess
 import time
 
@@ -436,7 +436,7 @@ async def store_kgq_sql_embeddings():
         print("If no Known Good Queries for the dataset are availabe at this time, you can use 3_LoadKnownGoodSQL.ipynb to load them later!!")
 
 
-def create_firestore_db(firestore_region,firestore_database="opendataqna-session-logs"):
+def create_firestore_db(firestore_region=FIRESTORE_REGION,firestore_database="opendataqna-session-logs"):
 
     # Check if Firestore database exists
     database_exists_cmd = [
@@ -487,5 +487,5 @@ if __name__ == '__main__':
     # Store known good query embeddings (if enabled)
     asyncio.run(store_kgq_sql_embeddings())
 
-    create_firestore_db(firestore_region)  
+    create_firestore_db()  
 

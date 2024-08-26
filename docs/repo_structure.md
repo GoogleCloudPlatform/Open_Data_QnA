@@ -34,7 +34,6 @@ Repository Structure
   └── kgq_embeddings.py
 └── frontend
 └── notebooks
-  └── (standalone)Run_OpenDataQnA.ipynb
   └── 0_CopyDataToBigQuery.ipynb
   └── 0_CopyDataToCloudSqlPG.ipynb
   └── 1_Setup_OpenDataQnA.ipynb
@@ -75,3 +74,4 @@ Repository Structure
 - [`/Dockerfile`](/Dockerfile): Dockerfile for deployment of backend apis. It is placed at the root folder to give it right context and access to the files.
 - [`/env_setup.py`](/env_setup.py): Python file for initial setup. 
 - [`/opendataqna.py`](/opendataqna.py): Python file for running the main pipeline. 
+- [`/prompts.yaml`](/prompts.yaml): Yaml file that contains the prompts used by the solution. It also provides users the ability to prompt extra context for the use case if any.

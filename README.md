@@ -191,7 +191,7 @@ python env_setup.py
 The Open Data QnA SQL Generation tool can be conveniently used from your terminal or command prompt using a simple CLI interface. Here's how:
 
 ```
-python opendataqna.py --user_question "What are the top 5 cities with highest recalls?" --user_grouping "fda_food"
+python opendataqna.py --session_id "122133131f--ade-eweq" --user_question "What are the top 5 cities with highest recalls?" --user_grouping "fda_food"
 ```
 
 Where
