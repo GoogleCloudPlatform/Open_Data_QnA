@@ -57,17 +57,17 @@ main(){
 
     echo "Setting orgpolicy to allow all IAM domains"
     
-    gcloud resource-manager org-policies set-policy --project=$PROJECT_ID policy.yaml #This command will create policy that overrides to allow all domain
+    gcloud resource-manager org-policies set-policy --project=$PROJECT_ID policy.yaml || exit 1 #This command will create policy that overrides to allow all domain
     
     cd ../
     
     echo "Deploying cloud run service.."
     pwd
-    gcloud beta run deploy $SERVICE_NAME --region $DEPLOY_REGION --source . --service-account=$SERVICE_ACCOUNT --service-min-instances=1  --allow-unauthenticated --project=$PROJECT_ID 
+    gcloud beta run deploy $SERVICE_NAME --region $DEPLOY_REGION --source . --service-account=$SERVICE_ACCOUNT --service-min-instances=1  --allow-unauthenticated --project=$PROJECT_ID || exit 1
 
     echo "Deleting the previously create dorg policy.."
 
-    gcloud resource-manager org-policies delete iam.allowedPolicyMemberDomains --project=$PROJECT_ID
+    gcloud resource-manager org-policies delete iam.allowedPolicyMemberDomains --project=$PROJECT_ID || exit 1
 
 }
 

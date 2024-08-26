@@ -5,7 +5,7 @@ The provided terraform streamlines the setup of this solution and serves as a bl
 *Note*: Current version of the Terraform Google Cloud provider does not support deployment of a few resources, this soultion uses null_resource to create those resources using Google Cloud SDK.
 
 ## Table of Contents
-- [Infra folder structure](#infra-folder-structure)
+- [Terraform folder structure](#terraform-folder-structure)
   - [Structure](#structure)
   - [.tf Files Description](#tf-files-description)
   - [Scripts](#scripts)
@@ -21,31 +21,29 @@ The provided terraform streamlines the setup of this solution and serves as a bl
 - [Deployed Resources](#deployed-resources)
 - [Troubleshooting Known Issues](#troubleshooting-known-issues)
 
-## Infra folder structure
+## Terraform folder structure
 #### Structure
 ```
 Open_Data_QnA/
     |
-    |--->infra/
+    |--->terraform/
           |---> .tf files
           |---> scripts/
           |             |--> .sh, .py
           |---> templates/
-          |             |--> .tftpl files
-          |---> bq-schemas/
-                        |--> .json files 
+                        |--> .tftpl files
+
 ```
 1. .tf files - terraform scripts to spin up resources.
 1. scripts/ - A folder containing all the required shell scripts and python files.
 1. templates/ - the templates in this directory are used to replace all necessary configuration values for the application in config.ini and constants.ts
-1. bq-schemas/ - This folder contains .json files that define schema for embedding tables & audit log tables in BQ.
 
 #### .tf Files Description
 1. versions.tf - Contains provider blocks with appropriate versions that are needed to deploy the resources
 1. locals.tf - Contains the list of APIs to be enabled and BQ tables to be created.
 1. main.tf - Imports data about the mentioned project and also activates required APIs in the project.
 1. iam.tf - Handles implementation of all the necessary IAM roles to various members like service accounts and users.
-1. bq.tf - This script is responsible for creating Bigquery dataset and tables.
+1. bq.tf - This script is responsible for creating Bigquery dataset.
 1. pg-vector.tf - This is responsible for spinning up the CloudSQL instance, database, username and password.
 1. embeddings-setup.tf - This script is responsible for the below tasks.
     * Update [config.ini](../config.ini) with values provided in variables.tf / terraform.tfvars.
@@ -110,7 +108,7 @@ gcloud auth application-default set-quota-project <your_project_id>
 
 1. Install [terraform 1.7 or higher](https://developer.hashicorp.com/terraform/install).
 1. [OPTIONAL] Update default values of variables in [variables.tf](variables.tf) according to your preferences. You can find the description for each variable inside the file. This file will be used by terraform to get information about the resources it needs to deploy. If you do not update these, terraform will use the already specified default values in the file.
-1. Move to the terraform directory in the terminal: ```Open_Data_QnA/infra```.
+1. Move to the terraform directory in the terminal: ```Open_Data_QnA/terraform```.
 1. There are 2 ways to deploy this application: 
     * **[One-click deployment](#step-1-one-click-deployment)** : Use this method when you want to do a single click deployment i.e execute terraform and shell scripts for frontend & backend services deployment all at once.
     * **[Step by step deployment](#step-1-step-by-step-deployment)**: Use this method if you want to deploy teraaform resources, frontend and backend services separately after manual validation of configuration files.
@@ -163,7 +161,7 @@ You need to enable at least one authentication provider in Firebase, you can ena
 This deployment uses the templates in the [templates/](templates/) directory to replace all necessary configuration values for the application. Before deploying the application check that all the values have been populated correctly in the [config.ini](../config.ini) file and [constants.ts](../frontend/src/assets/constants.ts) file.
 
 #### Application deployment
-To deploy the backend cloud run service for the application, run the following command. You will find all the needed values from terraform output. Expected working directory : ```Open_Data_QnA/infra``` 
+To deploy the backend cloud run service for the application, run the following command. You will find all the needed values from terraform output. Expected working directory : ```Open_Data_QnA/terraform``` 
 ```
 sh scripts/backend-deployment.sh --servicename <cloudrun_service_name> --project <your_project_id> --region <region> --sa <your_cloud_run_sa>
 ```
@@ -203,7 +201,7 @@ This deployment creates all the resources described in the main [README.md](../R
         - **Column Embeddings table**: Created only when cloudsql-pgvector is chosen as the vector db. This will contain all column meta data and its text embeddings.
         - **Example SQL table**: Created only when cloudsql-pgvector is chosen as the vector db and marked kgq_examples='yes' in tfvars. This contains all the known good sqls and their respective text embeddings.
 > [!NOTE]  
-> The above mentioned tables are created via the python script [create-and-store-embeddings.py](scripts/create-and-store-embeddings.py)
+> The above mentioned tables in **CloudSQL & BigQuery** are created via the python script [create-and-store-embeddings.py](scripts/create-and-store-embeddings.py)
 
 
 > [!IMPORTANT]  

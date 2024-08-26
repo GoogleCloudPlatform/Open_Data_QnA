@@ -44,14 +44,13 @@ done
 main(){
     pwd
     cd ../..
-    pwd
-    git clone https://github.com/GoogleCloudPlatform/cloud-builders-community.git
+    git clone https://github.com/GoogleCloudPlatform/cloud-builders-community.git || exit 1
     cd cloud-builders-community/firebase 
-    gcloud builds submit --region=$REGION . --project=$PROJECT_ID
+    gcloud builds submit --region=$REGION . --project=$PROJECT_ID || exit 1
     cd ../..
-    rm -rf cloud-builders-community/
+    rm -rf cloud-builders-community/ || exit 1
     cd Open_Data_QnA/frontend
-    gcloud builds submit . --config frontend.yaml --substitutions _FIREBASE_PROJECT_ID=$PROJECT_ID --project=$PROJECT_ID
+    gcloud builds submit . --config frontend.yaml --substitutions _FIREBASE_PROJECT_ID=$PROJECT_ID --project=$PROJECT_ID || exit 1
 }
 
 main
