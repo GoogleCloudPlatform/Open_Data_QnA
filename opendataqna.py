@@ -203,6 +203,7 @@ async def generate_sql(session_id,
         process_step='Not Started'
         error_msg=''
         corrected_sql = ''
+        DATA_SOURCE = 'Yet to determine'
 
         DATA_SOURCE,src_invalid = get_source_type(user_grouping)
 
@@ -304,7 +305,7 @@ async def generate_sql(session_id,
         error_msg=str(e)
         final_sql="Error generating the SQL Please check the logs. "+str(e)
         invalid_response=True
-        AUDIT_TEXT="Exception at SQL generation"
+        AUDIT_TEXT=AUDIT_TEXT+ "\nException at SQL generation"
         print("Error :: "+str(error_msg))
         if LOGGING: 
             bqconnector.make_audit_entry(DATA_SOURCE, user_grouping, SQLBuilder_model, user_question, final_sql, found_in_vector, "", process_step, error_msg,AUDIT_TEXT)  
