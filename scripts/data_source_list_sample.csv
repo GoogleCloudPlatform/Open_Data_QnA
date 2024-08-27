@@ -1,16 +1,8 @@
 source,user_grouping,schema,table
-bigquery,Movie Explorer-bigquery,imdb_people,name_basics
-bigquery,Movie Explorer-bigquery,imdb_people,title_principals
-bigquery,Movie Explorer-bigquery,imdb_people,title_crew
-bigquery,Movie Explorer-bigquery,imdb_people,title_basics
-bigquery,Movie Explorer-bigquery,imdb_ratings,reviews
-bigquery,Movie Explorer-bigquery,imdb_ratings,title_ratings
-bigquery,,fda_food,
-cloudsql-pg,DEI Hiring-cloudsql-pg,google_dei,dar_intersectional_hiring
-cloudsql-pg,,faa,
-bigquery,Know Your Superhero-bigquery,superhero,superhero
-bigquery,Know Your Superhero-bigquery,superhero,alignment
-bigquery,Know Your Superhero-bigquery,superhero,gender
-bigquery,Know Your Superhero-bigquery,superhero,hero_power
-bigquery,Know Your Superhero-bigquery,superhero,superpower
-bigquery,Know Your Superhero-bigquery,superhero,publisher
+bigquery,MovieExplorer-bigquery,imdb_people,name_basics
+bigquery,MovieExplorer-bigquery,imdb_people,title_principals
+bigquery,MovieExplorer-bigquery,imdb_people,title_crew
+bigquery,MovieExplorer-bigquery,imdb_people,title_basics
+bigquery,MovieExplorer-bigquery,imdb_ratings,reviews
+bigquery,MovieExplorer-bigquery,imdb_ratings,title_ratings
+cloudsql-pg,WorldCensus-cloudsql-pg,census_bureau_international,

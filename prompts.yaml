@@ -11,13 +11,14 @@
 
 # Use case prompt: source_type = 'bigquery'; user_grouping = 'MovieExplorer-bigquery'
 
-#usecase_bigquery_MovieExplorer-bigquery: |
-  # Dont have any specific usecase context
+usecase_bigquery_MovieExplorer-bigquery: |
+  The Movie Explorer Dataset is group of tables that contains details of movies and tv shows. We have titles, names of the personas worked in those movies. We also
+  have the reviews and ratings of those movies as well.
 
 # Use case prompt: source_type = 'cloudsql-pg'; user_grouping = 'WorldCensus-cloudsql-pg'
 
-#usecase_cloudsql-pg_WorldCensus-cloudsql-pg: |
-  #Dont have any specific usecase context
+usecase_cloudsql-pg_WorldCensus-cloudsql-pg: |
+  The World Census Dataset is group of tables 
 
 #################################################################################################
 

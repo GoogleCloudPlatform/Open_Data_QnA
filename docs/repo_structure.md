@@ -45,7 +45,7 @@ Repository Structure
   └── data_source_list.csv
   └── known_good_sql.csv
   └── save_config.py
-  └── ...
+  └── Scenarios Sample.csv
 └── utilities
   └── __init__.py
 └── prompts.yaml
@@ -66,7 +66,7 @@ Repository Structure
 - [`/frontend`](/frontend) : Angular based frontend code to deploy demo app using the API developed with [`/main.py`](backend-apis/main.py)
 - [`/notebooks`](/notebooks): Sample notebooks demonstrating the usage of this library.  
 - [`/scripts`](/scripts): Additional scripts for initial setup.
-  - [`/bq_to_pg.py`](/scripts/bq_to_pg.py): Source code for exporting BigQuery tables to PostgreSQL on Google Cloud SQL. 
+  - [`/Sample Scenarios.csv`](/scripts/Scenarios%20Sample.csv): Sample Scenarios file that can used to load them on the frontend UI for demos
   - [`/copy_select_table_column_bigquery.py`](/scripts/copy_select_table_column_bigquery.py): Code Sample to copy select tables and columns from one BQ table to another; add table and column descriptions from csv file.
   - [`/tables_columns_descriptions.csv`](/scripts/tables_columns_descriptions.csv): CSV file containing table and column names and descriptions to be copied 
   - [`/known_good_sql.csv`](/scripts/known_good_sql.csv): CSV files
