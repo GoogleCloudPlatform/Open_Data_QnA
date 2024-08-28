@@ -32,7 +32,7 @@ variable "description_model" {
 
 variable "vector_store" {
   type = string
-  default = "cloudsql-pgvector"
+  default = "bigquery-vector"
   description = "name of the datastore you want to use to store text embeddings of your meta data. Options: bigquery-vector, cloudsql-pgvector"
 }
 
@@ -50,7 +50,7 @@ variable "logging" {
 
 variable "kgq_examples" {
   type = string
-  default = "no"
+  default = "yes"
   description = "yes, if you want to use known good sqls for few shot prompting and creating cache. No, otherwise"
 }
 
@@ -104,13 +104,13 @@ variable "pg_user" {
 
 variable "pg_password" {
   type        = string
-  default     = "Pguser@!12345"
+  default     = "pg123"
   description = "password for pg_user"
 }
 
 variable "bq_opendataqna_dataset" {
   type        = string
-  default     = "opendataqna2"
+  default     = "opendataqna"
   description = "This dataset will be used to store text embeddings and application logs. If pg-vector is chosen as vector db, only application logs will be stored here."
 }
 
@@ -134,7 +134,7 @@ variable "firestore_region" {
 
 variable service_account {
   type = string
-  default = "opendataqna-sa"
+  default = "opendataqna"
   description = "service account used by backend service"
 }
 

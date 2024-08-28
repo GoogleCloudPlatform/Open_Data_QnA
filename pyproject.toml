@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "talktodata"
+name = "opendataqna"
 version = "0.1.0"
 description = ""
 authors = ["msubasioglu","l-sri","orpzs"]
