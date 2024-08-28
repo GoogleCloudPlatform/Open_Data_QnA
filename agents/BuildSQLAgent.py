@@ -10,6 +10,8 @@ from utilities import PROMPTS, format_prompt
 from google.cloud.aiplatform import telemetry
 import vertexai 
 from utilities import PROJECT_ID, PG_REGION
+from vertexai.generative_models import GenerationConfig
+
 vertexai.init(project=PROJECT_ID, location=PG_REGION)
 
 
@@ -19,6 +21,7 @@ class BuildSQLAgent(Agent, ABC):
 
     def __init__(self, model_id = 'gemini-1.5-pro'): 
         super().__init__(model_id=model_id)
+
 
     def build_sql(self,source_type,user_grouping, user_question,session_history,tables_schema,columns_schema, similar_sql, max_output_tokens=2048, temperature=0.4, top_p=1, top_k=32):
         not_related_msg=f'''select 'Question is not related to the dataset' as unrelated_answer;'''
@@ -114,9 +117,11 @@ class BuildSQLAgent(Agent, ABC):
 
         Generate SQL for User Question : {user_question}
 
+
         """
 
         # print("BUILD CONTEXT ::: "+str(build_context_prompt))
+
 
         with telemetry.tool_context_manager('opendataqna-buildsql-v2'):
 

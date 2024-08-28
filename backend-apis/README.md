@@ -314,6 +314,30 @@ gcloud resource-manager org-policies delete iam.allowedPolicyMemberDomains --pro
     }
 
     ```
+7. Get Results : To directly get the sql results in JSON format
+
+    URI:/get_results
+    Complete URL Sample : https://OpenDataQnA-aeiouAEI-uc.a.run.app/embed_sql
+
+    METHOD: POST
+
+    Request Payload:
+
+    ```
+    {
+    "user_question":"Which city had maximum number of sales?",
+    "user_database":"retail"
+    }
+    ```
+
+    Request response:
+    ```
+    {
+    "Error": "",
+    "GeneratedResults": "[{\"city_id\":\"C014\"}]",
+    "ResponseCode": 200
+    }
+    ```
 
 
 ### For setting up the demo UI with these endpoints please refer to README.md under [`/frontend`](/frontend/)

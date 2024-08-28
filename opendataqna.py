@@ -237,13 +237,13 @@ async def generate_sql(session_id,
             found_in_vector = 'Y' 
             final_sql = exact_sql_history
             invalid_response = False
-            AUDIT_TEXT = AUDIT_TEXT + "\nExact match has been found! Going to retreive the SQL query from cache and serve!"
+            AUDIT_TEXT = AUDIT_TEXT + "\nExact match has been found! Going to retrieve the SQL query from cache and serve!"
 
 
         else:
             # No exact match found. Proceed looking for similar entries in db IF kgq is enabled 
             if EXAMPLES: 
-                AUDIT_TEXT = AUDIT_TEXT +  process_step + "\nNo exact match found in query cache, retreiving revelant schema and known good queries for few shot examples using similarity search...."
+                AUDIT_TEXT = AUDIT_TEXT +  process_step + "\nNo exact match found in query cache, retrieving relevant schema and known good queries for few shot examples using similarity search...."
                 process_step = "\n\nGet Similar Match: "
                 if call_await:
                     similar_sql = await vector_connector.getSimilarMatches('example', user_grouping, embedded_question, num_sql_matches, example_similarity_threshold)

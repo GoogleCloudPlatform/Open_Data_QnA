@@ -1,15 +1,15 @@
 from abc import ABC
 
+import vertexai
 from vertexai.language_models import CodeChatModel
 from vertexai.generative_models import GenerativeModel,GenerationConfig
-
+from google.cloud.aiplatform import telemetry
+from dbconnectors import pgconnector, bqconnector
+from utilities import PROMPTS, format_prompt
 from .core import Agent
 import pandas as pd
 import json  
-from dbconnectors import pgconnector, bqconnector
-from utilities import PROMPTS, format_prompt
-from google.cloud.aiplatform import telemetry
-import vertexai 
+
 from utilities import PROJECT_ID, PG_REGION
 vertexai.init(project=PROJECT_ID, location=PG_REGION)
 
