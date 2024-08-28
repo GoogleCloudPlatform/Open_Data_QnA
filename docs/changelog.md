@@ -7,15 +7,34 @@ Ability to interact back and forth with the database in a context. Initial v1 wa
 ## Table Grouping
 
 Initial v1 was tied to single dataset processing and all the tables under this dataset. In reality, users most likely want to restrict the tables and add other datasets if needed. This table grouping provides a way for users to be able to define their scope 
-
+<p align="center">
+    <a href="images/table_grouping.png">
+        <img src="images/table_grouping.png" alt="aaie image">
+    </a>
+</p>
 
 ## Data Sampling
 We provide a sampling of data values in a column to provide contextual information to the SQL Generation agent. For this, top 5 values are retrieved for every column in the specified tables. 
 This information is aggregated and stored back into the vector store, and is retrieved during the retrieval process. 
+<p align="center">
+    <a href="images/data_sampling1.png">
+        <img src="images/data_sampling1.png" alt="aaie image">
+    </a>
+</p>
+<p align="center">
+    <a href="images/data_sampling2.png">
+        <img src="images/data_sampling2.png" alt="aaie image">
+    </a>
+</p>
+
 
 ## Data summarization
 In the initial V1 release, the results were in tabular format. With this release , we provide summarized answers in a natural language format that can be integrated into a chatbot. User does have an option to still get the tabular and visualized results based on their settings.
-
+<p align="center">
+    <a href="images/data_summarization.png">
+        <img src="images/data_summarization.png" alt="aaie image">
+    </a>
+</p>
 
 ## Resolving ambiguities
 The multi-turn approach helps to resolve ambiguities in the questions, by allowing the user to provide follow-up questions and clarifications. 
