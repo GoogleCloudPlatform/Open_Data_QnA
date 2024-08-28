@@ -9,6 +9,12 @@
     </a>
 </p>
 <h1 align="center">Open Data QnA - Chat with your SQL Database</h1> 
+_______________
+<div align="center"">
+  <strong>🚨 Version 2.0.0 is now live! Refer to the <a href="docs/changelog.md">Release Notes</a> for detailed information on updates and fixes. 🚨</strong>
+</div>
+
+_______________
 
 ✨ Overview
 -------------
