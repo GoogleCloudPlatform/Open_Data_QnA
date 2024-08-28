@@ -1,22 +1,154 @@
 mat-icon {
   vertical-align: bottom;
-
 }
+
 .app-sidenav {
-  font-family: Google Sans Text;
+  color: #000;
+  font-feature-settings: 'clig' off, 'liga' off;
+  font-family: "Google Sans";
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: -0.154px;
+  width: 350px;
+}
+
+.activeTab {
+  background-color: #E8F0FE;
+  border-radius: 25px;
+  color: #4D88FF;
+  cursor: pointer;
+}
+
+.inactiveTab {
+  background-color: #FFF;
+  border-radius: 25px;
+  color: #444746;
+  cursor: pointer;
+}
+
+.historyDetails {
+  text-wrap: wrap;
+  display: block;
+  color: #444746;
+  font-family: 'Google Sans';
   font-size: 14px;
-    width: 200px;
-  }
-  .app-sidenav mat-list-item {
-    cursor: pointer;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
 
-    }
+.showMore {
+  font-size: .875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+  font-family: "Google Sans", "Helvetica Neue", sans-serif;
+  letter-spacing: normal;
+  border: transparent;
+  border-radius: 20px;
+  padding: 10px;
+  width: 100%;
+  margin-bottom: 10px;
+  background: #FFF;
+}
 
-     .active {
-      background-color: #E8F0FE      ;
-      border-radius: 25px;
-      color: #4D88FF;
-    }
+::ng-deep.mat-expansion-indicator {
+  margin-right: 10px
+}
 
+// .mdc-list-item {
+//   cursor: auto !important;
+// }
 
+input[type="file"] {
+  display: none;
+}
 
+.dropLabel {
+  text-align: center;
+  font-family: Google Sans;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 20px;
+  cursor: pointer;
+  display: flex;
+}
+
+.file-wrapper {
+  border-color: transparent;
+  height: 41px;
+  background: #34A853;
+  border-radius: 100px;
+  font-family: "Google Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+  letter-spacing: 0.25px;
+  color: #FFFFFF;
+  cursor: pointer;
+}
+
+::ng-deep .mat-expansion-panel-body {
+  padding: 0 24px 0px !important;
+}
+
+.mat-expansion-panel {
+  background: transparent !important;
+}
+
+.mat-expansion-panel:not(.mat-expanded) .mat-expansion-panel-header:not([aria-disabled=true]):hover {
+  background: transparent !important;
+}
+
+ul,
+#myUL {
+  list-style-type: none;
+}
+
+#myUL {
+  margin: 0;
+  padding: 0;
+}
+
+.caret {
+  cursor: pointer;
+  -webkit-user-select: none;
+  /* Safari 3.1+ */
+  -moz-user-select: none;
+  /* Firefox 2+ */
+  -ms-user-select: none;
+  /* IE 10+ */
+  user-select: none;
+}
+
+.caret::before {
+  content: "\25B6";
+  color: black;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.caret-down::before {
+  -ms-transform: rotate(90deg);
+  /* IE 9 */
+  -webkit-transform: rotate(90deg);
+  /* Safari */
+  transform: rotate(90deg);
+}
+
+.scenariosInfoBtn {
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  height: 24px;
+}
+
+.uploadScenarioBtn{
+  position: absolute; bottom:20px; width: 100%;
+}

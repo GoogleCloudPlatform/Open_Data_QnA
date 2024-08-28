@@ -34,16 +34,21 @@ Repository Structure
   └── kgq_embeddings.py
 └── frontend
 └── notebooks
-  └── (standalone)Run_OpenDataQnA.ipynb
   └── 0_CopyDataToBigQuery.ipynb
   └── 0_CopyDataToCloudSqlPG.ipynb
   └── 1_Setup_OpenDataQnA.ipynb
   └── 2_Run_OpenDataQnA.ipynb
   └── 3_LoadKnownGoodSQL.ipynb
 └── scripts
-  └── ...
+  └── tables_columns_descriptions.csv
+  └── copy_select_table_column_bigquery.csv
+  └── data_source_list.csv
+  └── known_good_sql.csv
+  └── save_config.py
+  └── Scenarios Sample.csv
 └── utilities
   └── __init__.py
+└── prompts.yaml
 └── pyproject.toml
 └── config.ini
 └── env_setup.py
@@ -61,10 +66,12 @@ Repository Structure
 - [`/frontend`](/frontend) : Angular based frontend code to deploy demo app using the API developed with [`/main.py`](backend-apis/main.py)
 - [`/notebooks`](/notebooks): Sample notebooks demonstrating the usage of this library.  
 - [`/scripts`](/scripts): Additional scripts for initial setup.
-  - [`/bq_to_pg.py`](/scripts/bq_to_pg.py): Source code for exporting BigQuery tables to PostgreSQL on Google Cloud SQL. 
+  - [`/Sample Scenarios.csv`](/scripts/Scenarios%20Sample.csv): Sample Scenarios file that can used to load them on the frontend UI for demos
   - [`/copy_select_table_column_bigquery.py`](/scripts/copy_select_table_column_bigquery.py): Code Sample to copy select tables and columns from one BQ table to another; add table and column descriptions from csv file.
   - [`/tables_columns_descriptions.csv`](/scripts/tables_columns_descriptions.csv): CSV file containing table and column names and descriptions to be copied 
   - [`/known_good_sql.csv`](/scripts/known_good_sql.csv): CSV files
+  - [`/data_source_list.csv`](/scripts/data_source_list.csv): Data Source CSV File to mention the list of tables and source type etc.
 - [`/Dockerfile`](/Dockerfile): Dockerfile for deployment of backend apis. It is placed at the root folder to give it right context and access to the files.
 - [`/env_setup.py`](/env_setup.py): Python file for initial setup. 
 - [`/opendataqna.py`](/opendataqna.py): Python file for running the main pipeline. 
+- [`/prompts.yaml`](/prompts.yaml): Yaml file that contains the prompts used by the solution. It also provides users the ability to prompt extra context for the use case if any.

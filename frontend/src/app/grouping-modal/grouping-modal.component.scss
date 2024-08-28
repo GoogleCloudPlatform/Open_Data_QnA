@@ -1,0 +1,25 @@
+.grouping-msg {
+    font-family: "Google Sans";
+    font-size: "16px";
+    color : #d93035
+}
+
+.closeBtn {
+    font-family: "Google Sans";
+    font-size: "14px";
+    border: transparent;
+    width: 100px;
+    border-radius: 10px;
+
+}
+
+::ng-deep .mat-dialog-container {
+    border-radius: 40px !important;
+}
+.popup{
+    height: 110px;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    flex-direction: column;
+}

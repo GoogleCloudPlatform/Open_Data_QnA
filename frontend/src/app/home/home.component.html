@@ -1,61 +1,51 @@
 <div class="grid-container">
-  <mat-toolbar style="border-bottom: 1px solid #b0b0b0;">
+  <mat-toolbar class="toolbar">
     <button *ngIf="isMobile" mat-icon-button aria-label="Menu icon" (click)="toggleMenu()">
       <mat-icon>menu</mat-icon>
     </button>
 
-    <img src="assets/images/cymbal-customer-service-logo.svg" alt="Cymbal Customer Service Logo">
+    <img src="assets/images/group.svg" alt="Cymbal Customer Service Logo" class="mr-2">
     <img src="assets/images/cymbal-text-logo.svg" alt="Cymbal Text Logo">
     <app-header class="ms-5"></app-header>
     <span class="flex-expand"></span>
-    <form>
 
+    <form>
       <select class="form-control-sm mr-10" name="selectAction" (change)="changeDb($event)"
-        [formControl]="organizationCtrl">
-        <option *ngFor="let op of organisation" [value]="op.table_schema">
+        [formControl]="groupingsListCtrl" style="cursor: pointer;background: #FFF;">
+        <option value="">Select Grouping</option>
+        <option *ngFor="let op of groupingsList" [value]="op.table_schema">
           {{op.table_schema}}
         </option>
       </select>
-
     </form>
 
     <app-user-photo></app-user-photo>
   </mat-toolbar>
 
-  <div class="row">
+  <div>
     <div class="content col-xxl-12">
-
       <mat-sidenav-container fullscreen>
         <mat-sidenav [mode]="isMobile ? 'over' : 'side'" [opened]="isMobile ? 'false' : 'true'" class="no-border">
-          <app-menu (selectedTab)="checkSideNavTAb($event)"></app-menu>
+          <app-menu *ngIf="userSessions" (selectedTab)="checkSideNavTAb($event)" (selectedHistory)="sendHistory($event)"
+            [userHistory]="userHistory" [userSessions]="userSessions"
+            ></app-menu>
         </mat-sidenav>
-        <mat-sidenav-content [ngStyle]="checkStyle?{'background-color': '#FFF'} : {'background-color': '#F3F6FC'}">
-          <app-business-user *ngIf="userType === 'Business' && checkSideNav === 'Query'"
-            (updateStyleEvent)="updateBackgroundStyle($event)"></app-business-user>
-          <app-business-user *ngIf="userType === 'Operational'"
-            (updateStyleEvent)="updateBackgroundStyle($event)"></app-business-user>
-          <app-results *ngIf="checkSideNav === 'Reports'"></app-results>
-          <app-history *ngIf="checkSideNav === 'History'"></app-history>
-          <app-saved-queries *ngIf="checkSideNav === 'Saved'"></app-saved-queries>
-          <app-technical-user *ngIf="userType === 'Technical'"></app-technical-user>
-
+        <!-- <mat-sidenav-content [ngStyle]="checkStyle?{'background-color': '#FFF'} : {'background-color': '#F3F6FC'}"> -->
+        <mat-sidenav-content style="background-color: #FFF; min-height: 100vh;">
+          <!-- <div *ngIf="checkSideNav === 'Query'" style="height:100%">
+            <app-business-user *ngIf="checkSideNav === 'Query'" (updateStyleEvent)="updateBackgroundStyle($event)"
+              [checkSideNav]="checkSideNav" [selectedHistory]="selectedHistory"
+              [selectedGrouping]="groupingsListCtrl.value"></app-business-user>
+          </div> -->
+          <div *ngIf="checkSideNav === 'History'|| checkSideNav ==='New Query' || checkSideNav ==='Scenarios'"
+            style="height:100%">
+            <app-business-user (updateStyleEvent)="updateBackgroundStyle($event)" [checkSideNav]="checkSideNav"
+              [selectedHistory]="selectedHistory" [userSessions]="userSessions"
+              [selectedGrouping]="groupingsListCtrl.value" [selectedScenario]="selectedScenario"></app-business-user>
+          </div>
           <router-outlet></router-outlet>
-
-
         </mat-sidenav-content>
       </mat-sidenav-container>
-
-
-      <!-- </mat-tab>
-			<mat-tab label="Technical" class="ml-4 ">
-				<mat-divider></mat-divider>
-				<div class="main  pl-4" style="margin: 20px 0.5rem;">
-					<div>
-					
-					</div>
-				</div>
-			</mat-tab>
-		</mat-tab-group> -->
     </div>
   </div>
 </div>

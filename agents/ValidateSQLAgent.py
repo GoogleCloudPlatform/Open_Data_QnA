@@ -1,21 +1,7 @@
-# Copyright 2024 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-
 import json 
 from abc import ABC
-from .core import Agent 
+from .core import Agent
+from utilities import PROMPTS, format_prompt 
 
 
 
@@ -47,44 +33,19 @@ class ValidateSQLAgent(Agent, ABC):
 
     agentType: str = "ValidateSQLAgent"
 
-
-    # TODO: Make the LLM Validator optional
-    def check(self, user_question, tables_schema, columns_schema, generated_sql):
-
-        context_prompt = f"""
-
-            Classify the SQL query: {generated_sql} as valid or invalid?
-
-            Guidelines to be valid:
-            - all column_name in the query must exist in the table_name.
-            - If a join includes d.country_id and table_alias d is equal to table_name DEPT, then country_id column_name must exist with table_name DEPT in the table column metadata. If not, the sql is invalid
-            - all join columns must be the same data_type.
-            - table relationships must be correct.
-            - Tables should be refered to using a fully qualified name including owner and table name.
-            - Use table_alias.column_name when referring to columns. Example: dept_id=hr.dept_id
-            - Capitalize the table names on SQL "where" condition.
-            - Use the columns from the "SELECT" statement while framing "GROUP BY" block.
-            - Always refer the column name with rightly mapped table-name as seen in the table schema.
-            - Must be syntactically and symantically correct SQL for Postgres with proper relation mapping i.e owner, table and column relation.
-            - Always the table should be refered as schema.table_name.
-
-
-        Parameters:
-        - SQL query: {generated_sql}
-        - table schema: {tables_schema}
-        - column description: {columns_schema}
-
-        Respond using a valid JSON format with two elements valid and errors. Remove ```json and ``` from the output:
-        {{ "valid": true or false, "errors":errors }}
-
-        Initial user question:
-        {user_question}
-
-
-        """
-
+    def check(self,source_type, user_question, tables_schema, columns_schema, generated_sql):
         
-        if self.model_id =='gemini-1.0-pro':
+        context_prompt = PROMPTS['validatesql']
+        context_prompt = format_prompt(context_prompt,
+                                       source_type = source_type,
+                                       user_question = user_question,
+                                       tables_schema = tables_schema, 
+                                       columns_schema = columns_schema,
+                                       generated_sql=generated_sql)
+
+        # print(f"Prompt to Validate SQL after formatting: \n{context_prompt}")
+        
+        if "gemini" in self.model_id:
             context_query = self.model.generate_content(context_prompt, stream=False)
             generated_sql = str(context_query.candidates[0].text)
 

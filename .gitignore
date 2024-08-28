@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+agents/__pycache__/
+application_default_credentials.json
+databases/__pycache__/
+embeddings/__pycache__/
+utils/__pycache__/
+*/__pycache__/
+.DS_Store
+poetry.lock
+dist/
+test-pypi-token.txt
+firebase.json
+.firebaserc
+config_copy.ini
+eval/

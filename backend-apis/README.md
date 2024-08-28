@@ -16,9 +16,7 @@ export PROJECT_ID=<PROJECT_ID>
 ```
 
 ```
-cd applied-ai-engineering-samples
-git checkout opendataqna
-cd backend-apis
+cd Open_Data_QnA/backend-apis
 
 gcloud resource-manager org-policies set-policy --project=$PROJECT_ID policy.yaml #This command will create policy that overrides to allow all domain
 
@@ -31,6 +29,7 @@ gcloud iam service-accounts create opendataqna --project=$PROJECT_ID
 gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:opendataqna@$PROJECT_ID.iam.gserviceaccount.com --role='roles/cloudsql.client' --project=$PROJECT_ID --quiet
 gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:opendataqna@$PROJECT_ID.iam.gserviceaccount.com --role='roles/bigquery.admin' --project=$PROJECT_ID --quiet
 gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:opendataqna@$PROJECT_ID.iam.gserviceaccount.com --role='roles/aiplatform.user' --project=$PROJECT_ID --quiet
+gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:opendataqna@$PROJECT_ID.iam.gserviceaccount.com --role='roles/datastore.owner' --project=$PROJECT_ID --quiet
 
 ```
 
@@ -55,11 +54,45 @@ export PROJECT_ID=<Enter your Project ID>
 export SERVICE_NAME=opendataqna #change the name if needed 
 export DEPLOY_REGION=us-central1 #change the cloud run deployment region if needed 
 ```
-```
- cd applied-ai-engineering-samples
- git checkout opendataqna
 
- gcloud beta run deploy $SERVICE_NAME --region $DEPLOY_REGION --source . --service-account=opendataqna@$PROJECT_ID.iam.gserviceaccount.com --service-min-instances=1 --min-instances=1 --allow-unauthenticated --project=$PROJECT_ID 
+Enable the cloud build API to deploy the endpoints
+```
+gcloud services enable cloudbuild.googleapis.com --project $PROJECT_ID
+```
+
+Get default service account for compute engine and cloud build to deploy the cloud run and add IAM Roles for deployment
+```
+export PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
+
+export DEFAULT_CE_SA=$(gcloud iam service-accounts list --project=$PROJECT_ID --format="value(EMAIL)" --filter="EMAIL ~ $PROJECT_NUMBER-compute@developer.gserviceaccount.com")
+
+gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$DEFAULT_CE_SA --role='roles/storage.admin' --project=$PROJECT_ID --quiet
+
+gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$DEFAULT_CE_SA --role='roles/artifactregistry.admin' --project=$PROJECT_ID --quiet
+
+gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$DEFAULT_CE_SA --role='roles/firebase.admin' --project=$PROJECT_ID --quiet
+
+gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$DEFAULT_CE_SA --role='roles/cloudbuild.builds.builder' --project=$PROJECT_ID --quiet
+
+gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$DEFAULT_CE_SA --role='roles/logging.logWriter' --project=$PROJECT_ID --quiet
+
+
+export DEFAULT_CB_SA=$PROJECT_NUMBER'@cloudbuild.gserviceaccount.com'
+
+gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$DEFAULT_CB_SA --role='roles/firebase.admin' --project=$PROJECT_ID --quiet
+
+gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$DEFAULT_CB_SA --role='roles/serviceusage.apiKeysAdmin' --project=$PROJECT_ID --quiet
+
+gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$DEFAULT_CB_SA --role='roles/cloudbuild.builds.builder' --project=$PROJECT_ID --quiet
+
+gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$DEFAULT_CB_SA --role='roles/artifactregistry.admin' --project=$PROJECT_ID --quiet
+
+```
+
+```
+ cd Open_Data_QnA
+
+ gcloud beta run deploy $SERVICE_NAME --region $DEPLOY_REGION --source . --service-account=opendataqna@$PROJECT_ID.iam.gserviceaccount.com --service-min-instances=1  --allow-unauthenticated --project=$PROJECT_ID 
  
  #if you are deploying cloud run application for the first time in the project you will be prompted for a couple of settings. Go ahead and type Yes.
 
@@ -124,7 +157,7 @@ gcloud resource-manager org-policies delete iam.allowedPolicyMemberDomains --pro
 
     ```
     {
-    "user_database":"retail"
+    "user_grouping":"retail"
     }
     ```
 
@@ -139,7 +172,7 @@ gcloud resource-manager org-policies delete iam.allowedPolicyMemberDomains --pro
     ```
 
 
-3. SQL Generation : Generate the SQL for the input question asked aganist a database
+3. SQL Generation : Generate the SQL for the input question asked against a database
 
     URI: /generate_sql
 
@@ -153,8 +186,10 @@ gcloud resource-manager org-policies delete iam.allowedPolicyMemberDomains --pro
 
     ```
     {
+    "session_id":"",
+    "user_id":"harry@hogwarts.com",
     "user_question":"Which city had maximum number of sales?",
-    "user_database":"retail"
+    "user_grouping":"retail"
     }
     ```
 
@@ -164,7 +199,8 @@ gcloud resource-manager org-policies delete iam.allowedPolicyMemberDomains --pro
     {
     "Error": "",
     "GeneratedSQL": " select st.city_id from retail.sales as s join retail.stores as st on s.id_store = st.id_store group by st.city_id order by count(*) desc limit 1;",
-    "ResponseCode": 200
+    "ResponseCode": 200,
+    "SessionID":"1iuu2u-k1ij2-kkkhhj12131"
     }
     ```
 
@@ -178,14 +214,16 @@ gcloud resource-manager org-policies delete iam.allowedPolicyMemberDomains --pro
 
     Request payload:
     ```
-    { "user_database": "retail",
-    "generated_sql":"select st.city_id from retail.sales as s join retail.stores as st on s.id_store = st.id_store group by st.city_id order by count(*) desc limit 1;"
+    { "user_grouping": "retail",
+    "generated_sql":"select st.city_id from retail.sales as s join retail.stores as st on s.id_store = st.id_store group by st.city_id order by count(*) desc limit 1;",
+    "session_id":"1iuu2u-k1ij2-kkkhhj12131"
     }
     ```
 
     Request response:
     ```
     {
+    "SessionID":"1iuu2u-k1ij2-kkkhhj12131",
     "Error": "",
     "KnownDB": "[{\"city_id\":\"C014\"}]",
     "ResponseCode": 200
@@ -202,9 +240,10 @@ gcloud resource-manager org-policies delete iam.allowedPolicyMemberDomains --pro
 
     ```
     {
+      "session_id":"1iuu2u-k1ij2-kkkhhj12131",
     "user_question":"Which city had maximum number of sales?",
     "generated_sql":"select st.city_id from retail.sales as s join retail.stores as st on s.id_store = st.id_store group by st.city_id order by count(*) desc limit 1;",
-    "user_database":"retail"
+    "user_grouping":"retail"
     }
     ```
 
@@ -213,7 +252,8 @@ gcloud resource-manager org-policies delete iam.allowedPolicyMemberDomains --pro
     {
     "ResponseCode" : 201, 
     "Message" : "Example SQL has been accepted for embedding",
-    "Error":""
+    "Error":"",
+    "SessionID":"1iuu2u-k1ij2-kkkhhj12131"
     }
     ```
 6. Generate Visualization Code : To generated javascript Google Charts code based on the SQL Results and display them on the UI
@@ -231,6 +271,7 @@ gcloud resource-manager org-policies delete iam.allowedPolicyMemberDomains --pro
     Request Payload:
     ```
       {
+      "session_id":"1iuu2u-k1ij2-kkkhhj12131" ,
       "user_question": "What are top 5 product skus that are ordered?",
       "sql_generated": "SELECT productSKU as ProductSKUCode, sum(total_ordered) as TotalOrderedItems FROM `inbq1-joonix.demo.sales_sku` group by productSKU order by sum(total_ordered) desc limit 5",
       "sql_results": [
@@ -262,6 +303,7 @@ gcloud resource-manager org-policies delete iam.allowedPolicyMemberDomains --pro
     Request response:
     ```
     {
+    "SessionID":"1iuu2u-k1ij2-kkkhhj12131",
     "Error": "",
     "GeneratedChartjs": {
         "chart_div": "google.charts.load('current', {\n  packages: ['corechart']\n});\ngoogle.charts.setOnLoadCallback(drawChart);\n\nfunction drawChart() {\n  var data = google.visualization.arrayToDataTable([\n    ['Product SKU', 'Total Ordered Items'],\n    ['GGOEGOAQ012899', 456],\n    ['GGOEGDHC074099', 334],\n    ['GGOEGOCB017499', 319],\n    ['GGOEGOCC077999', 290],\n    ['GGOEGFYQ016599', 253],\n  ]);\n\n  var options = {\n    title: 'Top 5 Product SKUs Ordered',\n    width: 600,\n    height: 300,\n    hAxis: {\n      textStyle: {\n        fontSize: 12\n      }\n    },\n    vAxis: {\n      textStyle: {\n        fontSize: 12\n      }\n    },\n    legend: {\n      textStyle: {\n        fontSize: 12\n      }\n    },\n    bar: {\n      groupWidth: '50%'\n    }\n  };\n\n  var chart = new google.visualization.BarChart(document.getElementById('chart_div'));\n\n  chart.draw(data, options);\n}\n",

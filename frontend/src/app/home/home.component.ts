@@ -1,20 +1,3 @@
-/*
- * Copyright 2024 Google LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-
 import { Component, ViewChild } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { HomeService } from '../shared/services/home.service';
@@ -23,7 +6,7 @@ import { MatSidenav } from '@angular/material/sidenav';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { LoginService } from '../shared/services/login.service';
 import { Router } from '@angular/router';
-
+import { Subject, Subscription, take, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-home',
@@ -33,27 +16,35 @@ import { Router } from '@angular/router';
 export class HomeComponent {
   title = 'material-responsive-sidenav';
   isCollapsed = true;
-  organizationCtrl = new FormControl<string>('');
-
-  organisation: any;
-  organizationString: any;
+  groupingsListCtrl = new FormControl<string>('');
+  private _destroy$ = new Subject<void>();
+  groupingsList: any;
+  groupingString: any;
   checkStyle: boolean | undefined;
   userType: String | undefined;
-  color: ThemePalette = 'accent';
-  checkSideNav: string | undefined;
+  checkSideNav: string = 'New Query';
   @ViewChild(MatSidenav)
   sidenav!: MatSidenav;
   isMobile = true;
-  selectedDb: any;
+  selectedGrouping: any;
   photoURL: any;
+  reloadComp: boolean = false;
+  userId: any;
+  userSessions: any = [];
+  userHistory: any = [];
+  Subscription!: Subscription
+  selectedHistory: any;
+  selectedScenario: any;
 
-  constructor(private homeService: HomeService, private observer: BreakpointObserver , private _router : Router, private loginService : LoginService) { 
+  constructor(private homeService: HomeService, private observer: BreakpointObserver, private _router: Router, private loginService: LoginService) {
     this.loginService.getUserDetails().subscribe(message => {
+      this.userId = message.uid;
       this.photoURL = message?.photoURL
     });
   }
+
   async ngOnInit() {
-    if(!this.photoURL){
+    if (!this.photoURL) {
       this._router.navigate(['']);
     }
     this.observer.observe(['(max-width: 800px)']).subscribe((screenSize) => {
@@ -63,67 +54,74 @@ export class HomeComponent {
         this.isMobile = false;
       }
     });
-
-    if (this.homeService.checkuserType === undefined) {
-      this.userType = 'Business';
-
-    } else {
-      this.userType = this.homeService.checkuserType;
-
+    if (this.userId) {
+      this.Subscription = this.homeService.getUserSessions(this.userId)
+        .pipe(takeUntil(this._destroy$))
+        .subscribe({
+          next: (res: any) => {
+            this.userSessions = res;
+          },
+          error: (error: any) => {
+            throw error;
+          },
+          complete: () => {
+            //console.log("complete")
+          }
+        })
     }
-    this.organizationString = this.homeService.getAvailableDBList();
-    // this.homeService.databaseSubject.subscribe((data: any) => {
-    if (this.organizationString !== null && this.organizationString !== undefined) {
-      this.organisation = JSON.parse(this.organizationString);
-      this.selectedDb = this.organisation[0].table_schema.split("-")
-      if (this.selectedDb.length === 2) {
-        this.selectedDb[1] = this.selectedDb.slice(1).join("-"); // Merge elements from index 1 onwards
-      }
-      this.organizationCtrl.setValue(this.organisation[0].table_schema);
-      this.homeService.setselectedDb(this.selectedDb[0]);
-      this.homeService.setselectedDbName(this.selectedDb[1])
-      this.homeService.sqlSuggestionList(this.selectedDb[0], this.selectedDb[1]).subscribe((data: any) => {
-        if (data && data.ResponseCode === 200) {
-          this.homeService.databaseSubject.next(data.KnownSQL);
+    this.groupingValAndKnownSql()
+  }
+  groupingValAndKnownSql() {
+    this.homeService.setSelectedDbGrouping("");
+    this.groupingString = this.homeService.getAvailableDBList();
+    if (this.groupingString !== null && this.groupingString !== undefined) {
+      this.groupingsList = JSON.parse(this.groupingString);
+      this.homeService.currentSelectedGrouping.next('');
+      this.homeService.currentSelectedGroupingObservable.subscribe((res) => {
+        this.groupingsListCtrl.setValue(res);
+        if (!res) {
+          this.homeService.sqlSuggestionList("", "").subscribe((data: any) => {
+            if (data && data.ResponseCode === 200) {
+              this.homeService.knownSqlFromDb.next(data.KnownSQL);
+            }
+          })
         }
       })
     } else {
       this.homeService.getAvailableDatabases().subscribe((res: any) => {
         if (res && res.ResponseCode === 200) {
-          // this.homeService.setAvailableDBList(res.KnownDB);
-          this.organisation = JSON.parse(res.KnownDB);
-          this.selectedDb = this.organisation[0].table_schema.split("-")
-          this.organizationCtrl.setValue(this.organisation[0].table_schema);
-          this.homeService.setselectedDb(this.selectedDb[0]);
-          this.homeService.setselectedDbName(this.selectedDb[1])
-          this.homeService.sqlSuggestionList(this.selectedDb[0], this.selectedDb[1]).subscribe((data: any) => {
-            if (data && data.ResponseCode === 200) {
-              this.homeService.databaseSubject.next(data.KnownSQL);
-            }
-          })
+          this.groupingsList = JSON.parse(res.KnownDB);
         }
       });
     }
   }
-
   changeDb(dbtype: any) {
     let selectedDbtype = dbtype.target.value.split("-");
-    this.homeService.setselectedDb(selectedDbtype[0]);
+    this.homeService.setSelectedDbGrouping(dbtype.target.value);
+    this.homeService.setSessionId('');
     this.homeService.setselectedDbName(selectedDbtype[1])
-    this.homeService.sqlSuggestionList(selectedDbtype[0], selectedDbtype[1]).subscribe((data: any) => {
+    this.homeService.currentSelectedGrouping.next(dbtype.target.value)
+    this.homeService.sqlSuggestionList(dbtype.target.value, selectedDbtype[1]).subscribe((data: any) => {
       if (data && data.ResponseCode === 200) {
-        this.homeService.databaseSubject.next(data.KnownSQL);
+        this.homeService.knownSqlFromDb.next(data.KnownSQL);
       }
     })
   }
-
 
   updateBackgroundStyle(data: boolean) {
     this.checkStyle = data;
   }
   checkSideNavTAb(data: any) {
+    if (data == 'New Query') {
+      this.reloadComp = true;
+    }
     this.checkSideNav = data;
   }
+
+  sendHistory(data: any) {
+    this.selectedHistory = data
+  }
+
   toggleMenu() {
     if (this.isMobile) {
       this.sidenav.toggle();
@@ -132,5 +130,9 @@ export class HomeComponent {
     }
   }
 
-
+  ngOnDestroy() {
+    this.userHistory = [];
+    this.Subscription?.unsubscribe();
+    this._destroy$.next()
+  }
 }

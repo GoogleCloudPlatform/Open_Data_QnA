@@ -1,26 +1,13 @@
-# Copyright 2024 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-
 import json 
 from abc import ABC
-from .core import Agent 
+from .core import Agent
+from utilities import PROMPTS, format_prompt 
 from vertexai.generative_models import HarmCategory, HarmBlockThreshold
 from google.cloud.aiplatform import telemetry
 import vertexai 
 from utilities import PROJECT_ID, PG_REGION
 vertexai.init(project=PROJECT_ID, location=PG_REGION)
+
 
 class ResponseAgent(Agent, ABC):
     """
@@ -46,29 +33,26 @@ class ResponseAgent(Agent, ABC):
 
     agentType: str = "ResponseAgent"
 
-    # TODO: Make the LLM Validator optional
     def run(self, user_question, sql_result):
 
-        context_prompt = f"""
-
-            You are a Data Assistant that helps to answer users' questions on their data within their databases.
-            The user has provided the following question in natural language: "{str(user_question)}"
-
-            The system has returned the following result after running the SQL query: "{str(sql_result)}".
-
-            Provide a natural sounding response to the user to answer the question with the SQL result provided to you.
-        """
+        context_prompt = PROMPTS['nl_reponse']
 
 
-        if self.model_id =='gemini-1.0-pro':
-            with telemetry.tool_context_manager('opendataqna-response'):
 
-                context_query = self.model.generate_content(context_prompt, stream=False)
+        context_prompt = format_prompt(context_prompt,
+                                       user_question = user_question,
+                                       sql_result = sql_result)
+                                       
+        # print(f"Prompt for Natural Language Response: \n{context_prompt}")
+
+
+        if 'gemini' in self.model_id:
+            with telemetry.tool_context_manager('opendataqna-response-v2'):
+                context_query = self.model.generate_content(context_prompt,safety_settings=self.safety_settings, stream=False)
                 generated_sql = str(context_query.candidates[0].text)
 
         else:
-            with telemetry.tool_context_manager('opendataqna-response'):
-
+            with telemetry.tool_context_manager('opendataqna-response-v2'):
                 context_query = self.model.predict(context_prompt, max_output_tokens = 8000, temperature=0)
                 generated_sql = str(context_query.candidates[0])
         

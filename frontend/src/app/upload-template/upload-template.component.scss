@@ -1,0 +1,66 @@
+.grouping-msg {
+  font-family: "Google Sans";
+  font-size: 16px;
+  color: #d93035;
+  margin-bottom: 20px;
+}
+
+.closeBtn {
+  border-color: transparent;
+  min-width: 146px;
+  height: 41px;
+  background: #1A73E8;
+  border-radius: 100px;
+  font-family: "Google Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+  letter-spacing: 0.25px;
+  color: #FFFFFF;
+}
+
+::ng-deep .mat-dialog-container {
+  border-radius: 40px !important;
+}
+
+.popup {
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  flex-direction: column;
+  gap: 20px;
+  margin: 20px;
+}
+
+#customers {
+  font-family: 'Google Sans';
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#customers td,
+#customers th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+#customers tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+#customers tr:hover {
+  background-color: #ddd;
+}
+
+#customers th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: #04AA6D;
+  color: white;
+}
