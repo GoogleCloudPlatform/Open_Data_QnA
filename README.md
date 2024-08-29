@@ -88,22 +88,90 @@ This notebook offers a streamlined way to experience the core functionality of O
 
 🏁 Getting Started: Main Repository 
 -------------
-ℹ️ **You can setup this solution with two approaches. Choose one based on your requirements:**
-  - **A)** Using Jupyter Notebooks (For better view at what is happening at each stage of the solution)
-  - **B)** Using CLI (For ease of use and running with simple python commands, without the need to understand every step of the solution)
-
 
 ### Clone the repository and switch to the correct directory 
    
     git clone git@github.com:GoogleCloudPlatform/Open_Data_QnA.git
     cd Open_Data_QnA
-__________
+
+### 🚧 **Prerequisites**
+
+Make sure that Google Cloud CLI and Python are installed before moving ahead! You can refer to the link below for guidance
+
+Installation Guide: https://cloud.google.com/sdk/docs/install
+
+Download Python: https://www.python.org/downloads/
+
+ℹ️ **You can setup this solution with three approaches. Choose one based on your requirements:**
+  - **A)** Using [Jupyter Notebooks](#a-jupyter-notebook-based-approach) (For better view at what is happening at each stage of the solution)
+  - **B)** Using [CLI](#b-command-line-interface-cli-based-approach) (For ease of use and running with simple python commands, without the need to understand every step of the solution)
+  - **C)** Using [terrafrom deployment](#c-using-terraform-to-deploy-the-solution) including your backend APIs with UI
+
 
 ### A) Jupyter Notebook Based Approach
 
+#### 💻 **Install Code Dependencies (Create and setup venv)**
+
+#### **All commands in this cell to be run on the terminal (typically Ctrl+Shift+`) where your notebooks are running**
+Install the dependencies by running the poetry commands below 
+
+```
+# Install poetry
+pip uninstall poetry -y
+pip install poetry --quiet
+
+#Run the poetry commands below to set up the environment
+poetry lock #resolve dependecies (also auto create poetry venv if not exists)
+poetry install --quiet #installs dependencies
+poetry env info #Displays the evn just created and the path to it
+
+poetry shell #this command should activate your venv and you should see it enters into the venv
+
+##inside the activated venv shell []
+
+#If you are running on Worbench instance where the service account used has required permissions to run this solution you can skip the below gcloud auth commands and get to next kernel creation section
+
+gcloud auth login  # Use this or below command to authenticate
+
+gcloud auth application-default login
+
+gcloud services enable \
+    serviceusage.googleapis.com \
+    cloudresourcemanager.googleapis.com --project <<Enter Project Id>>
+
+```
+
+Chose the relevant instructions based on where you are running the notebook
+
+**For IDEs like Cloud Shell Editor, VS Code**
+
+For IDEs adding Juypter Extensions will automatically give you option to change the kernel. If not, manually select the python interpreter in your IDE (The exact is shown in the above cell. Path would look like e.g. /home/admin_/opendata/.venv/bin/python or ~cache/user/opendataqna/.venv/bin/python)
+
+Proceed to the Step 1 below
+
+
+**For Jupyter Lab or Jupyter Environments on Workbench etc**
+
+Create Kernel for with the envrionment created
+
+```
+pip install jupyter
+
+ipython kernel install --name "openqna-venv" --user 
+
+```
+
+Restart your kernel or close the exsiting notebook and open again, you should now see the "openqna-venv" in the kernel drop down
+
+**What did we do here?**
+
+* Created Application Default Credentials to use for the code
+* Added venv to kernel to select for running the notebooks (For standalone Jupyter setups like Workbench etc)
+
 #### 1. Run the [1_Setup_OpenDataQnA](/notebooks/1_Setup_OpenDataQnA.ipynb) (Run Once for Initial Setup) 
 
-This notebook guides you through the setup and execution of the Open Data QnA application. It provides comprehensive instructions for configuring your environment, preparing the vector store.
+This notebook guides you through the setup and execution of the Open Data QnA application. It provides comprehensive instructions for setup the solution.
+
 
 #### 2. Run the [2_Run_OpenDataQnA](/notebooks/2_Run_OpenDataQnA.ipynb)
 
@@ -237,6 +305,77 @@ You can find a full list of available options and their descriptions by running:
 ```
 python opendataqna.py --help
 ```
+
+### C) Using Terraform to deploy the solution
+
+The provided terraform streamlines the setup of this solution and serves as a blueprint for deployment. The script provides a one-click, one-time deployment option. However, it doesn't include CI/CD capabilities and is intended solely for initial setup.
+
+> [!NOTE]
+> Current version of the Terraform Google Cloud provider does not support deployment of a few resources, this soultion uses null_resource to create those resources using Google Cloud SDK.
+
+Prior to executing terraform, ensure that the below mentioned steps have been completed.
+
+#### Data Sources Set Up
+
+1. Source data should already be available. If you do not have readily available source data, use the notebooks [0_CopyDataToBigQuery.ipynb](/notebooks/0_CopyDataToBigQuery.ipynb) or [0_CopyDataToCloudSqlPG.ipynb](/notebooks/0_CopyDataToCloudSqlPG.ipynb) based on the preferred source to populate sample data.
+2. Ensure that the [data_source_list.csv](/scripts/data_source_list.csv) is populated with the list of datasources to be used in this solution. Terraform will take care of creating the embeddings in the destination. Use [data_source_list_sample.csv](/scripts/data_source_list_sample.csv) to fill the [data_source_list.csv](/scripts/data_source_list.csv)
+3. If you want to use known good sqls for few shot prompting, ensure that the [known_good_sql.csv](/scripts/known_good_sql.csv) is populated with the required data. Terraform will take care of creating the embeddings in the destination.
+
+#### Enable Firebase
+Firebase will be used to host the frontend of the application.
+
+1. Go to https://console.firebase.google.com/
+1. Select add project and load your Google Cloud Platform project
+1. Add Firebase to one of your existing Google Cloud projects
+1. Confirm Firebase billing plan
+1. Continue and complete
+
+
+#### Terraform deployment
+> [!NOTE]  
+> Terraform apply command for this application uses gcloud config to fetch & pass the set project id to the scripts. Please ensure that gcloud config has been set to your intended project id before proceeding.
+
+> [!IMPORTANT]  
+> The Terraform scripts require specific IAM permissions to function correctly. The user needs either the broad `roles/resourcemanager.projectIamAdmin` role or a custom role with tailored permissions to manage IAM policies and roles.
+> Additionally, one script TEMPORARILY disables Domain Restricted Sharing Org Policies to enable the creation of a public endpoint. This requires the user to also have the `roles/orgpolicy.policyAdmin` role.
+
+1. Install [terraform 1.7 or higher](https://developer.hashicorp.com/terraform/install).
+1. [OPTIONAL] Update default values of variables in [variables.tf](/terraform/variables.tf) according to your preferences. You can find the description for each variable inside the file. This file will be used by terraform to get information about the resources it needs to deploy. If you do not update these, terraform will use the already specified default values in the file.
+1. Move to the terraform directory in the terminal
+
+```
+cd Open_Data_QnA/terraform
+
+#If you are running this outside Cloud Shell you need to set up your Google Cloud SDK Credentials
+
+gcloud config set project <your_project_id>
+gcloud auth application-default set-quota-project <your_project_id>
+
+gcloud services enable \
+    serviceusage.googleapis.com \
+    cloudresourcemanager.googleapis.com --project <<Enter Project Id>>
+
+sh ./scripts/deploy-all.sh
+
+```
+This script will perform the following steps:
+1. **Run terraform scripts** - These terraform scripts will generate all the GCP resources and configurations files required for the frontend & backend. It will also generate embeddings and store it in the destination vector db.
+1. **Deploy cloud run backend service with latest backend code** - The terraform in the previous step uses a dummy container image to deploy the initial version of cloud run service. This is the step where the actual backend code gets deployed.
+1. **Deploy frontend app** - All the config files, web app etc required to create the frontend are deployed via terraform. However, the actual UI deployment takes place in this step.
+
+### After deployment
+***Auth Provider***
+
+You need to enable at least one authentication provider in Firebase, you can enable it using the following steps:
+1. Go to https://console.firebase.google.com/project/your_project_id/authentication/providers (change the `your_project_id` value)
+2. Click on Get Started (if needed)
+3. Select Google and enable it
+4. Set the name for the project and support email for project
+5. Save
+
+This should deploy you end to end solution in the project with firebase web url
+
+For detailed steps and known issues refer to  README.md under [`/terraform`](/terraform/)
 
 
 🖥️ Build a angular based frontend for this solution   
