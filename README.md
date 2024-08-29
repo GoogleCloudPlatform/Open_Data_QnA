@@ -88,10 +88,6 @@ This notebook offers a streamlined way to experience the core functionality of O
 
 🏁 Getting Started: Main Repository 
 -------------
-ℹ️ **You can setup this solution with two approaches. Choose one based on your requirements:**
-  - **A)** Using Jupyter Notebooks (For better view at what is happening at each stage of the solution)
-  - **B)** Using CLI (For ease of use and running with simple python commands, without the need to understand every step of the solution)
-  - **C)** Using terrafrom deployment including your backend APIs with UI
 
 ### Clone the repository and switch to the correct directory 
    
@@ -105,6 +101,12 @@ Make sure that Google Cloud CLI and Python are installed before moving ahead! Yo
 Installation Guide: https://cloud.google.com/sdk/docs/install
 
 Download Python: https://www.python.org/downloads/
+
+ℹ️ **You can setup this solution with three approaches. Choose one based on your requirements:**
+  - **A)** Using [Jupyter Notebooks](#a-jupyter-notebook-based-approach) (For better view at what is happening at each stage of the solution)
+  - **B)** Using [CLI](#b-command-line-interface-cli-based-approach) (For ease of use and running with simple python commands, without the need to understand every step of the solution)
+  - **C)** Using [terrafrom deployment](#c-using-terraform-to-deploy-the-solution) including your backend APIs with UI
+
 
 ### A) Jupyter Notebook Based Approach
 
@@ -348,6 +350,10 @@ cd Open_Data_QnA/terraform
 
 gcloud config set project <your_project_id>
 gcloud auth application-default set-quota-project <your_project_id>
+
+gcloud services enable \
+    serviceusage.googleapis.com \
+    cloudresourcemanager.googleapis.com --project <<Enter Project Id>>
 
 sh ./scripts/deploy-all.sh
 
