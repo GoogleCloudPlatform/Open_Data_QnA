@@ -2,7 +2,8 @@
 # Infrastructure deployment
 The provided terraform streamlines the setup of this solution and serves as a blueprint for deployment. The script provides a one-click, one-time deployment option. However, it doesn't include CI/CD capabilities and is intended solely for initial setup.
 
-*Note*: Current version of the Terraform Google Cloud provider does not support deployment of a few resources, this soultion uses null_resource to create those resources using Google Cloud SDK.
+> [!NOTE]
+> Current version of the Terraform Google Cloud provider does not support deployment of a few resources, this soultion uses null_resource to create those resources using Google Cloud SDK.
 
 ## Table of Contents
 - [Terraform folder structure](#terraform-folder-structure)
