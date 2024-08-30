@@ -460,7 +460,8 @@ def create_firestore_db(firestore_region=FIRESTORE_REGION,firestore_database="op
         create_db_cmd = [
             "gcloud", "firestore", "databases", "create", 
             "--database", firestore_database,
-            "--location", firestore_region
+            "--location", firestore_region,
+            "--project", PROJECT_ID
         ]
         subprocess.run(create_db_cmd, check=True)  # Raise exception on failure
 
