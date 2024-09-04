@@ -10,6 +10,8 @@
 1. Install the firebase tools to run CLI commands
     ```
     cd Open_Data_QnA
+    
+    gcloud services enable firebase.googleapis.com --project=$PROJECT_ID # Enable firebase management API
 
     npm install -g firebase-tools
 
@@ -136,7 +138,6 @@
     Run the below commands on the terminal
 
     ```
-    gcloud services enable firebase.googleapis.com --project=$PROJECT_ID # Enable firebase management API
 
     cd Open_Data_QnA/frontend
     ```

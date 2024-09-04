@@ -105,7 +105,7 @@ Download Python: https://www.python.org/downloads/
 ℹ️ **You can setup this solution with three approaches. Choose one based on your requirements:**
   - **A)** Using [Jupyter Notebooks](#a-jupyter-notebook-based-approach) (For better view at what is happening at each stage of the solution)
   - **B)** Using [CLI](#b-command-line-interface-cli-based-approach) (For ease of use and running with simple python commands, without the need to understand every step of the solution)
-  - **C)** Using [terrafrom deployment](#c-using-terraform-to-deploy-the-solution) including your backend APIs with UI
+  - **C)** Using [terraform deployment](#c-using-terraform-to-deploy-the-solution) including your backend APIs with UI
 
 
 ### A) Jupyter Notebook Based Approach
@@ -311,7 +311,7 @@ python opendataqna.py --help
 The provided terraform streamlines the setup of this solution and serves as a blueprint for deployment. The script provides a one-click, one-time deployment option. However, it doesn't include CI/CD capabilities and is intended solely for initial setup.
 
 > [!NOTE]
-> Current version of the Terraform Google Cloud provider does not support deployment of a few resources, this soultion uses null_resource to create those resources using Google Cloud SDK.
+> Current version of the Terraform Google Cloud provider does not support deployment of a few resources, this solution uses null_resource to create those resources using Google Cloud SDK.
 
 Prior to executing terraform, ensure that the below mentioned steps have been completed.
 
@@ -359,7 +359,7 @@ sh ./scripts/deploy-all.sh
 
 ```
 This script will perform the following steps:
-1. **Run terraform scripts** - These terraform scripts will generate all the GCP resources and configurations files required for the frontend & backend. It will also generate embeddings and store it in the destination vector db.
+1. **Run terraform scripts** - These terraform scripts will generate all the GCP resources and configuration files required for the frontend & backend. It will also generate embeddings and store it in the destination vector db.
 1. **Deploy cloud run backend service with latest backend code** - The terraform in the previous step uses a dummy container image to deploy the initial version of cloud run service. This is the step where the actual backend code gets deployed.
 1. **Deploy frontend app** - All the config files, web app etc required to create the frontend are deployed via terraform. However, the actual UI deployment takes place in this step.
 
