@@ -1,5 +1,6 @@
 from abc import ABC
-from .core import Agent 
+from .core import Agent
+import time
 
 
 class DescriptionAgent(Agent, ABC):
