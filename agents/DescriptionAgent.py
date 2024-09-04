@@ -70,7 +70,7 @@ class DescriptionAgent(Agent, ABC):
                         DO NOT generate description that is more than two lines
                     """
 
-                time.sleep(2) # to avoid quota errors
+                time.sleep(5) # to avoid quota errors
                 table_desc_df.at[index,'table_description']=self.generate_llm_response(context_prompt)
                 print(f"Generated table description for {row['table_schema']}.{row['table_name']}")
                 llm_generated=llm_generated+1
@@ -112,7 +112,7 @@ class DescriptionAgent(Agent, ABC):
                     DO NOT generate description that is more than two lines
                 """
                     
-                time.sleep(2) # to avoid quota errors
+                time.sleep(5) # to avoid quota errors
                 column_name_df.at[index,'column_description']=self.generate_llm_response(prompt=context_prompt)
                 print(f"Generated column description for {row['table_schema']}.{row['table_name']}.{row['column_name']}")
                 llm_generated=llm_generated+1
