@@ -11,7 +11,7 @@ from vertexai.language_models import CodeChatModel
 from vertexai.generative_models import GenerativeModel
 from vertexai.generative_models import HarmCategory,HarmBlockThreshold
 
-
+import time
 
 from utilities import PROJECT_ID, PG_REGION
 vertexai.init(project=PROJECT_ID, location=PG_REGION)
