@@ -1,8 +1,0 @@
-source,user_grouping,schema,table
-bigquery,MovieExplorer-bigquery,imdb_people,name_basics
-bigquery,MovieExplorer-bigquery,imdb_people,title_principals
-bigquery,MovieExplorer-bigquery,imdb_people,title_crew
-bigquery,MovieExplorer-bigquery,imdb_people,title_basics
-bigquery,MovieExplorer-bigquery,imdb_ratings,reviews
-bigquery,MovieExplorer-bigquery,imdb_ratings,title_ratings
-cloudsql-pg,WorldCensus-cloudsql-pg,census_bureau_international,
