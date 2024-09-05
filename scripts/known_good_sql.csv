@@ -1,2 +1,2 @@
 prompt,sql,user_grouping
-"User Question", "SELECT * FROM TABLE","user_grouping_from_data_source list"
+User Question,SELECT * FROM TABLE,user_grouping_from_data_source list
