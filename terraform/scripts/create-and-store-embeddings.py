@@ -15,7 +15,7 @@ from env_setup import get_embeddings, store_embeddings, store_kgq_sql_embeddings
 
 async def create_and_store_embeddings():
 # Generate embeddings for tables and columns
-    table_schema_embeddings, col_schema_embeddings = get_embeddings()
+    table_schema_embeddings, col_schema_embeddings = get_embeddings(generate_missing_descriptions_flag = False, sleep_time=1)
 
 # Store table/column embeddings (asynchronous)
     await(store_embeddings(table_schema_embeddings, col_schema_embeddings))

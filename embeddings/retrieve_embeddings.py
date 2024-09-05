@@ -25,7 +25,7 @@ def get_embedding_chunked(textinput, batch_size):
     return out_df
 
 
-def retrieve_embeddings(SOURCE, SCHEMA="public", table_names = None): 
+def retrieve_embeddings(SOURCE, SCHEMA="public", table_names = None, generate_missing_descriptions_flag = False, sleep_time = 1): 
     """ Augment all the DB schema blocks to create document for embedding """
 
     if SOURCE == "cloudsql-pg":
@@ -36,9 +36,9 @@ def retrieve_embeddings(SOURCE, SCHEMA="public", table_names = None):
         column_schema_sql = pgconnector.return_column_schema_sql(SCHEMA,table_names=table_names)
         column_name_df = pgconnector.retrieve_df(column_schema_sql)
         
-
-         #GENERATE MISSING DESCRIPTIONS
-        table_desc_df,column_name_df= descriptor.generate_missing_descriptions(SOURCE,table_desc_df,column_name_df)
+        if generate_missing_descriptions_flag:
+            #GENERATE MISSING DESCRIPTIONS
+            table_desc_df,column_name_df= descriptor.generate_missing_descriptions(SOURCE,table_desc_df,column_name_df, sleep_time)
 
         #ADD SAMPLES VALUES FOR COLUMNS
         column_name_df["sample_values"]=None
@@ -110,8 +110,10 @@ def retrieve_embeddings(SOURCE, SCHEMA="public", table_names = None):
 
         column_schema_sql = bqconnector.return_column_schema_sql(SCHEMA, table_names=table_names)
         column_name_df = bqconnector.retrieve_df(column_schema_sql)
-        #GENERATE MISSING DESCRIPTIONS
-        table_desc_df,column_name_df= descriptor.generate_missing_descriptions(SOURCE,table_desc_df,column_name_df)
+                                                                 
+        if generate_missing_descriptions_flag:                                                      
+            #GENERATE MISSING DESCRIPTIONS
+            table_desc_df,column_name_df= descriptor.generate_missing_descriptions(SOURCE,table_desc_df,column_name_df, sleep_time)
         
         #ADD SAMPLES VALUES FOR COLUMNS
         column_name_df["sample_values"]=None
@@ -182,4 +184,4 @@ def retrieve_embeddings(SOURCE, SCHEMA="public", table_names = None):
 
 if __name__ == '__main__':
     SOURCE = 'cloudsql-pg'
-    t, c = retrieve_embeddings(SOURCE, SCHEMA="public") 
+    t, c = retrieve_embeddings(SOURCE, SCHEMA="public", generate_missing_descriptions_flag = False, sleep_time = 1) 

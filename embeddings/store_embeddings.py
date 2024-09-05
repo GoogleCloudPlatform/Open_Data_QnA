@@ -248,7 +248,7 @@ if __name__ == '__main__':
     from retrieve_embeddings import retrieve_embeddings
     from utilities import PG_SCHEMA, PROJECT_ID, PG_INSTANCE, PG_DATABASE, PG_USER, PG_PASSWORD, PG_REGION
     VECTOR_STORE = "cloudsql-pgvector"
-    t, c = retrieve_embeddings(VECTOR_STORE, PG_SCHEMA) 
+    t, c = retrieve_embeddings(VECTOR_STORE, PG_SCHEMA, generate_missing_descriptions = False) 
     asyncio.run(store_schema_embeddings(t, 
                             c, 
                             PROJECT_ID,

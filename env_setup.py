@@ -159,7 +159,7 @@ def create_vector_store():
 
 
 
-def get_embeddings():
+def get_embeddings(generate_missing_descriptions_flag = False, sleep_time=0):
     """Generates and returns embeddings for table schemas and column descriptions.
 
     This function performs the following steps:
@@ -225,7 +225,7 @@ def get_embeddings():
         DATA_SOURCE = row['source']
         SCHEMA = row['schema']
         TABLE_LIST = row['table']
-        _t, _c = retrieve_embeddings(DATA_SOURCE, SCHEMA=SCHEMA, table_names=TABLE_LIST)
+        _t, _c = retrieve_embeddings(DATA_SOURCE, SCHEMA=SCHEMA, table_names=TABLE_LIST, generate_missing_descriptions_flag = generate_missing_descriptions_flag, sleep_time=sleep_time)
         _t["source_type"]=DATA_SOURCE
         _c["source_type"]=DATA_SOURCE
         if not TABLE_LIST:
