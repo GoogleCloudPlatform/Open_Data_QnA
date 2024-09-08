@@ -16,6 +16,8 @@ ______________
 
 **kgq_examples = yes**    *;if known-good-queries are provided. yes or no.* 
 
+**use_session_history = yes** *;if you want to use current session's questions without re-evaluating them*
+
 **use_column_samples = yes** *;if you want the solution to collect some samples values from the data source columns to imporve understanding of values. yes or no*
 
 **[GCP]**
