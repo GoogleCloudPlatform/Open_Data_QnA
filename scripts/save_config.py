@@ -16,9 +16,9 @@ def is_root_dir():
     print("current dir: ", current_dir)
     notebooks_path = os.path.join(current_dir, "notebooks")
     agents_path = os.path.join(current_dir, "agents")
-    
-    return os.path.exists(notebooks_path) or os.path.exists(agents_path)
 
+
+    return os.path.exists(notebooks_path) or os.path.exists(agents_path)
 
 
 def save_config(embedding_model,
@@ -28,16 +28,18 @@ def save_config(embedding_model,
                 kgq_examples,
                 use_column_samples,
                 PROJECT_ID,
-                pg_region, 
-                pg_instance, 
-                pg_database, 
-                pg_user, 
+                pg_region,
+                pg_instance,
+                pg_database,
+                pg_user,
                 pg_password,
                 bq_dataset_region,
-                bq_opendataqna_dataset_name, 
+                bq_opendataqna_dataset_name,
                 bq_log_table_name,
-                firestore_region): 
-    
+                spanner_region,
+                spanner_instance,
+                spanner_opendataqna_database,
+                firestore_region):
     config = configparser.ConfigParser()
 
     if is_root_dir():
@@ -70,31 +72,35 @@ def save_config(embedding_model,
         # config['PGCLOUDSQL']['PG_SCHEMA'] = pg_schema
 
     if vector_store := 'bigquery':
+        config['SPANNER']['SPANNER_REGION'] = spanner_region
+        config['SPANNER']['SPANNER_INSTANCE'] = spanner_instance
+        config['SPANNER']['SPANNER_OPENDATAQNA_DATABASE'] = spanner_opendataqna_database
+
+    if vector_store := 'bigquery':
         config['BIGQUERY']['BQ_DATASET_REGION'] = bq_dataset_region
         config['BIGQUERY']['BQ_OPENDATAQNA_DATASET_NAME'] = bq_opendataqna_dataset_name
         config['BIGQUERY']['BQ_LOG_TABLE_NAME'] = bq_log_table_name
 
-    if logging: 
+    if logging:
         config['CONFIG']['LOGGING'] = 'yes'
         config['BIGQUERY']['BQ_LOG_TABLE_NAME'] = bq_log_table_name
 
-    else: 
+    else:
         config['CONFIG']['LOGGING'] = 'no'
 
-    if kgq_examples: 
+    if kgq_examples:
         config['CONFIG']['KGQ_EXAMPLES'] = 'yes'
 
-    else: 
+    else:
         config['CONFIG']['KGQ_EXAMPLES'] = 'no'
 
     if use_column_samples:
         config['CONFIG']['USE_COLUMN_SAMPLES'] = 'yes'
-    
+
     else:
         config['CONFIG']['USE_COLUMN_SAMPLES'] = 'no'
 
-
-    with open(root_dir+'/config.ini', 'w') as configfile:  
+    with open(root_dir+'/config.ini', 'w') as configfile:
         config.write(configfile)
 
     print('All configuration paramaters saved to file!')

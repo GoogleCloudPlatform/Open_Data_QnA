@@ -58,7 +58,7 @@ JOIN census_bureau_international.country_names_area cna ON mp.country_code = cna
 WHERE mp.year = 2023
 ORDER BY mp.midyear_population DESC
 LIMIT 3;",WorldCensus-cloudsql-pg
-What are the top 5 coutries with highest population density in 2024? ,"SELECT mp.country_name, 
+What are the top 5 coutries with highest population density in 2024? ,"SELECT mp.country_name,
        mp.midyear_population / cna.country_area AS population_density_persqkm
 FROM census_bureau_international.midyear_population mp
 JOIN census_bureau_international.country_names_area cna ON mp.country_code = cna.country_code

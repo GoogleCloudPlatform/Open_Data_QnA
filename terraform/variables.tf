@@ -115,6 +115,24 @@ variable "bq_log_table" {
   description = "Name of the table where audit logs will be stored. This table will be create under the bq_opendataqna_dataset."
 }
 
+variable "spanner_instance" {
+  default     = "spanner-opendataqna"
+  type        = string
+  description = "Name of the Cloud Spanner instance to store vector embeddings. Keep this empty if vector db is bigquery/postgres."
+}
+
+variable "spanner_region" {
+  default     = "us-central1"
+  type        = string
+  description = "Location of the spanner_instance"
+}
+
+variable "spanner_database" {
+  type        = string
+  default     = "opendataqna-db"
+  description = "Name of the Database associated with spanner_instance"
+}
+
 variable "firestore_region" {
   type        = string
   default     = "us-central1"

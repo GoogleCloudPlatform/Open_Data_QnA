@@ -4,12 +4,14 @@ import pandas as pd
 import numpy as np
 from pgvector.asyncpg import register_vector
 from google.cloud.sql.connector import Connector
+from google.cloud import spanner
 from langchain_community.embeddings import VertexAIEmbeddings
 from google.cloud import bigquery
 from dbconnectors import pgconnector
 from agents import EmbedderAgent
 from sqlalchemy.sql import text
-from utilities import VECTOR_STORE, PROJECT_ID, PG_INSTANCE, PG_DATABASE, PG_USER, PG_PASSWORD, PG_REGION, BQ_OPENDATAQNA_DATASET_NAME, BQ_REGION, EMBEDDING_MODEL
+from utilities import VECTOR_STORE, PROJECT_ID, PG_INSTANCE, PG_DATABASE, PG_USER, PG_PASSWORD, PG_REGION, \
+    BQ_OPENDATAQNA_DATASET_NAME, BQ_REGION, EMBEDDING_MODEL, SPANNER_INSTANCE, SPANNER_OPENDATAQNA_DATABASE
 
 embedder = EmbedderAgent(EMBEDDING_MODEL)
 
@@ -174,7 +176,96 @@ async def store_schema_embeddings(table_details_embeddings,
         client.query_and_wait(f'''CREATE TABLE IF NOT EXISTS `{project_id}.{schema}.example_prompt_sql_embeddings` (
                               user_grouping string NOT NULL, example_user_question string NOT NULL, example_generated_sql string NOT NULL,
                               embedding ARRAY<FLOAT64>)''')
-                              
+
+    if VECTOR_STORE == "spanner-vector":
+
+        spanner_client = spanner.Client(project=PROJECT_ID)
+        instance = spanner_client.instance(SPANNER_INSTANCE)
+        database = instance.database(SPANNER_OPENDATAQNA_DATABASE)
+
+        def create_tables():
+            # Create tables using DDL statements
+            ddl_statements = [
+                """CREATE TABLE IF NOT EXISTS table_details_embeddings (
+                    source_type STRING(100) NOT NULL,
+                    user_grouping STRING(100) NOT NULL,
+                    table_schema STRING(1024) NOT NULL,
+                    table_name STRING(1024) NOT NULL,
+                    content STRING(MAX),
+                    embedding ARRAY<FLOAT64>
+                ) PRIMARY KEY (user_grouping, table_name)""",
+
+                """CREATE TABLE IF NOT EXISTS tablecolumn_details_embeddings (
+                    source_type STRING(100) NOT NULL,
+                    user_grouping STRING(100) NOT NULL,
+                    table_schema STRING(1024) NOT NULL,
+                    table_name STRING(1024) NOT NULL,
+                    column_name STRING(1024) NOT NULL,
+                    content STRING(MAX),
+                    embedding ARRAY<FLOAT64>
+                ) PRIMARY KEY (user_grouping, table_name, column_name)""",
+
+                """CREATE TABLE IF NOT EXISTS example_prompt_sql_embeddings (
+                    user_grouping STRING(1024) NOT NULL,
+                    example_user_question STRING(MAX) NOT NULL,
+                    example_generated_sql STRING(MAX) NOT NULL,
+                    embedding ARRAY<FLOAT64>
+                ) PRIMARY KEY (user_grouping, example_user_question)"""
+            ]
+
+            operation = database.update_ddl(ddl_statements)
+            operation.result()  # Wait for the operation to complete
+
+        # Function to convert numpy array to list
+        def np_to_list(arr):
+            return arr.tolist() if isinstance(arr, np.ndarray) else arr
+
+        def insert_table_details(transaction):
+            for _, row in table_details_embeddings.iterrows():
+                transaction.insert_or_update(
+                    table="table_details_embeddings",
+                    columns=("source_type", "user_grouping", "table_schema", "table_name", "content", "embedding"),
+                    values=[(
+                        row["source_type"],
+                        row["user_grouping"],
+                        row["table_schema"],
+                        row["table_name"],
+                        row["content"],
+                        np_to_list(row["embedding"])
+                    )]
+                )
+
+        def insert_column_details(transaction):
+            for _, row in tablecolumn_details_embeddings.iterrows():
+                transaction.insert_or_update(
+                    table="tablecolumn_details_embeddings",
+                    columns=("source_type", "user_grouping", "table_schema", "table_name", "column_name", "content",
+                             "embedding"),
+                    values=[(
+                        row["source_type"],
+                        row["user_grouping"],
+                        row["table_schema"],
+                        row["table_name"],
+                        row["column_name"],
+                        row["content"],
+                        np_to_list(row["embedding"])
+                    )]
+                )
+
+        try:
+            create_tables()
+            print("Tables created successfully.")
+
+            database.run_in_transaction(insert_table_details)
+            print("Table details inserted successfully.")
+
+            database.run_in_transaction(insert_column_details)
+            print("Column details inserted successfully.")
+
+            print("Vector store implementation for Spanner completed successfully.")
+        except Exception as e:
+            print(f"An error occurred: {str(e)}")
+
     else: raise ValueError("Please provide a valid Vector Store.")
     return "Embeddings are stored successfully"
 

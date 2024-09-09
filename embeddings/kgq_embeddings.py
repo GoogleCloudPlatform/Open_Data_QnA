@@ -6,11 +6,11 @@ import numpy as np
 from pgvector.asyncpg import register_vector
 from google.cloud.sql.connector import Connector
 from langchain_community.embeddings import VertexAIEmbeddings
-from google.cloud import bigquery
+from google.cloud import bigquery, spanner
 from dbconnectors import pgconnector
 from agents import EmbedderAgent
 from sqlalchemy.sql import text
-from utilities import PROJECT_ID, PG_INSTANCE, PG_DATABASE, PG_USER, PG_PASSWORD, PG_REGION, BQ_OPENDATAQNA_DATASET_NAME, BQ_REGION
+from utilities import PROJECT_ID, PG_INSTANCE, PG_DATABASE, PG_USER, PG_PASSWORD, PG_REGION, BQ_OPENDATAQNA_DATASET_NAME, BQ_REGION, SPANNER_INSTANCE, SPANNER_OPENDATAQNA_DATABASE
 
 embedder = EmbedderAgent('vertex')
 
@@ -62,6 +62,21 @@ async def setup_kgq_table( project_id,
                                 example_generated_sql text NOT NULL,
                                 embedding vector(768))"""
             )
+
+    elif VECTOR_STORE == 'spanner-vector':
+        spanner_client = spanner.Client(project=project_id)
+        instance = spanner_client.instance(instance_name)
+        database = instance.database(database_name)
+
+        operation = database.update_ddl([
+                """CREATE TABLE IF NOT EXISTS example_prompt_sql_embeddings (
+                    user_grouping STRING(1024) NOT NULL,
+                    example_user_question STRING(MAX) NOT NULL,
+                    example_generated_sql STRING(MAX) NOT NULL,
+                    embedding ARRAY<FLOAT64>
+                ) PRIMARY KEY (user_grouping, example_user_question)"""
+        ])
+        operation.result()
 
     else: raise ValueError("Not a valid parameter for a vector store.")
 
@@ -158,6 +173,54 @@ async def store_kgq_embeddings(df_kgq,
                 )
 
         await conn.close()
+
+    elif VECTOR_STORE == 'spanner-vector':
+        spanner_client = spanner.Client(project=project_id)
+        instance = spanner_client.instance(instance_name)
+        database = instance.database(database_name)
+
+        example_sql_details_chunked = []
+
+        for _, row_aug in df_kgq.iterrows():
+            example_user_question = str(row_aug['prompt'])
+            example_generated_sql = str(row_aug['sql'])
+            example_grouping = str(row_aug['user_grouping'])
+            emb = embedder.create(example_user_question)
+
+            r = {"example_grouping": example_grouping, "example_user_question": example_user_question,
+                 "example_generated_sql": example_generated_sql, "embedding": emb}
+            example_sql_details_chunked.append(r)
+
+        example_prompt_sql_embeddings = pd.DataFrame(example_sql_details_chunked)
+
+        def update_embeddings(transaction):
+            for _, row in example_prompt_sql_embeddings.iterrows():
+                transaction.execute_update(
+                    "DELETE FROM example_prompt_sql_embeddings WHERE user_grouping = @user_grouping AND example_user_question = @example_user_question",
+                    params={"user_grouping": row["example_grouping"],
+                            "example_user_question": row["example_user_question"]},
+                    param_types={"user_grouping": spanner.param_types.STRING,
+                                 "example_user_question": spanner.param_types.STRING}
+                )
+                cleaned_sql = row["example_generated_sql"].replace("\r", " ").replace("\n", " ")
+                transaction.execute_update(
+                    "INSERT INTO example_prompt_sql_embeddings (user_grouping, example_user_question, example_generated_sql, embedding) "
+                    "VALUES (@user_grouping, @example_user_question, @example_generated_sql, @embedding)",
+                    params={
+                        "user_grouping": row["example_grouping"],
+                        "example_user_question": row["example_user_question"],
+                        "example_generated_sql": cleaned_sql,
+                        "embedding": row["embedding"]
+                    },
+                    param_types={
+                        "user_grouping": spanner.param_types.STRING,
+                        "example_user_question": spanner.param_types.STRING,
+                        "example_generated_sql": spanner.param_types.STRING,
+                        "embedding": spanner.param_types.Array(spanner.param_types.FLOAT64)
+                    }
+                )
+
+        database.run_in_transaction(update_embeddings)
 
     else: raise ValueError("Not a valid parameter for a vector store.")
 

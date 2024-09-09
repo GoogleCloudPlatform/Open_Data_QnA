@@ -1,24 +1,27 @@
-
 import asyncio
 from google.cloud import bigquery
-import google.api_core 
+import google.api_core
 
 from embeddings import retrieve_embeddings, store_schema_embeddings, setup_kgq_table, load_kgq_df, store_kgq_embeddings
 
-from utilities import ( PG_REGION, PG_INSTANCE, PG_DATABASE, PG_USER, PG_PASSWORD, 
-                        BQ_REGION, 
-                       EXAMPLES, LOGGING, VECTOR_STORE, PROJECT_ID, 
-                       BQ_OPENDATAQNA_DATASET_NAME,FIRESTORE_REGION) 
+from utilities import (PG_REGION, PG_INSTANCE, PG_DATABASE, PG_USER, PG_PASSWORD,
+                       BQ_REGION,
+                       SPANNER_REGION, SPANNER_INSTANCE, SPANNER_OPENDATAQNA_DATABASE,
+                       EXAMPLES, LOGGING, VECTOR_STORE, PROJECT_ID,
+                       BQ_OPENDATAQNA_DATASET_NAME, FIRESTORE_REGION)
 import subprocess
 import time
-
 
 if VECTOR_STORE == 'bigquery-vector':
     DATASET_REGION = BQ_REGION
 
 elif VECTOR_STORE == 'cloudsql-pgvector':
     DATASET_REGION = PG_REGION
-    
+
+elif VECTOR_STORE == 'spanner-vector':
+    DATASET_REGION = SPANNER_REGION
+
+
 def setup_postgresql(pg_instance, pg_region, pg_database, pg_user, pg_password):
     """Sets up a PostgreSQL Cloud SQL instance with a database and user.
 
@@ -29,7 +32,7 @@ def setup_postgresql(pg_instance, pg_region, pg_database, pg_user, pg_password):
         pg_user (str): Name of the user to create.
         pg_password (str): Password for the user.
     """
-    
+
     # Check if Cloud SQL instance exists
     describe_cmd = ["gcloud", "sql", "instances", "describe", pg_instance, "--format=value(databaseVersion)"]
     describe_process = subprocess.run(describe_cmd, capture_output=True, text=True)
@@ -62,9 +65,9 @@ def setup_postgresql(pg_instance, pg_region, pg_database, pg_user, pg_password):
     else:
         print("Creating new Cloud SQL database...")
         create_db_cmd = ["gcloud", "sql", "databases", "create", pg_database, "--instance", pg_instance]
-        subprocess.run(create_db_cmd, check=True)  
+        subprocess.run(create_db_cmd, check=True)
 
-    # Create the user
+        # Create the user
     create_user_cmd = [
         "gcloud", "sql", "users", "create", pg_user,
         "--instance", pg_instance, "--password", pg_password
@@ -74,6 +77,51 @@ def setup_postgresql(pg_instance, pg_region, pg_database, pg_user, pg_password):
     print(f"PG Database {pg_database} in instance {pg_instance} is ready.")
 
 
+def setup_spanner(spanner_instance, spanner_region, spanner_database):
+    """Sets up a Spanner database.
+
+    Args:
+        spanner_instance (str): Name of the Spanner instance.
+        spanner_region (str): Region where the instance should be located.
+        spanner_database (str): Name of the database to create.
+    """
+
+    # Check if Spanner instance exists
+    describe_cmd = ["gcloud", "spanner", "instances", "describe", spanner_instance, "--format=value(state)"]
+    describe_process = subprocess.run(describe_cmd, capture_output=True, text=True)
+
+    if describe_process.returncode == 0:
+        if describe_process.stdout.startswith("READY"):
+            print("Found existing Cloud Spanner Instance!")
+        else:
+            raise RuntimeError("Existing Cloud Spanner instance is not ready or missing")
+    else:
+        print("Creating new Cloud Spanner instance...")
+        create_cmd = [
+            "gcloud", "spanner", "instances", "create", spanner_instance,
+            f"--config=regional-{spanner_region}",
+            f"--description={spanner_instance.rsplit('-',1)[0]} embeddings",
+            "--processing-units=100"
+        ]
+        subprocess.run(create_cmd, check=True, capture_output=True)  # Raises an exception if creation fails
+
+        # Wait for instance to be ready
+        print("Waiting for instance to be ready...")
+        time.sleep(9999)  # You might need to adjust this depending on how long it takes
+
+    # Create the database
+    list_cmd = ["gcloud", "spanner", "databases", "list", "--instance", spanner_instance]
+    list_process = subprocess.run(list_cmd, capture_output=True, text=True)
+
+    if spanner_database in list_process.stdout:
+        print("Found existing Cloud Spanner database!")
+    else:
+        print("Creating new Cloud Spanner database...")
+        create_db_cmd = ["gcloud", "spanner", "databases", "create", spanner_database,
+                         "--database-dialect=GOOGLE_STANDARD_SQL", "--instance", spanner_instance]
+        subprocess.run(create_db_cmd, check=True)
+
+    print(f"Spanner Database {spanner_database} in instance {spanner_instance} is ready.")
 
 
 def create_vector_store():
@@ -110,16 +158,13 @@ def create_vector_store():
         RuntimeError: If there are errors during the setup process (e.g., dataset creation failure).
     """
 
-
     print("Initializing environment setup.")
     print("Loading configurations from config.ini file.")
-
-
 
     print("Vector Store source set to: ", VECTOR_STORE)
 
     # Create PostgreSQL Instance is data source is different from PostgreSQL Instance
-    if VECTOR_STORE == 'cloudsql-pgvector' :
+    if VECTOR_STORE == 'cloudsql-pgvector':
         print("Generating pg dataset for vector store.")
         # Parameters for PostgreSQL Instance
         pg_region = DATASET_REGION
@@ -127,23 +172,30 @@ def create_vector_store():
         pg_database = "opendataqna-db"
         pg_user = "pguser"
         pg_password = "pg123"
-        pg_schema = 'pg-vector-store' 
+        pg_schema = 'pg-vector-store'
 
         setup_postgresql(pg_instance, pg_region, pg_database, pg_user, pg_password)
 
+    if VECTOR_STORE == 'spanner-vector':
+        print("Generating spanner database for vector store.")
+        # Parameters for Spanner
+        spanner_region = DATASET_REGION
+        spanner_instance = SPANNER_INSTANCE
+        spanner_opendataqna_database = SPANNER_OPENDATAQNA_DATABASE
+
+        setup_spanner(spanner_instance, spanner_region, spanner_opendataqna_database)
 
     # Create a new data set on Bigquery to use for the logs table
     if LOGGING or VECTOR_STORE == 'bigquery-vector':
-        if LOGGING: 
+        if LOGGING:
             print("Logging is enabled")
 
         if VECTOR_STORE == 'bigquery-vector':
             print("Vector store set to 'bigquery-vector'")
 
         print(f"Generating Big Query dataset {BQ_OPENDATAQNA_DATASET_NAME}")
-        client=bigquery.Client(project=PROJECT_ID)
+        client = bigquery.Client(project=PROJECT_ID)
         dataset_ref = f"{PROJECT_ID}.{BQ_OPENDATAQNA_DATASET_NAME}"
-
 
         # Create the dataset if it does not exist already
         try:
@@ -151,12 +203,10 @@ def create_vector_store():
             print("Destination Dataset exists")
         except google.api_core.exceptions.NotFound:
             print("Cannot find the dataset hence creating.......")
-            dataset=bigquery.Dataset(dataset_ref)
-            dataset.location=DATASET_REGION
+            dataset = bigquery.Dataset(dataset_ref)
+            dataset.location = DATASET_REGION
             client.create_dataset(dataset)
-            print(str(dataset_ref)+" is created")
-
-
+            print(str(dataset_ref) + " is created")
 
 
 def get_embeddings():
@@ -181,7 +231,6 @@ def get_embeddings():
             - PG_SCHEMA (if DATA_SOURCE is "cloudsql-pg"): The PostgreSQL schema name.
     """
 
-
     print("Generating embeddings from source db schemas")
 
     import pandas as pd
@@ -199,69 +248,72 @@ def get_embeddings():
 
         current_dir = os.path.dirname(current_dir)
 
-    print("Source Found at Path :: "+file_path)
+    print("Source Found at Path :: " + file_path)
 
     # Load the file
     df_src = pd.read_csv(file_path)
-    df_src = df_src.loc[:, ["source", "user_grouping", "schema","table"]]
-    df_src = df_src.sort_values(by=["source","user_grouping","schema","table"])
-    
-    #If no schema Error Out
-    if df_src['schema'].astype(str).str.len().min()==0 or df_src['schema'].isna().any():
+    df_src = df_src.loc[:, ["source", "user_grouping", "schema", "table"]]
+    df_src = df_src.sort_values(by=["source", "user_grouping", "schema", "table"])
+
+    # If no schema Error Out
+    if df_src['schema'].astype(str).str.len().min() == 0 or df_src['schema'].isna().any():
         raise ValueError("Schema column cannot be empty")
 
+    # Group by for all the tables filtered
+    df = df_src.groupby(['source', 'schema'])['table'].agg(lambda x: list(x.dropna().unique())).reset_index()
 
-    #Group by for all the tables filtered
-    df=df_src.groupby(['source','schema'])['table'].agg(lambda x: list(x.dropna().unique())).reset_index()
+    df['table'] = df['table'].apply(lambda x: None if pd.isna(x).any() else x)
 
-    df['table']=df['table'].apply(lambda x: None if pd.isna(x).any() else x)
-    
     print("The Embeddings are extracted for the below combinations")
     print(df)
-    table_schema_embeddings=pd.DataFrame(columns=['source_type','join_by','table_schema', 'table_name', 'content','embedding'])
-    col_schema_embeddings=pd.DataFrame(columns=['source_type','join_by','table_schema', 'table_name', 'column_name', 'content','embedding'])
+    table_schema_embeddings = pd.DataFrame(
+        columns=['source_type', 'join_by', 'table_schema', 'table_name', 'content', 'embedding'])
+    col_schema_embeddings = pd.DataFrame(
+        columns=['source_type', 'join_by', 'table_schema', 'table_name', 'column_name', 'content', 'embedding'])
 
     for _, row in df.iterrows():
         DATA_SOURCE = row['source']
         SCHEMA = row['schema']
         TABLE_LIST = row['table']
         _t, _c = retrieve_embeddings(DATA_SOURCE, SCHEMA=SCHEMA, table_names=TABLE_LIST)
-        _t["source_type"]=DATA_SOURCE
-        _c["source_type"]=DATA_SOURCE
+        _t["source_type"] = DATA_SOURCE
+        _c["source_type"] = DATA_SOURCE
         if not TABLE_LIST:
-            _t["join_by"]=DATA_SOURCE+"_"+SCHEMA+"_"+SCHEMA
-            _c["join_by"]=DATA_SOURCE+"_"+SCHEMA+"_"+SCHEMA
-        table_schema_embeddings = pd.concat([table_schema_embeddings,_t],ignore_index=True)
-        col_schema_embeddings = pd.concat([col_schema_embeddings,_c],ignore_index=True)
+            _t["join_by"] = DATA_SOURCE + "_" + SCHEMA + "_" + SCHEMA
+            _c["join_by"] = DATA_SOURCE + "_" + SCHEMA + "_" + SCHEMA
+        table_schema_embeddings = pd.concat([table_schema_embeddings, _t], ignore_index=True)
+        col_schema_embeddings = pd.concat([col_schema_embeddings, _c], ignore_index=True)
 
     df_src['join_by'] = df_src.apply(
-    lambda row: f"{row['source']}_{row['schema']}_{row['schema']}" if pd.isna(row['table']) else f"{row['source']}_{row['schema']}_{row['table']}",axis=1)
+        lambda row: f"{row['source']}_{row['schema']}_{row['schema']}" if pd.isna(
+            row['table']) else f"{row['source']}_{row['schema']}_{row['table']}", axis=1)
 
-    table_schema_embeddings['join_by'] = table_schema_embeddings['join_by'].fillna(table_schema_embeddings['source_type'] + "_" + table_schema_embeddings['table_schema'] + "_" + table_schema_embeddings['table_name'])
+    table_schema_embeddings['join_by'] = table_schema_embeddings['join_by'].fillna(
+        table_schema_embeddings['source_type'] + "_" + table_schema_embeddings['table_schema'] + "_" +
+        table_schema_embeddings['table_name'])
 
+    col_schema_embeddings['join_by'] = col_schema_embeddings['join_by'].fillna(
+        col_schema_embeddings['source_type'] + "_" + col_schema_embeddings['table_schema'] + "_" +
+        col_schema_embeddings['table_name'])
 
-    col_schema_embeddings['join_by'] = col_schema_embeddings['join_by'].fillna(col_schema_embeddings['source_type'] + "_" + col_schema_embeddings['table_schema'] + "_" + col_schema_embeddings['table_name'])
+    table_schema_embeddings = table_schema_embeddings.merge(df_src[['join_by', 'user_grouping']], on='join_by',
+                                                            how='left')
 
+    table_schema_embeddings.drop(columns=["join_by"], inplace=True)
+    # Replace NaN values in group to default to the schema
 
-
-    table_schema_embeddings = table_schema_embeddings.merge(df_src[['join_by', 'user_grouping']], on='join_by', how='left')
-
-    table_schema_embeddings.drop(columns=["join_by"],inplace=True)
-    #Replace NaN values in group to default to the schema
-
-    
-    table_schema_embeddings['user_grouping'] = table_schema_embeddings['user_grouping'].fillna(table_schema_embeddings['table_schema']+"-"+table_schema_embeddings['source_type'])
-
+    table_schema_embeddings['user_grouping'] = table_schema_embeddings['user_grouping'].fillna(
+        table_schema_embeddings['table_schema'] + "-" + table_schema_embeddings['source_type'])
 
     col_schema_embeddings = col_schema_embeddings.merge(df_src[['join_by', 'user_grouping']], on='join_by', how='left')
 
-    col_schema_embeddings.drop(columns=["join_by"],inplace=True)
+    col_schema_embeddings.drop(columns=["join_by"], inplace=True)
 
-    #Replace NaN values in group to default to the schema
-    col_schema_embeddings['user_grouping'] = col_schema_embeddings['user_grouping'].fillna(col_schema_embeddings['table_schema']+"-"+col_schema_embeddings['source_type'])
+    # Replace NaN values in group to default to the schema
+    col_schema_embeddings['user_grouping'] = col_schema_embeddings['user_grouping'].fillna(
+        col_schema_embeddings['table_schema'] + "-" + col_schema_embeddings['source_type'])
 
     print("Table and Column embeddings are created")
-
 
     return table_schema_embeddings, col_schema_embeddings
 
@@ -290,34 +342,46 @@ async def store_embeddings(table_schema_embeddings, col_schema_embeddings):
     """
 
     print("Storing embeddings back to the vector store.")
-    if VECTOR_STORE=='bigquery-vector':
-        await(store_schema_embeddings(table_details_embeddings=table_schema_embeddings, 
-                                    tablecolumn_details_embeddings=col_schema_embeddings, 
-                                    project_id=PROJECT_ID,
-                                    instance_name=None,
-                                    database_name=None,
-                                    schema=BQ_OPENDATAQNA_DATASET_NAME,
-                                    database_user=None,
-                                    database_password=None,
-                                    region=BQ_REGION,
-                                    VECTOR_STORE = VECTOR_STORE
-                                    ))
+    if VECTOR_STORE == 'bigquery-vector':
+        await(store_schema_embeddings(table_details_embeddings=table_schema_embeddings,
+                                      tablecolumn_details_embeddings=col_schema_embeddings,
+                                      project_id=PROJECT_ID,
+                                      instance_name=None,
+                                      database_name=None,
+                                      schema=BQ_OPENDATAQNA_DATASET_NAME,
+                                      database_user=None,
+                                      database_password=None,
+                                      region=BQ_REGION,
+                                      VECTOR_STORE=VECTOR_STORE
+                                      ))
 
-    elif VECTOR_STORE=='cloudsql-pgvector':
-        await(store_schema_embeddings(table_details_embeddings=table_schema_embeddings, 
-                                    tablecolumn_details_embeddings=col_schema_embeddings, 
-                                    project_id=PROJECT_ID,
-                                    instance_name=PG_INSTANCE,
-                                    database_name=PG_DATABASE,
-                                    schema=None,
-                                    database_user=PG_USER,
-                                    database_password=PG_PASSWORD,
-                                    region=PG_REGION,
-                                    VECTOR_STORE = VECTOR_STORE
-                                    ))
+    elif VECTOR_STORE == 'cloudsql-pgvector':
+        await(store_schema_embeddings(table_details_embeddings=table_schema_embeddings,
+                                      tablecolumn_details_embeddings=col_schema_embeddings,
+                                      project_id=PROJECT_ID,
+                                      instance_name=PG_INSTANCE,
+                                      database_name=PG_DATABASE,
+                                      schema=None,
+                                      database_user=PG_USER,
+                                      database_password=PG_PASSWORD,
+                                      region=PG_REGION,
+                                      VECTOR_STORE=VECTOR_STORE
+                                      ))
+
+    elif VECTOR_STORE == 'spanner-vector':
+        await(store_schema_embeddings(table_details_embeddings=table_schema_embeddings,
+                                      tablecolumn_details_embeddings=col_schema_embeddings,
+                                      project_id=PROJECT_ID,
+                                      instance_name=SPANNER_INSTANCE,
+                                      database_name=SPANNER_OPENDATAQNA_DATABASE,
+                                      schema=None,
+                                      database_user=None,
+                                      database_password=None,
+                                      region=SPANNER_REGION,
+                                      VECTOR_STORE=VECTOR_STORE
+                                      ))
 
     print("Table and Column embeddings are saved to vector store")
-
 
 
 async def create_kgq_sql_table():
@@ -344,33 +408,44 @@ async def create_kgq_sql_table():
     if EXAMPLES:
         print("Creating kgq table in vector store.")
         # Delete any old tables and create a new table to KGQ embeddings
-        if VECTOR_STORE=='bigquery-vector':
+        if VECTOR_STORE == 'bigquery-vector':
             await(setup_kgq_table(project_id=PROJECT_ID,
-                                instance_name=None,
-                                database_name=None,
-                                schema=BQ_OPENDATAQNA_DATASET_NAME,
-                                database_user=None,
-                                database_password=None,
-                                region=BQ_REGION,
-                                VECTOR_STORE = VECTOR_STORE
-                                ))
+                                  instance_name=None,
+                                  database_name=None,
+                                  schema=BQ_OPENDATAQNA_DATASET_NAME,
+                                  database_user=None,
+                                  database_password=None,
+                                  region=BQ_REGION,
+                                  VECTOR_STORE=VECTOR_STORE
+                                  ))
 
-        elif VECTOR_STORE=='cloudsql-pgvector':
+        elif VECTOR_STORE == 'cloudsql-pgvector':
             await(setup_kgq_table(project_id=PROJECT_ID,
-                                instance_name=PG_INSTANCE,
-                                database_name=PG_DATABASE,
-                                schema=None,
-                                database_user=PG_USER,
-                                database_password=PG_PASSWORD,
-                                region=PG_REGION,
-                                VECTOR_STORE = VECTOR_STORE
-                                ))
+                                  instance_name=PG_INSTANCE,
+                                  database_name=PG_DATABASE,
+                                  schema=None,
+                                  database_user=PG_USER,
+                                  database_password=PG_PASSWORD,
+                                  region=PG_REGION,
+                                  VECTOR_STORE=VECTOR_STORE
+                                  ))
+
+        elif VECTOR_STORE == 'spanner-vector':
+            await(setup_kgq_table(project_id=PROJECT_ID,
+                                  instance_name=SPANNER_INSTANCE,
+                                  database_name=SPANNER_OPENDATAQNA_DATABASE,
+                                  schema=None,
+                                  database_user=None,
+                                  database_password=None,
+                                  region=SPANNER_REGION,
+                                  VECTOR_STORE=VECTOR_STORE
+                                  ))
+
     else:
         print("⚠️ WARNING: No Known Good Queries are provided to create query cache for Few shot examples!")
         print("Creating a query cache is highly recommended for best outcomes")
-        print("If no Known Good Queries for the dataset are availabe at this time, you can use 3_LoadKnownGoodSQL.ipynb to load them later!!")
-
-
+        print(
+            "If no Known Good Queries for the dataset are availabe at this time, you can use 3_LoadKnownGoodSQL.ipynb to load them later!!")
 
 
 async def store_kgq_sql_embeddings():
@@ -401,54 +476,65 @@ async def store_kgq_sql_embeddings():
         # Load the contents of the known_good_sql.csv file into a dataframe
         df_kgq = load_kgq_df()
 
-
-
         print("Storing kgq embeddings in vector store table.")
         # Add KGQ to the vector store
-        if VECTOR_STORE=='bigquery-vector':
+        if VECTOR_STORE == 'bigquery-vector':
             await(store_kgq_embeddings(df_kgq,
-                                    project_id=PROJECT_ID,
-                                        instance_name=None,
-                                        database_name=None,
-                                        schema=BQ_OPENDATAQNA_DATASET_NAME,
-                                        database_user=None,
-                                        database_password=None,
-                                        region=BQ_REGION,
-                                        VECTOR_STORE = VECTOR_STORE
-                                        ))
+                                       project_id=PROJECT_ID,
+                                       instance_name=None,
+                                       database_name=None,
+                                       schema=BQ_OPENDATAQNA_DATASET_NAME,
+                                       database_user=None,
+                                       database_password=None,
+                                       region=BQ_REGION,
+                                       VECTOR_STORE=VECTOR_STORE
+                                       ))
 
-        elif VECTOR_STORE=='cloudsql-pgvector':
+        elif VECTOR_STORE == 'cloudsql-pgvector':
             await(store_kgq_embeddings(df_kgq,
-                                    project_id=PROJECT_ID,
-                                        instance_name=PG_INSTANCE,
-                                        database_name=PG_DATABASE,
-                                        schema=None,
-                                        database_user=PG_USER,
-                                        database_password=PG_PASSWORD,
-                                        region=PG_REGION,
-                                        VECTOR_STORE = VECTOR_STORE
-                                        ))
+                                       project_id=PROJECT_ID,
+                                       instance_name=PG_INSTANCE,
+                                       database_name=PG_DATABASE,
+                                       schema=None,
+                                       database_user=PG_USER,
+                                       database_password=PG_PASSWORD,
+                                       region=PG_REGION,
+                                       VECTOR_STORE=VECTOR_STORE
+                                       ))
+
+        elif VECTOR_STORE == 'spanner-vector':
+            await(store_kgq_embeddings(df_kgq,
+                                       project_id=PROJECT_ID,
+                                       instance_name=SPANNER_INSTANCE,
+                                       database_name=SPANNER_OPENDATAQNA_DATABASE,
+                                       schema=None,
+                                       database_user=None,
+                                       database_password=None,
+                                       region=SPANNER_REGION,
+                                       VECTOR_STORE=VECTOR_STORE
+                                       ))
+
         print('kgq embeddings stored.')
 
     else:
         print("⚠️ WARNING: No Known Good Queries are provided to create query cache for Few shot examples!")
         print("Creating a query cache is highly recommended for best outcomes")
-        print("If no Known Good Queries for the dataset are availabe at this time, you can use 3_LoadKnownGoodSQL.ipynb to load them later!!")
+        print(
+            "If no Known Good Queries for the dataset are availabe at this time, you can use 3_LoadKnownGoodSQL.ipynb to load them later!!")
 
 
-def create_firestore_db(firestore_region=FIRESTORE_REGION,firestore_database="opendataqna-session-logs"):
-
+def create_firestore_db(firestore_region=FIRESTORE_REGION, firestore_database="opendataqna-session-logs"):
     # Check if Firestore database exists
     database_exists_cmd = [
-        "gcloud", "firestore", "databases", "list", 
-        "--filter", f"name=projects/{PROJECT_ID}/databases/{firestore_database}", 
+        "gcloud", "firestore", "databases", "list",
+        "--filter", f"name=projects/{PROJECT_ID}/databases/{firestore_database}",
         "--format", "value(name)"  # Extract just the name if found
     ]
 
     database_exists_process = subprocess.run(
         database_exists_cmd, capture_output=True, text=True
     )
-    
+
     if database_exists_process.returncode == 0 and database_exists_process.stdout:
         if database_exists_process.stdout.startswith(f"projects/{PROJECT_ID}/databases/{firestore_database}"):
             print("Found existing Firestore database with this name already!")
@@ -458,7 +544,7 @@ def create_firestore_db(firestore_region=FIRESTORE_REGION,firestore_database="op
         # Create Firestore database
         print("Creating new Firestore database...")
         create_db_cmd = [
-            "gcloud", "firestore", "databases", "create", 
+            "gcloud", "firestore", "databases", "create",
             "--database", firestore_database,
             "--location", firestore_region,
             "--project", PROJECT_ID
@@ -469,24 +555,20 @@ def create_firestore_db(firestore_region=FIRESTORE_REGION,firestore_database="op
         time.sleep(30)  # May not be strictly necessary for basic use
 
 
-
-
-
 if __name__ == '__main__':
     # Setup vector store for embeddings
-    create_vector_store()  
+    create_vector_store()
 
     # Generate embeddings for tables and columns
-    table_schema_embeddings, col_schema_embeddings = get_embeddings()  
+    table_schema_embeddings, col_schema_embeddings = get_embeddings()
 
     # Store table/column embeddings (asynchronous)
-    asyncio.run(store_embeddings(table_schema_embeddings, col_schema_embeddings)) 
+    asyncio.run(store_embeddings(table_schema_embeddings, col_schema_embeddings))
 
     # Create table for known good queries (if enabled)
-    asyncio.run(create_kgq_sql_table()) 
+    asyncio.run(create_kgq_sql_table())
 
     # Store known good query embeddings (if enabled)
     asyncio.run(store_kgq_sql_embeddings())
 
-    create_firestore_db()  
-
+    create_firestore_db()

@@ -32,6 +32,7 @@ flask-cors = "^4.0.0"
 Werkzeug = "^2.3.7"
 google-cloud-firestore= "^2.16.0"
 firebase-admin = "^5.2.0"
+google-cloud-spanner = "^3.49.1"
 
 
 

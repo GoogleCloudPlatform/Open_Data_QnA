@@ -29,12 +29,17 @@ class BuildSQLAgent(Agent, ABC):
         if source_type=='bigquery':
 
             from dbconnectors import bq_specific_data_types
-            specific_data_types = bq_specific_data_types() 
-        
-        else:
-           
+            specific_data_types = bq_specific_data_types()
+
+        elif source_type=='postgres':
+
             from dbconnectors import pg_specific_data_types
             specific_data_types = pg_specific_data_types()
+
+        elif source_type == 'spanner':
+
+            from dbconnectors import spanner_specific_data_types
+            specific_data_types = spanner_specific_data_types()
 
         if f'usecase_{source_type}_{user_grouping}' in PROMPTS:
             usecase_context = PROMPTS[f'usecase_{source_type}_{user_grouping}']

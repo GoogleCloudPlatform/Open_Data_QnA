@@ -4,8 +4,8 @@ import uuid
 
 from agents import EmbedderAgent, BuildSQLAgent, DebugSQLAgent, ValidateSQLAgent, ResponseAgent,VisualizeAgent
 from utilities import (PROJECT_ID, PG_REGION, BQ_REGION, EXAMPLES, LOGGING, VECTOR_STORE,
-                       BQ_OPENDATAQNA_DATASET_NAME)
-from dbconnectors import bqconnector, pgconnector, firestoreconnector
+                       BQ_OPENDATAQNA_DATASET_NAME, SPANNER_REGION)
+from dbconnectors import bqconnector, pgconnector, firestoreconnector, spannerconnector
 from embeddings.store_embeddings import add_sql_embedding
 
 
@@ -20,6 +20,11 @@ elif VECTOR_STORE == 'cloudsql-pgvector':
     region=PG_REGION
     vector_connector = pgconnector
     call_await=True
+
+elif VECTOR_STORE == 'spanner-vector':
+    region=SPANNER_REGION
+    vector_connector = spannerconnector
+    call_await = False
 
 else: 
     raise ValueError("Please specify a valid Data Store. Supported are either 'bigquery-vector' or 'cloudsql-pgvector'")
@@ -282,7 +287,7 @@ async def generate_sql(session_id,
                     invalid_response=False
 
                     if RUN_DEBUGGER: 
-                        generated_sql, invalid_response, AUDIT_TEXT = SQLDebugger.start_debugger(DATA_SOURCE,user_grouping, generated_sql, user_question, SQLChecker, table_matches, column_matches, AUDIT_TEXT, similar_sql, DEBUGGING_ROUNDS, LLM_VALIDATION) 
+                        generated_sql, invalid_response, AUDIT_TEXT = SQLDebugger.start_debugger(DATA_SOURCE,user_grouping, generated_sql, user_question, SQLChecker, table_matches, column_matches, AUDIT_TEXT, similar_sql, DEBUGGING_ROUNDS, LLM_VALIDATION)
                         # AUDIT_TEXT = AUDIT_TEXT + '\n Feedback from Debugger: \n' + feedback_text
 
                     final_sql=generated_sql
@@ -346,20 +351,25 @@ def get_results(user_grouping, final_sql, invalid_response=False, EXECUTE_FINAL_
     try:
 
         DATA_SOURCE,src_invalid = get_source_type(user_grouping)
-        
+        src_database_id = None
+
         if not src_invalid:
             ## SET DATA SOURCE 
             if DATA_SOURCE=='bigquery':
                 src_connector = bqconnector
-            else: 
+            elif DATA_SOURCE == "postgres":
                 src_connector = pgconnector
+            elif DATA_SOURCE == "spanner":
+                src_connector = spannerconnector
+                src_database_id = user_grouping.removesuffix("-spanner")
+
         else:
             raise ValueError(DATA_SOURCE)
 
         if not invalid_response:
             try: 
                 if EXECUTE_FINAL_SQL is True:
-                        final_exec_result_df=src_connector.retrieve_df(final_sql.replace("```sql","").replace("```","").replace("EXPLAIN ANALYZE ",""))
+                        final_exec_result_df=src_connector.retrieve_df(final_sql.replace("```sql","").replace("```","").replace("EXPLAIN ANALYZE ",""),database_id=src_database_id)
                         result_df = final_exec_result_df
 
                 else:  # Do not execute final SQL

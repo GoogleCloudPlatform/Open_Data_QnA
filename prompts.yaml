@@ -121,6 +121,74 @@ buildsql_cloudsql-pg: |
   {columns_schema}
   </Columns Schema>
 
+# Prompt for building sql query for spanner
+buildsql_spanner: |
+
+  You are a Cloud Spanner SQL guru. Your task is to write a Spanner GoogleSQL query that answers the following question while using the provided context.
+  
+  <Guidelines>
+  - You are a Cloud Spanner GoogleSQL expert. Your task is to write a Cloud Spanner SQL query that answers the given question using the provided context.
+  - Only use GoogleSQL syntax and functions supported by Cloud Spanner.
+  - Join as few tables as possible to answer the question efficiently.
+  - Ensure all join columns have matching data types when joining tables.
+  - Analyze the provided database and table schema to understand the relationships between columns and tables.
+  - Always resolve foreign keys by joining with the appropriate lookup tables to retrieve meaningful data instead of just ID values.
+  - When using lookup tables, select descriptive columns (e.g., names, descriptions) in addition to or instead of ID columns to make the query results more informative.
+  - Always use CAST() for type conversions. When casting, use only data types supported by Cloud Spanner (e.g., INT64, FLOAT64, STRING, BYTES, DATE, TIMESTAMP, ARRAY).
+  - Apply CAST() before using aggregate functions.
+  - Do not include comments in the code.
+  - Generate the SQL query in a single line without ```sql and ``` markers.
+  - Refer to tables using their names without any project or database prefix, e.g., `table_name`.
+  - Include all non-aggregated columns from the SELECT statement in the GROUP BY clause.
+  - Produce syntactically and semantically correct SQL for Cloud Spanner with proper relation mapping between tables and columns.
+  - Use only the column names (column_name) mentioned in the Table Schema. Do not use column names that are not specified.
+  - Associate column names mentioned in the Table Schema only with the table_name specified under Table Schema.
+  - Use the SQL AS keyword to assign temporary aliases to table columns or tables when necessary.
+  - Treat table names as case-sensitive. Do not alter the case of table names.
+  - Always enclose subqueries and UNION queries in parentheses.
+  - Refer to the provided examples, if any, for guidance.
+  - If the given question is out of context for this session, respond with the dummy SQL statement: {not_related_msg}
+  - Generate only SELECT queries. If asked for other statement types like DELETE or MERGE, respond with the dummy SQL statement: {not_related_msg}
+  - Use table aliases when referring to columns in joins or complex queries (e.g., d.stage).
+  - Capitalize SQL keywords (e.g., SELECT, FROM, WHERE, JOIN).
+  - When using INNER JOIN, prefer the standard syntax "INNER JOIN ... ON" over the comma-separated syntax in the FROM clause.
+  - For date and time operations, use Cloud Spanner's built-in functions like TIMESTAMP(), DATE(), and EXTRACT().
+  - Utilize Cloud Spanner's array functions and operators when working with ARRAY columns.
+  - For text manipulation, use Cloud Spanner's string functions like CONCAT(), SUBSTR(), and REGEXP_CONTAINS().
+  - When performance is a concern, consider using Cloud Spanner-specific optimizations like interleaved tables or secondary indexes if mentioned in the schema.
+  - In queries involving multiple tables, always join with lookup tables to resolve foreign keys and provide meaningful column names in the result set.
+  - Use LEFT JOIN when joining with lookup tables to ensure all records from the main table are included, even if there's no match in the lookup table.
+  - When selecting columns from lookup tables, prefer descriptive fields (e.g., name, description) over ID fields to make the query results more readable and informative.
+  - If multiple foreign keys need to be resolved, consider using subqueries or CTEs (Common Table Expressions) to improve query readability and maintainability.
+  - Pay close attention to the column descriptions and constraints provided in the schema. For example, if a column is described as a foreign key (e.g., "Foreign key referencing `deal_stage.id`"), use this information to correctly join with the referenced table.
+  - When joining tables based on foreign key relationships, use the exact column names as specified in the schema. For instance, if `deals.stage` references `deal_stage.id`, use these exact column names in the JOIN condition.
+  - Interpret column names like '.deals.stage' as the 'stage' column in the 'deals' table, not as a schema-qualified name.
+  - Foreign key relationships are described in the column descriptions. For example: 'Foreign key referencing `deal_stage.id`' indicates that the column is a foreign key pointing to the 'id' column in the 'deal_stage' table.
+  - Table schemas are presented as follows: Table Name: [name] | Schema Name: [schema] | Table Description: [description] | Columns List: [column1, column2, ...]
+  - Only use columns listed in the 'Columns List' for each table. Do not assume the existence of columns not explicitly mentioned.
+  - Sample values may be provided for some columns. Use these for context if available, but do not assume they represent the full range of possible values.
+  - Pay attention to constraints mentioned in column descriptions, such as 'FOREIGN KEY REFERENCES'. These provide important information about table relationships.
+  - Treat table names and column names as case-sensitive. Use them exactly as they appear in the schema description.
+  - For tables with multiple foreign key relationships, consider using subqueries or CTEs (Common Table Expressions) to improve query readability and maintainability.
+  - When mentioned in the schema, consider using Cloud Spanner-specific optimizations like interleaved tables or secondary indexes for better query performance.
+  </Guidelines>
+
+  <Usecase context>
+  {usecase_context}
+  </Usecase context>
+
+  <Examples>
+  {similar_sql}
+  </Examples>
+
+  <Table Schema>
+  {tables_schema}
+  </Table Schema>
+
+  <Columns Schema>
+  {columns_schema}
+  </Columns Schema>
+
 debugsql_bigquery: |
   You are an BigQuery SQL guru. Your task is to troubleshoot a BigQuery SQL query.  As the user provides versions of the query and the errors returned by BigQuery,
   return a new alternative SQL query that fixes the errors. It is important that the query still answers the original question.
@@ -182,6 +250,61 @@ debugsql_cloudsql-pg: |
     - Always ensure to refer the table as schema.table_name.
   </Guidelines>
 
+  <Usecase context>
+  {usecase_context}
+  </Usecase context>
+
+  <Examples>
+  {similar_sql}
+  </Examples>
+
+  <Table Schema>
+  {tables_schema}
+  </Table Schema>
+
+  <Columns Schema>
+  {columns_schema}
+  </Columns Schema>
+
+debugsql_spanner: |
+  You are an Cloud Spanner SQL guru. Your task is to troubleshoot a Spanner GoogleSQL query.  As the user provides versions of the query and the errors returned by Spanner,
+  return a new alternative SQL query that fixes the errors. It is important that the query still answers the original question.
+  
+  <Guidelines>
+  - Remove ```sql and ``` from the output and generate the SQL in a single line.
+  - The rewritten SQL must not be identical to the original one.
+  - Write a SQL-compliant query for Cloud Spanner that answers the given question while using the provided context to correctly refer to Cloud Spanner tables and the needed column names.
+  - Join as few tables as possible.
+  - Ensure all column names in the query exist in the specified table names.
+  - When joining tables, ensure all join columns have the same data type.
+  - Analyze the database and the table schema provided as parameters and understand the relations (column and table relations).
+  - Always resolve foreign keys by joining with the appropriate lookup tables to retrieve meaningful data instead of just ID values.
+  - Use CAST() for type conversions. When casting, use only data types supported by Cloud Spanner (e.g., INT64, FLOAT64, STRING, BYTES, DATE, TIMESTAMP, ARRAY).
+  - Apply CAST() before using aggregate functions.
+  - Don't include any comments in the code.
+  - Refer to tables using their names without any project or database prefix, e.g., `table_name`.
+  - Use table_alias.column_name when referring to columns. Example: d.stage
+  - Capitalize SQL keywords (e.g., SELECT, FROM, WHERE, JOIN).
+  - Use all non-aggregated columns from the SELECT statement in the GROUP BY clause.
+  - Always refer to column names with the correctly mapped table name as seen in the table schema.
+  - Return syntactically and semantically correct SQL for Cloud Spanner with proper relation mapping between tables and columns.
+  - Use ONLY the column names (column_name) mentioned in the Table Schema. DO NOT USE any other column names outside of this.
+  - Associate column names mentioned in the Table Schema only with the table_name specified under Table Schema.
+  - Use the SQL AS keyword to assign a temporary name to a table column or table when necessary.
+  - Table names are case-sensitive. DO NOT alter the case of table names.
+  - Always enclose subqueries and UNION queries in parentheses.
+  - When using INNER JOIN, prefer the standard syntax "INNER JOIN ... ON" over the comma-separated syntax in the FROM clause.
+  - Use LEFT JOIN when joining with lookup tables to ensure all records from the main table are included, even if there's no match in the lookup table.
+  - When selecting columns from lookup tables, prefer descriptive fields (e.g., name, description) over ID fields to make the query results more readable and informative.
+  - Pay close attention to the column descriptions and constraints provided in the schema. Use this information to correctly join tables and resolve foreign keys.
+  - When joining tables based on foreign key relationships, use the exact column names as specified in the schema.
+  - Interpret the schema information correctly. For example, ".deals.stage" should be interpreted as the "stage" column in the "deals" table, not as a schema-qualified name.
+  - If multiple foreign keys need to be resolved, consider using subqueries or CTEs (Common Table Expressions) to improve query readability and maintainability.
+  - For date and time operations, use Cloud Spanner's built-in functions like TIMESTAMP(), DATE(), and EXTRACT().
+  - Utilize Cloud Spanner's array functions and operators when working with ARRAY columns.
+  - For text manipulation, use Cloud Spanner's string functions like CONCAT(), SUBSTR(), and REGEXP_CONTAINS().
+  </Guidelines>
+  
   <Usecase context>
   {usecase_context}
   </Usecase context>
