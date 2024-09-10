@@ -446,7 +446,22 @@ It also contains code derived from the following third-party packages:
 
 * [pandas](<https://pandas.pydata.org/>)
 * [Python](<https://www.python.org/>)
+  
 
+🧪 Disclaimer
+----------
+
+This repository provides an open-source solution accelerator designed to streamline your development process. Please be aware that all resources associated with this accelerator will be deployed within your own Google Cloud Platform (GCP) instances.
+
+It is imperative that you thoroughly test all components and configurations in a non-production environment before integrating any part of this accelerator with your production data or systems.
+
+While we strive to provide a secure and reliable solution, we cannot be held responsible for any data loss, service disruptions, or other issues that may arise from the use of this accelerator.
+
+By utilizing this repository, you acknowledge that you are solely responsible for the deployment, management, and security of the resources deployed within your GCP environment.
+
+If you encounter any issues or have concerns about potential risks, please refrain from using this accelerator in a production setting.
+
+We encourage responsible and informed use of this open-source solution.
 
 
 🙋 Getting Help
