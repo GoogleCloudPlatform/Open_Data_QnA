@@ -5,7 +5,7 @@
 </p>
 <p align="center">
     <a href="https://sites.google.com/corp/google.com/genai-solutions/home?authuser=0">
-        <img src="utilities/imgs/opendataqna.png" alt="logo" width="400" height="auto">
+        <img src="utilities/imgs/opendataqna_logo.png" alt="logo" width="400" height="auto">
     </a>
 </p>
 <h1 align="center">Open Data QnA - Chat with your SQL Database</h1> 
