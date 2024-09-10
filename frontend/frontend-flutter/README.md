@@ -2,7 +2,7 @@
 
 <p align="center">
     <a>
-        <img src="readme_images/ttmd_logo1.png" alt="aaie image">
+        <img src="readme_images/opendataqna_logo.png" alt="aaie image" width="300">
     </a>
 </p>
 
