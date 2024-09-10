@@ -1,0 +1,24 @@
+user_grouping,scenario,question,main_question
+MovieExplorer-bigquery,Genres,What are the top 5 most common movie genres in the dataset?,Y
+MovieExplorer-bigquery,Genres,How many are musicals?,N
+MovieExplorer-bigquery,Genres,Romance?,N
+MovieExplorer-bigquery,Movie,What is the average user rating of the God Father movie?,Y
+MovieExplorer-bigquery,Movie,Which year was it released?,N
+MovieExplorer-bigquery,Movie,How long is it?,N
+MovieExplorer-bigquery,Movie,Who is the lead actor?,N
+MovieExplorer-bigquery,Movie,Director,N
+MovieExplorer-bigquery,Movie,Cast,N
+MovieExplorer-bigquery,Movie,Who is the actor playing the role of the godfather in the Godfather movie?,Y
+MovieExplorer-bigquery,Movie,and the one playing the role of Sony?,N
+MovieExplorer-bigquery,Movie,How many people saw the Godfather?,y
+WorldCensus-cloudsql-pg,Life Expectancy,What is the life expectancy for men and women in a United States in 2022?,Y
+WorldCensus-cloudsql-pg,Life Expectancy,In India?,N
+WorldCensus-cloudsql-pg,Life Expectancy,Which country has highest male life expectancy?,N
+WorldCensus-cloudsql-pg,Life Expectancy,Female life expectancy?,N
+WorldCensus-cloudsql-pg,Population Density,What are the top 5 coutries with highest population density in 2024?,Y 
+WorldCensus-cloudsql-pg,Population Density,What are the birth and death rates in these counties?,N
+WorldCensus-cloudsql-pg,Sex Ratio at Birth,What is the sex ratio at birth in China in 2023?,Y
+WorldCensus-cloudsql-pg,Sex Ratio at Birth,Which country has the highest?,N
+WorldCensus-cloudsql-pg,Sex Ratio at Birth,What is the world average?,N
+WorldCensus-cloudsql-pg,Sex Ratio at Birth,What country has the lowest male ration?,Y
+WorldCensus-cloudsql-pg,Sex Ratio at Birth,Since when?,N
