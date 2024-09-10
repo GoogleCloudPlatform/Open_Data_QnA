@@ -24,6 +24,8 @@ The **Open Data QnA** python library enables you to chat with your databases by 
 
 Open Data QnA enables a conversational approach to interacting with your data. Ask questions about your PostgreSQL or BigQuery databases in natural language and receive informative responses, without needing to write SQL. Open Data QnA leverages Large Language Models (LLMs) to bridge the gap between human language and database queries, streamlining data analysis and decision-making.
 
+![Alt Text](utilities/imgs/Teaser.gif)
+
 **Key Features:**
 
 * **Conversational Querying with Multiturn Support:** Ask questions naturally, without requiring SQL knowledge and ask follow up questions.
