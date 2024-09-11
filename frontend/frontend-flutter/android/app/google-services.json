@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "7413174684",
+    "project_id": "dic-caa-ra1",
+    "storage_bucket": "dic-caa-ra1.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:7413174684:android:f4ed287d5da149fce5f859",
+        "android_client_info": {
+          "package_name": "com.pilotcap.ttmd"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCytznMTfW7u99AuEQRbdiqmfaCAoMh0Bc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

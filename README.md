@@ -5,7 +5,7 @@
 </p>
 <p align="center">
     <a href="https://sites.google.com/corp/google.com/genai-solutions/home?authuser=0">
-        <img src="utilities/imgs/opendataqna.png" alt="logo" width="400" height="auto">
+        <img src="utilities/imgs/opendataqna_logo.png" alt="logo" width="400" height="auto">
     </a>
 </p>
 <h1 align="center">Open Data QnA - Chat with your SQL Database</h1> 
@@ -23,6 +23,8 @@ _______________
 The **Open Data QnA** python library enables you to chat with your databases by leveraging LLM Agents on Google Cloud.
 
 Open Data QnA enables a conversational approach to interacting with your data. Ask questions about your PostgreSQL or BigQuery databases in natural language and receive informative responses, without needing to write SQL. Open Data QnA leverages Large Language Models (LLMs) to bridge the gap between human language and database queries, streamlining data analysis and decision-making.
+
+![Alt Text](utilities/imgs/Teaser.gif)
 
 **Key Features:**
 
@@ -444,7 +446,22 @@ It also contains code derived from the following third-party packages:
 
 * [pandas](<https://pandas.pydata.org/>)
 * [Python](<https://www.python.org/>)
+  
 
+🧪 Disclaimer
+----------
+
+This repository provides an open-source solution accelerator designed to streamline your development process. Please be aware that all resources associated with this accelerator will be deployed within your own Google Cloud Platform (GCP) instances.
+
+It is imperative that you thoroughly test all components and configurations in a non-production environment before integrating any part of this accelerator with your production data or systems.
+
+While we strive to provide a secure and reliable solution, we cannot be held responsible for any data loss, service disruptions, or other issues that may arise from the use of this accelerator.
+
+By utilizing this repository, you acknowledge that you are solely responsible for the deployment, management, and security of the resources deployed within your GCP environment.
+
+If you encounter any issues or have concerns about potential risks, please refrain from using this accelerator in a production setting.
+
+We encourage responsible and informed use of this open-source solution.
 
 
 🙋 Getting Help
