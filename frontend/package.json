@@ -28,7 +28,7 @@
     "bootstrap": "^5.3.2",
     "chart.js": "^4.4.1",
     "deps": "^1.0.0",
-    "express": "^4.18.2",
+    "express": "^4.21.0",
     "firebase": "^10.12.2",
     "ng2-charts": "^5.0.4",
     "prismjs": "^1.29.0",
