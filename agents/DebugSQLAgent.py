@@ -4,14 +4,14 @@ import vertexai
 from vertexai.language_models import CodeChatModel
 from vertexai.generative_models import GenerativeModel,GenerationConfig
 from google.cloud.aiplatform import telemetry
-from dbconnectors import pgconnector, bqconnector
+from dbconnectors import bqconnector # pgconnector removed
 from utilities import PROMPTS, format_prompt
 from .core import Agent
 import pandas as pd
 import json  
 
-from utilities import PROJECT_ID, PG_REGION
-vertexai.init(project=PROJECT_ID, location=PG_REGION)
+from utilities import PROJECT_ID, BQ_REGION
+vertexai.init(project=PROJECT_ID, location=BQ_REGION)
 
 
 class DebugSQLAgent(Agent, ABC):
