@@ -2,7 +2,7 @@ import re
 import io
 import sys 
 import pandas as pd
-from dbconnectors import pgconnector,bqconnector
+from dbconnectors import bqconnector # pgconnector removed
 from agents import EmbedderAgent, ResponseAgent, DescriptionAgent
 from utilities import EMBEDDING_MODEL, DESCRIPTION_MODEL, USE_COLUMN_SAMPLES
 
