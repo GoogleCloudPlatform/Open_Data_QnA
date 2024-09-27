@@ -10,7 +10,7 @@ from .core import Agent
 import pandas as pd
 import json  
 
-from utilities import PROJECT_ID, BQ_REGION
+from utilities import PROJECT_ID, BQ_REGION  # Changed from PG_REGION
 vertexai.init(project=PROJECT_ID, location=BQ_REGION)
 
 

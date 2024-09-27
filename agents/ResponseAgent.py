@@ -5,8 +5,8 @@ from utilities import PROMPTS, format_prompt
 from vertexai.generative_models import HarmCategory, HarmBlockThreshold
 from google.cloud.aiplatform import telemetry
 import vertexai 
-from utilities import PROJECT_ID, PG_REGION
-vertexai.init(project=PROJECT_ID, location=PG_REGION)
+from utilities import PROJECT_ID, BQ_REGION
+vertexai.init(project=PROJECT_ID, location=BQ_REGION)
 
 
 class ResponseAgent(Agent, ABC):
