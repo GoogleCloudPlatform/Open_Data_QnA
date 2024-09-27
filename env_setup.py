@@ -5,7 +5,7 @@ import google.api_core
 
 from embeddings import retrieve_embeddings, store_schema_embeddings, setup_kgq_table, load_kgq_df, store_kgq_embeddings
 
-from utilities import ( PG_REGION, PG_INSTANCE, PG_DATABASE, PG_USER, PG_PASSWORD, 
+from utilities import ( #PG_REGION, PG_INSTANCE, PG_DATABASE, PG_USER, PG_PASSWORD, 
                         BQ_REGION, 
                        EXAMPLES, LOGGING, VECTOR_STORE, PROJECT_ID, 
                        BQ_OPENDATAQNA_DATASET_NAME,FIRESTORE_REGION) 

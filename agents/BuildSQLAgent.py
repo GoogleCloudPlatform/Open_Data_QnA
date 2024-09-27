@@ -9,10 +9,10 @@ from dbconnectors import bqconnector,firestoreconnector # pgconnector removed
 from utilities import PROMPTS, format_prompt
 from google.cloud.aiplatform import telemetry
 import vertexai 
-from utilities import PROJECT_ID, PG_REGION
+from utilities import PROJECT_ID, BQ_REGION # Changed from PG_REGION
 from vertexai.generative_models import GenerationConfig
 
-vertexai.init(project=PROJECT_ID, location=PG_REGION)
+vertexai.init(project=PROJECT_ID, location=BQ_REGION)
 
 
 class BuildSQLAgent(Agent, ABC):
