@@ -3,9 +3,9 @@ import argparse
 import uuid
 
 from agents import EmbedderAgent, BuildSQLAgent, DebugSQLAgent, ValidateSQLAgent, ResponseAgent,VisualizeAgent
-from utilities import (PROJECT_ID, PG_REGION, BQ_REGION, EXAMPLES, LOGGING, VECTOR_STORE,
+from utilities import (PROJECT_ID, BQ_REGION, BQ_REGION, EXAMPLES, LOGGING, VECTOR_STORE,
                        BQ_OPENDATAQNA_DATASET_NAME)
-from dbconnectors import bqconnector, pgconnector, firestoreconnector
+from dbconnectors import bqconnector, firestoreconnector #, pgconnector
 from embeddings.store_embeddings import add_sql_embedding
 
 
@@ -17,8 +17,8 @@ if VECTOR_STORE=='bigquery-vector':
     call_await = False
 
 elif VECTOR_STORE == 'cloudsql-pgvector':
-    region=PG_REGION
-    vector_connector = pgconnector
+    region=BQ_REGION
+    vector_connector = bqconnector
     call_await=True
 
 else: 
@@ -352,7 +352,7 @@ def get_results(user_grouping, final_sql, invalid_response=False, EXECUTE_FINAL_
             if DATA_SOURCE=='bigquery':
                 src_connector = bqconnector
             else: 
-                src_connector = pgconnector
+                src_connector = bqconnector
         else:
             raise ValueError(DATA_SOURCE)
 
