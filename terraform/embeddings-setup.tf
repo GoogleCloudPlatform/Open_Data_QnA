@@ -24,6 +24,7 @@ resource "local_file" "config_ini" {
     kgq_examples           = var.kgq_examples,
     firestore_region       = var.firestore_region,
     use_column_samples     = var.use_column_samples,
+    use_session_history    = var.use_session_history,
     project_id             = var.project_id,
     pg_region              = var.pg_region,
     pg_instance            = var.pg_instance,

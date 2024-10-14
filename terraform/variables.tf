@@ -54,6 +54,12 @@ variable "kgq_examples" {
   description = "yes, if you want to use known good sqls for few shot prompting and creating cache. No, otherwise"
 }
 
+variable "use_session_history" {
+  type = string
+  default = "yes"
+  description = "yes, if you want to use current session's questions without re-evaluating them. No, otherwise"
+}
+
 variable "use_column_samples" {
   type = string
   default = "no"
