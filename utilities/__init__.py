@@ -59,6 +59,7 @@ VECTOR_STORE = config['CONFIG']['VECTOR_STORE']
 #DEBUGGING = config.getboolean('CONFIG','DEBUGGING')
 LOGGING = config.getboolean('CONFIG','LOGGING')
 EXAMPLES = config.getboolean('CONFIG', 'KGQ_EXAMPLES')
+USE_SESSION_HISTORY = config.getboolean('CONFIG', 'USE_SESSION_HISTORY')
 USE_COLUMN_SAMPLES = config.getboolean('CONFIG','USE_COLUMN_SAMPLES')
 
 #[GCP]

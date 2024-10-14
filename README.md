@@ -98,7 +98,7 @@ This notebook offers a streamlined way to experience the core functionality of O
 
 ### 🚧 **Prerequisites**
 
-Make sure that Google Cloud CLI and Python are installed before moving ahead! You can refer to the link below for guidance
+Make sure that Google Cloud CLI and Python >= 3.10 are installed before moving ahead! You can refer to the link below for guidance
 
 Installation Guide: https://cloud.google.com/sdk/docs/install
 
