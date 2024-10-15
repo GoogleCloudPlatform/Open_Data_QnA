@@ -4,8 +4,9 @@ import uuid
 
 from agents import EmbedderAgent, BuildSQLAgent, DebugSQLAgent, ValidateSQLAgent, ResponseAgent,VisualizeAgent
 from utilities import (PROJECT_ID, PG_REGION, BQ_REGION, EXAMPLES, LOGGING, VECTOR_STORE,
-                       BQ_OPENDATAQNA_DATASET_NAME, SPANNER_REGION)
+                       BQ_OPENDATAQNA_DATASET_NAME, USE_SESSION_HISTORY, SPANNER_REGION)
 from dbconnectors import bqconnector, pgconnector, firestoreconnector, spannerconnector
+
 from embeddings.store_embeddings import add_sql_embedding
 
 
@@ -194,7 +195,7 @@ async def generate_sql(session_id,
         re_written_qe=user_question
 
         print("Getting the history for the session.......\n")
-        session_history =firestoreconnector.get_chat_logs_for_session(session_id)
+        session_history = firestoreconnector.get_chat_logs_for_session(session_id) if USE_SESSION_HISTORY else None
         print("Grabbed history for the session:: "+ str(session_history))
 
         if session_history is None or not session_history:
@@ -315,7 +316,7 @@ async def generate_sql(session_id,
         if LOGGING: 
             bqconnector.make_audit_entry(DATA_SOURCE, user_grouping, SQLBuilder_model, user_question, final_sql, found_in_vector, "", process_step, error_msg,AUDIT_TEXT)  
 
-    if not invalid_response:
+    if USE_SESSION_HISTORY and not invalid_response:
         firestoreconnector.log_chat(session_id,user_question,final_sql,user_id)
         print("Session history persisted")  
 
@@ -398,7 +399,7 @@ def get_response(session_id,user_question,result_df,Responder_model='gemini-1.0-
         if session_id is None or session_id=="":
             print("This is a new session")
         else:
-            session_history =firestoreconnector.get_chat_logs_for_session(session_id)
+            session_history =firestoreconnector.get_chat_logs_for_session(session_id) if USE_SESSION_HISTORY else None
             if session_history is None or not session_history:
                 print("No records for the session. Not rewriting the question\n")
             else:
@@ -583,7 +584,7 @@ async def embed_sql(session_id,user_grouping,user_question,generate_sql):
         if session_id is None or session_id=="":
             print("This is a new session")
         else:
-            session_history =firestoreconnector.get_chat_logs_for_session(session_id)
+            session_history =firestoreconnector.get_chat_logs_for_session(session_id) if USE_SESSION_HISTORY else None
             if session_history is None or not session_history:
                 print("No records for the session. Not rewriting the question\n")
             else:
@@ -606,7 +607,7 @@ def visualize(session_id,user_question,generated_sql,sql_results):
         if session_id is None or session_id=="":
             print("This is a new session")
         else:
-            session_history =firestoreconnector.get_chat_logs_for_session(session_id)
+            session_history =firestoreconnector.get_chat_logs_for_session(session_id) if USE_SESSION_HISTORY else None
             if session_history is None or not session_history:
                 print("No records for the session. Not rewriting the question\n")
             else:

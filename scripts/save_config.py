@@ -26,6 +26,7 @@ def save_config(embedding_model,
                 vector_store,
                 logging,
                 kgq_examples,
+                use_session_history,
                 use_column_samples,
                 PROJECT_ID,
                 pg_region,
@@ -93,6 +94,12 @@ def save_config(embedding_model,
 
     else:
         config['CONFIG']['KGQ_EXAMPLES'] = 'no'
+
+    if use_session_history:
+        config['CONFIG']['USE_SESSION_HISTORY'] = 'yes'
+
+    else:
+        config['CONFIG']['USE_SESSION_HISTORY'] = 'no'
 
     if use_column_samples:
         config['CONFIG']['USE_COLUMN_SAMPLES'] = 'yes'
