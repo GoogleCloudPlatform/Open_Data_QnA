@@ -452,7 +452,7 @@ class BQConnector(DBConnector, ABC):
         sample_column_list=[]
 
         for index, row in columns_df.iterrows():
-            get_column_sample_sql=f'''SELECT STRING_AGG(CAST(value AS STRING)) as sample_values FROM UNNEST((SELECT APPROX_TOP_COUNT({row["column_name"]},5) as osn 
+            get_column_sample_sql=f'''SELECT STRING_AGG(CAST(value AS STRING)) as sample_values FROM UNNEST((SELECT APPROX_TOP_COUNT(`{row["column_name"]}`,5) as osn 
             FROM `{row["project_id"]}.{row["table_schema"]}.{row["table_name"]}`
             ))'''
 
