@@ -189,10 +189,10 @@ async def generate_sql(session_id,
         re_written_qe=user_question
 
         print("Getting the history for the session.......\n")
-        session_history = firestoreconnector.get_chat_logs_for_session(session_id) if USE_SESSION_HISTORY else None
+        session_history = firestoreconnector.get_chat_logs_for_session(session_id) if USE_SESSION_HISTORY else []
         print("Grabbed history for the session:: "+ str(session_history))
 
-        if session_history is None or not session_history:
+        if not session_history:
             print("No records for the session. Not rewriting the question\n")
         else:
             concated_questions,re_written_qe=SQLBuilder.rewrite_question(user_question,session_history)
