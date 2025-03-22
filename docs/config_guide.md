@@ -6,7 +6,9 @@ ______________
 
 **embedding_model = vertex**     *;Options: 'vertex' or 'vertex-lang'*
 
-**description_model = gemini-1.0-pro**   *;Options 'gemini-1.0-pro', 'gemini-1.5-pro', 'text-bison-32k', 'gemini-1.5-flash'*
+**llm_model = gemini-1.0-pro**   *;Options 'gemini-1.0-pro', 'gemini-1.5-pro', 'text-bison-32k', 'gemini-1.5-flash'*
+
+**llm_model_region = us-central1** *;Valid GCP Regions for the model endpoints to use (Note every model is present in every region*
 
 **vector_store = cloudsql-pgvector**    *;Options: 'bigquery-vector', 'cloudsql-pgvector'*
 

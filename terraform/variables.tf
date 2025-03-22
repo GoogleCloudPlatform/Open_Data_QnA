@@ -24,10 +24,16 @@ variable "embedding_model" {
   description = "name of the model that you want to use to create embeddings. Options: 'vertex' or 'vertex-lang'"
 }
 
-variable "description_model" {
+variable "llm_model" {
   type = string
   default = "gemini-1.5-pro"
-  description = "name of the model that you want to use to generate missing description for tables and columns. Options: 'gemini-1.0-pro', 'gemini-1.5-pro', 'text-bison-32k', 'gemini-1.5-flash'"
+  description = "name of the model that you want to use for the solution. Options: 'gemini-1.0-pro', 'gemini-1.5-pro', 'text-bison-32k', 'gemini-1.5-flash'"
+}
+
+variable "llm_model_region" {
+  type = string
+  default = "us-central1"
+  description = "LLM Endpoint region"
 }
 
 variable "vector_store" {

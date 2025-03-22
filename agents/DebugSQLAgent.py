@@ -10,8 +10,7 @@ from .core import Agent
 import pandas as pd
 import json  
 
-from utilities import PROJECT_ID, PG_REGION
-vertexai.init(project=PROJECT_ID, location=PG_REGION)
+
 
 
 class DebugSQLAgent(Agent, ABC):

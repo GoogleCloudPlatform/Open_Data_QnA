@@ -17,7 +17,8 @@
 resource "local_file" "config_ini" {
   content = templatefile("${path.module}/templates/config.ini.tftpl", {
     embedding_model        = var.embedding_model,
-    description_model      = var.description_model,
+    llm_model              = var.llm_model,
+    llm_model_region       = var.llm_model_region
     vector_store           = var.vector_store,
     debugging              = var.debugging,
     logging                = var.logging,

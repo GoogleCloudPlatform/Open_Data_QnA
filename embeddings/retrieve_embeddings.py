@@ -4,11 +4,11 @@ import sys
 import pandas as pd
 from dbconnectors import pgconnector,bqconnector
 from agents import EmbedderAgent, ResponseAgent, DescriptionAgent
-from utilities import EMBEDDING_MODEL, DESCRIPTION_MODEL, USE_COLUMN_SAMPLES
+from utilities import EMBEDDING_MODEL, LLM_MODEL, USE_COLUMN_SAMPLES
 
 embedder = EmbedderAgent(EMBEDDING_MODEL)
 # responder = ResponseAgent('gemini-1.0-pro')
-descriptor = DescriptionAgent(DESCRIPTION_MODEL)
+descriptor = DescriptionAgent(LLM_MODEL)
 
 
 def get_embedding_chunked(textinput, batch_size): 

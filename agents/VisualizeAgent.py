@@ -14,8 +14,7 @@ import pandas as pd
 import json  
 from google.cloud.aiplatform import telemetry
 import vertexai 
-from utilities import PROJECT_ID, PG_REGION
-vertexai.init(project=PROJECT_ID, location=PG_REGION)
+
 
 class VisualizeAgent(Agent, ABC):
     """

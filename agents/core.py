@@ -13,8 +13,8 @@ from vertexai.generative_models import HarmCategory,HarmBlockThreshold
 
 
 
-from utilities import PROJECT_ID, PG_REGION
-vertexai.init(project=PROJECT_ID, location=PG_REGION)
+from utilities import PROJECT_ID, LLM_MODEL_REGION
+vertexai.init(project=PROJECT_ID, location=LLM_MODEL_REGION)
 
 
 

@@ -22,7 +22,8 @@ def is_root_dir():
 
 
 def save_config(embedding_model,
-                description_model,
+                llm_model,
+                llm_model_region,
                 vector_store,
                 logging,
                 kgq_examples,
@@ -57,7 +58,8 @@ def save_config(embedding_model,
     # config['CONFIG']['DATA_SOURCE'] = data_source
     config['CONFIG']['VECTOR_STORE'] = vector_store
     config['CONFIG']['EMBEDDING_MODEL'] = embedding_model
-    config['CONFIG']['DESCRIPTION_MODEL'] = description_model
+    config['CONFIG']['LLM_MODEL'] = llm_model
+    config['CONFIG']['LLM_MODEL_REGION'] = llm_model_region
     config['CONFIG']['FIRESTORE_REGION'] = firestore_region
 
 

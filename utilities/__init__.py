@@ -51,7 +51,8 @@ def format_prompt(context_prompt, **kwargs):
 
 # [CONFIG]
 EMBEDDING_MODEL = config['CONFIG']['EMBEDDING_MODEL']
-DESCRIPTION_MODEL = config['CONFIG']['DESCRIPTION_MODEL']
+LLM_MODEL = config['CONFIG']['LLM_MODEL']
+LLM_MODEL_REGION = config['CONFIG']['LLM_MODEL_REGION']
 # DATA_SOURCE = config['CONFIG']['DATA_SOURCE'] 
 VECTOR_STORE = config['CONFIG']['VECTOR_STORE']
 
@@ -87,7 +88,8 @@ FIRESTORE_REGION = config['CONFIG']['FIRESTORE_REGION']
 PROMPTS = load_yaml(root_dir + '/prompts.yaml')
 
 __all__ = ["EMBEDDING_MODEL",
-           "DESCRIPTION_MODEL",
+           "LLM_MODEL",
+           "LLM_MODEL_REGION",
           #"DATA_SOURCE",
            "VECTOR_STORE",
            #"CACHING",
