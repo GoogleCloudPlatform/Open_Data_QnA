@@ -4,7 +4,6 @@ import vertexai
 from vertexai.language_models import CodeChatModel
 from vertexai.generative_models import GenerativeModel,GenerationConfig
 from google.cloud.aiplatform import telemetry
-from dbconnectors import pgconnector, bqconnector
 from utilities import PROMPTS, format_prompt
 from .core import Agent
 import pandas as pd
@@ -151,6 +150,7 @@ class DebugSQLAgent(Agent, ABC):
     def start_debugger  (self,
                         source_type,
                         user_grouping,
+                        connector,
                         query,
                         user_question, 
                         SQLChecker,
@@ -184,11 +184,6 @@ class DebugSQLAgent(Agent, ABC):
                 AUDIT_TEXT=AUDIT_TEXT+"\nGenerated SQL is syntactically correct as per LLM Validation!"
                    
                 # print(AUDIT_TEXT)
-                if source_type=='bigquery':
-                    connector=bqconnector
-                else:
-                    connector=pgconnector
-                    
                 correct_sql, exec_result_df = connector.test_sql_plan_execution(sql)
                 
                 if not correct_sql:

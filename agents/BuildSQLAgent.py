@@ -5,7 +5,6 @@ from .core import Agent
 import pandas as pd
 import json
 from datetime import datetime
-from dbconnectors import pgconnector,bqconnector,firestoreconnector
 from utilities import PROMPTS, format_prompt
 from google.cloud.aiplatform import telemetry
 import vertexai 

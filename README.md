@@ -380,6 +380,63 @@ This should deploy you end to end solution in the project with firebase web url
 For detailed steps and known issues refer to  README.md under [`/terraform`](/terraform/)
 
 
+### D) Running with Docker (CLI)
+
+For a containerized approach, you can use the provided `Dockerfile.cli` to build a Docker image for the command-line application. This is a convenient way to run the tool without managing a local Python environment.
+
+#### 1. Build the Docker Image
+
+From the root of the repository, run the following command to build the image:
+
+```sh
+docker build -t opendataqna-cli -f Dockerfile.cli .
+```
+
+#### 2. Run the Application in a Container
+
+Once the image is built, you can run the application using `docker run`. You will need to pass your Google Cloud credentials and configure the application using environment variables.
+
+**Example:**
+
+```sh
+# Set your Google Cloud Project ID
+export GCP_PROJECT_ID="your-gcp-project-id"
+
+# Run the container, passing arguments to the CLI script
+docker run --rm -it \
+  -e PROJECT_ID=$GCP_PROJECT_ID \
+  -e PG_INSTANCE="your-pg-instance" \
+  -e PG_DATABASE="your-pg-db" \
+  -e PG_USER="your-pg-user" \
+  -e PG_PASSWORD="your-pg-password" \
+  --mount type=bind,source="$(pwd)"/your-gcloud-key.json,target=/app/your-gcloud-key.json,readonly \
+  -e GOOGLE_APPLICATION_CREDENTIALS=/app/your-gcloud-key.json \
+  opendataqna-cli \
+  --session_id "docker-session-123" \
+  --user_question "How many movies have a rating above 4?" \
+  --user_grouping "your-user-grouping"
+```
+
+*Note: The above example demonstrates mounting a service account key file for authentication. Ensure you have downloaded your key and replaced `"your-gcloud-key.json"` with the correct path.*
+
+#### Environment Variable Configuration
+
+The application can be configured using environment variables, which override the settings in `config.ini`. This is the recommended way to configure the application in a container.
+
+| Environment Variable          | `config.ini` Section | `config.ini` Key                | Description                                        |
+| ----------------------------- | -------------------- | ------------------------------- | -------------------------------------------------- |
+| `PROJECT_ID`                  | `[GCP]`              | `PROJECT_ID`                    | Your Google Cloud Project ID.                      |
+| `VECTOR_STORE`                | `[CONFIG]`           | `VECTOR_STORE`                  | The vector store to use (`bigquery-vector` or `cloudsql-pgvector`). |
+| `PG_INSTANCE`                 | `[PGCLOUDSQL]`       | `PG_INSTANCE`                   | The Cloud SQL PostgreSQL instance name.            |
+| `PG_DATABASE`                 | `[PGCLOUDSQL]`       | `PG_DATABASE`                   | The PostgreSQL database name.                      |
+| `PG_USER`                     | `[PGCLOUDSQL]`       | `PG_USER`                       | The PostgreSQL username.                           |
+| `PG_PASSWORD`                 | `[PGCLOUDSQL]`       | `PG_PASSWORD`                   | The PostgreSQL password. (Not recommended for production) |
+| `PG_PASSWORD_SECRET_ID`       | (N/A)                | (N/A)                           | The ID of the secret in Google Secret Manager containing the PG password. **(Recommended)** |
+| `BQ_OPENDATAQNA_DATASET_NAME` | `[BIGQUERY]`         | `BQ_OPENDATAQNA_DATASET_NAME`   | The BigQuery dataset for OpenDataQnA metadata.     |
+| `SQLBUILDER_MODEL`            | `[MODELS]`           | `SQLBUILDER_MODEL`              | The model used to build SQL queries.               |
+| `...`                         | `...`                | `...`                           | (Other model and config variables follow the same pattern) |
+
+
 🖥️ Build a angular based frontend for this solution   
 ---------------------------------------------------
 Deploy backend apis for the solution, refer to the README.md under [`/backend-apis`](/backend-apis/). This APIs are designed with work with the frontend and provide access to run the solution.

@@ -1,0 +1,27 @@
+# Use a smaller, Google-hosted Python image to avoid disk space issues.
+# Using Python 3.10 which is compatible with the project.
+FROM us-central1-docker.pkg.dev/serverless-runtimes/google-22/runtimes/python310
+
+# Set environment variables
+ENV PYTHONUNBUFFERED True
+ENV APP_HOME /app
+WORKDIR $APP_HOME
+
+# Install poetry
+RUN pip install poetry
+
+# Copy dependency files and install dependencies
+# This is done in a separate step to leverage Docker layer caching.
+COPY pyproject.toml poetry.lock ./
+RUN poetry install --no-dev --no-interaction --no-ansi
+
+# Copy the rest of the application code
+COPY . .
+
+# Set the entrypoint to run the CLI script
+ENTRYPOINT ["poetry", "run", "python", "opendataqna.py"]
+
+# CMD is used to provide default arguments to the entrypoint.
+# For example: CMD ["--user_question", "What is the total number of movies?"]
+# Here, we'll just show the help message by default.
+CMD ["--help"]

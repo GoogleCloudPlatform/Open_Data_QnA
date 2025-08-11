@@ -1,0 +1,32 @@
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+Dockerfile.cli
+.dockerignore
+
+# Python
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# IDEs and local config
+.vscode/
+.idea/
+
+# Frontend
+frontend/
+
+# Notebooks
+notebooks/
+
+# Terraform
+terraform/
+
+# Documentation and other assets
+docs/
+utilities/imgs/
