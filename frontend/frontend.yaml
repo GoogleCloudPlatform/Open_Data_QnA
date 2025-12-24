@@ -17,6 +17,7 @@ steps:
     script: |
       #!/usr/bin/env bash
       npm run build || true
+  # gsutil command with no arguments cannot be translated.
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
     dir: frontend
     entrypoint: gsutil
