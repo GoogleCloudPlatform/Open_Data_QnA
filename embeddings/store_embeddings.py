@@ -232,14 +232,30 @@ async def add_sql_embedding(user_question, generated_sql, database):
             client.query_and_wait(f'''CREATE TABLE IF NOT EXISTS `{PROJECT_ID}.{BQ_OPENDATAQNA_DATASET_NAME}.example_prompt_sql_embeddings` (
                 user_grouping string NOT NULL, example_user_question string NOT NULL, example_generated_sql string NOT NULL,
                 embedding ARRAY<FLOAT64>)''')
-            client.query_and_wait(f'''DELETE FROM `{PROJECT_ID}.{BQ_OPENDATAQNA_DATASET_NAME}.example_prompt_sql_embeddings`
-                                WHERE user_grouping= '{database}' and example_user_question= "{user_question}" '''
-                                    )
-                        # embedding=np.array(row["embedding"])
+            delete_sql = f'''DELETE FROM `{PROJECT_ID}.{BQ_OPENDATAQNA_DATASET_NAME}.example_prompt_sql_embeddings`
+                                WHERE user_grouping = @database and example_user_question = @user_question'''
+            delete_job_config = bigquery.QueryJobConfig(
+                query_parameters=[
+                    bigquery.ScalarQueryParameter("database", "STRING", database),
+                    bigquery.ScalarQueryParameter("user_question", "STRING", user_question),
+                ]
+            )
+            client.query_and_wait(delete_sql, job_config=delete_job_config)
+
             cleaned_sql = generated_sql.replace("\r", " ").replace("\n", " ")
-            client.query_and_wait(f'''INSERT INTO `{PROJECT_ID}.{BQ_OPENDATAQNA_DATASET_NAME}.example_prompt_sql_embeddings` 
-                        VALUES ("{database}","{user_question}" , 
-                        "{cleaned_sql}",{emb})''')
+            insert_sql = f'''INSERT INTO `{PROJECT_ID}.{BQ_OPENDATAQNA_DATASET_NAME}.example_prompt_sql_embeddings`
+                        (user_grouping, example_user_question, example_generated_sql, embedding)
+                        VALUES (@database, @user_question, @generated_sql, @embedding)'''
+            emb_list = [float(x) for x in emb] if hasattr(emb, '__iter__') else list(emb)
+            insert_job_config = bigquery.QueryJobConfig(
+                query_parameters=[
+                    bigquery.ScalarQueryParameter("database", "STRING", database),
+                    bigquery.ScalarQueryParameter("user_question", "STRING", user_question),
+                    bigquery.ScalarQueryParameter("generated_sql", "STRING", cleaned_sql),
+                    bigquery.ArrayQueryParameter("embedding", "FLOAT64", emb_list),
+                ]
+            )
+            client.query_and_wait(insert_sql, job_config=insert_job_config)
         return 1
 
 
