@@ -1,0 +1,21 @@
+This document describes the schema for the 'all_email_corpus.csv' file.
+This CSV file contains individual email messages or 'turns' from conversations.
+
+Columns:
+- turn_id: A unique identifier for each message turn in the corpus.
+- patient_email: The email address of the patient involved in this message turn. This links to the patient's overall record.
+- conversation_id: An identifier that groups messages belonging to the same conversation thread.
+- turn_position: An integer indicating the order of this message within its conversation (e.g., 1st message, 2nd message).
+- direction: Indicates if the message was 'inbound' (to the patient/organization) or 'outbound' (from the patient/organization).
+- sender: The email address of the sender of this specific message.
+- message_content: The textual body of the email message.
+- sentiment_score: A numerical score indicating the sentiment of the message content (e.g., positive, negative, neutral).
+- topic: The primary topic identified in the message content.
+- intent: The inferred intent of the message (e.g., 'request_appointment', 'query_medication').
+- dialogflow_intent: If applicable, the specific intent name as recognized by a Dialogflow agent.
+- training_phrase: If this message was used as a training phrase for an intent, this field contains that phrase.
+- parameters: Any parameters extracted in relation to the identified intent (e.g., if intent is 'request_appointment', a parameter might be 'date: tomorrow').
+- response_template: If a predefined response template was used or suggested for this message turn.
+
+This CSV is used to provide a corpus of email messages for analysis, training, or creating a searchable index of communications.
+It can be linked to more detailed JSON data for each patient using 'patient_email' and specific messages using 'conversation_id' and potentially fields that can be used to derive 'message_id'.

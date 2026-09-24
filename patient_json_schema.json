@@ -1,0 +1,152 @@
+{
+  "type": "object",
+  "properties": {
+    "patient_email_original": {
+      "type": "string",
+      "description": "The original email address of the patient, serving as a primary identifier."
+    },
+    "total_conversations": {
+      "type": "integer",
+      "description": "Total number of conversation threads for this patient."
+    },
+    "conversations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "description": "Unique identifier for a single conversation thread."
+          },
+          "start_date_iso": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO formatted start date and time of the conversation."
+          },
+          "total_messages": {
+            "type": "integer",
+            "description": "Total number of messages within this conversation."
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "email"
+            },
+            "description": "List of email addresses of participants in the conversation."
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "message_id": {
+                  "type": "string",
+                  "description": "Unique identifier for a single message."
+                },
+                "sender": {
+                  "type": "string",
+                  "format": "email",
+                  "description": "Email address of the message sender."
+                },
+                "recipients_to": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "description": "List of email addresses of direct recipients."
+                },
+                "recipients_cc": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "description": "List of email addresses of CC recipients."
+                },
+                "recipients_bcc": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "description": "List of email addresses of BCC recipients."
+                },
+                "date_iso": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "ISO formatted date and time the message was sent."
+                },
+                "subject": {
+                  "type": "string",
+                  "description": "Subject line of the message."
+                },
+                "body": {
+                  "type": "string",
+                  "description": "Main content/body of the message."
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": ["inbound", "outbound"],
+                  "description": "Direction of the message relative to the patient (e.g., 'inbound' to patient, 'outbound' from patient)."
+                },
+                "attachments": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "filename": {
+                        "type": "string"
+                      },
+                      "size_kb": {
+                        "type": "integer"
+                      },
+                      "filepath_gcs": {
+                        "type": "string",
+                        "description": "Path to the attachment file in Google Cloud Storage."
+                      }
+                    },
+                    "required": ["filename"]
+                  },
+                  "description": "List of attachments in the message."
+                },
+                "read_status": {
+                  "type": "boolean",
+                  "description": "Indicates if the message has been read."
+                }
+              },
+              "required": ["message_id", "sender", "date_iso", "body"]
+            }
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "User-defined tags for the conversation."
+          }
+        },
+        "required": ["conversation_id", "messages"]
+      }
+    },
+    "last_updated_iso": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO formatted date and time the JSON record was last updated."
+    },
+    "patient_preferences": {
+      "type": "object",
+      "properties": {
+        "contact_method": {
+          "type": "string"
+        },
+        "appointment_reminders": {
+          "type": "boolean"
+        }
+      },
+      "description": "Preferences set by the patient."
+    }
+  },
+  "required": ["patient_email_original", "conversations"]
+}
