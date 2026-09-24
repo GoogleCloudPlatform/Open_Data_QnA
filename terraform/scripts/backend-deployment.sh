@@ -63,7 +63,7 @@ main(){
     
     echo "Deploying cloud run service.."
     pwd
-    gcloud beta run deploy $SERVICE_NAME --region $DEPLOY_REGION --source . --service-account=$SERVICE_ACCOUNT --service-min-instances=1  --allow-unauthenticated --project=$PROJECT_ID || exit 1
+    gcloud beta run deploy $SERVICE_NAME --region $DEPLOY_REGION --source . --service-account=$SERVICE_ACCOUNT --service-min-instances=1  --no-allow-unauthenticated --project=$PROJECT_ID || exit 1
 
     echo "Deleting the previously create dorg policy.."
 

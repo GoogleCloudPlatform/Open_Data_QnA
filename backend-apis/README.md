@@ -21,9 +21,10 @@ Create the service account and add roles to run the solution backend for the API
 ```
 gcloud iam service-accounts create opendataqna --project=$PROJECT_ID
 gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:opendataqna@$PROJECT_ID.iam.gserviceaccount.com --role='roles/cloudsql.client' --project=$PROJECT_ID --quiet
-gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:opendataqna@$PROJECT_ID.iam.gserviceaccount.com --role='roles/bigquery.admin' --project=$PROJECT_ID --quiet
+gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:opendataqna@$PROJECT_ID.iam.gserviceaccount.com --role='roles/bigquery.jobUser' --project=$PROJECT_ID --quiet
+gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:opendataqna@$PROJECT_ID.iam.gserviceaccount.com --role='roles/bigquery.dataEditor' --project=$PROJECT_ID --quiet
 gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:opendataqna@$PROJECT_ID.iam.gserviceaccount.com --role='roles/aiplatform.user' --project=$PROJECT_ID --quiet
-gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:opendataqna@$PROJECT_ID.iam.gserviceaccount.com --role='roles/datastore.owner' --project=$PROJECT_ID --quiet
+gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:opendataqna@$PROJECT_ID.iam.gserviceaccount.com --role='roles/datastore.user' --project=$PROJECT_ID --quiet
 
 ```
 
