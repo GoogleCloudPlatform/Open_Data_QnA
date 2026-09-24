@@ -231,26 +231,38 @@ class BQConnector(DBConnector, ABC):
         """
         matches = []
 
+        dataset_path = f"{self.project_id}.{self.opendataqna_dataset}"
+        limit_val = int(limit)
+        similarity_threshold_val = float(similarity_threshold)
+
         if mode == 'table':
-            sql = '''select base.content as tables_content from vector_search(
-                 (SELECT * FROM `{}.table_details_embeddings` WHERE user_grouping = '{}'), "embedding", 
-            (SELECT {} as qe), top_k=> {},distance_type=>"COSINE") where 1-distance > {} '''
+            sql = f'''select base.content as tables_content from vector_search(
+                 (SELECT * FROM `{dataset_path}.table_details_embeddings` WHERE user_grouping = @user_grouping), "embedding", 
+            (SELECT {qe} as qe), top_k=> {limit_val},distance_type=>"COSINE") where 1-distance > {similarity_threshold_val} '''
         
         elif mode == 'column':
-            sql='''select base.content as columns_content from vector_search(
-                 (SELECT * FROM `{}.tablecolumn_details_embeddings` WHERE user_grouping = '{}'), "embedding",
-            (SELECT {} as qe), top_k=> {}, distance_type=>"COSINE") where 1-distance > {} '''
+            sql = f'''select base.content as columns_content from vector_search(
+                 (SELECT * FROM `{dataset_path}.tablecolumn_details_embeddings` WHERE user_grouping = @user_grouping), "embedding",
+            (SELECT {qe} as qe), top_k=> {limit_val}, distance_type=>"COSINE") where 1-distance > {similarity_threshold_val} '''
 
         elif mode == 'example': 
-            sql='''select base.example_user_question, base.example_generated_sql from vector_search ( 
-                (SELECT * FROM `{}.example_prompt_sql_embeddings` WHERE user_grouping = '{}'), "embedding",
-            (select {} as qe), top_k=> {}, distance_type=>"COSINE") where 1-distance > {} '''
+            sql = f'''select base.example_user_question, base.example_generated_sql from vector_search ( 
+                (SELECT * FROM `{dataset_path}.example_prompt_sql_embeddings` WHERE user_grouping = @user_grouping), "embedding",
+            (select {qe} as qe), top_k=> {limit_val}, distance_type=>"COSINE") where 1-distance > {similarity_threshold_val} '''
     
         else: 
-            ValueError("No valid mode. Must be either table, column, or example")
-            name_txt = ''
+            raise ValueError("No valid mode. Must be either table, column, or example")
 
-        results=self.client.query_and_wait(sql.format('{}.{}'.format(self.project_id,self.opendataqna_dataset),user_grouping,qe,limit,similarity_threshold)).to_dataframe()
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter(
+                    "user_grouping", "STRING", user_grouping
+                )
+            ]
+        )
+        results = self.client.query_and_wait(
+            sql, job_config=job_config
+        ).to_dataframe()
         # CHECK RESULTS 
         if len(results) == 0:
             print(f"Did not find any results for {mode}. Adjust the query parameters.")
