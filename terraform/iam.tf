@@ -15,6 +15,7 @@
  */
 
 resource "null_resource" "org_policy_temp" {
+  count      = var.allow_unauthenticated_invoker ? 1 : 0
   depends_on = [module.project_services]
 
   provisioner "local-exec" {
@@ -25,6 +26,7 @@ resource "null_resource" "org_policy_temp" {
 }
 
 resource "null_resource" "delete_org_policy_temp" {
+  count = var.allow_unauthenticated_invoker ? 1 : 0
   provisioner "local-exec" {
     working_dir = "${path.module}"
     command = "sh ${path.module}/scripts/execute-gcloud-cmd.sh ${var.project_id} NO"
@@ -40,9 +42,10 @@ module "genai_cloudrun_service_account" {
   names      = [var.service_account]
   project_roles = [
     "${var.project_id}=>roles/cloudsql.client",
-    "${var.project_id}=>roles/bigquery.admin",
+    "${var.project_id}=>roles/bigquery.jobUser",
+    "${var.project_id}=>roles/bigquery.dataEditor",
     "${var.project_id}=>roles/aiplatform.user",
-    "${var.project_id}=>roles/datastore.owner"
+    "${var.project_id}=>roles/datastore.user"
   ]
   depends_on = [module.project_services]
 }
@@ -76,6 +79,7 @@ resource "google_project_iam_member" "default_cloudbuild_sa_role" {
 }
 
 resource "google_cloud_run_service_iam_member" "invoker" {
+  count    = var.allow_unauthenticated_invoker ? 1 : 0
   location = google_cloud_run_service.backend.location
   project  = google_cloud_run_service.backend.project
   service  = google_cloud_run_service.backend.name

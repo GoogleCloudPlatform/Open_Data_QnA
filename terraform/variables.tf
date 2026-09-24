@@ -152,3 +152,9 @@ variable "firebase_web_app_name" {
   description = "name of the firebase web app."
 }
 
+variable "allow_unauthenticated_invoker" {
+  type        = bool
+  default     = false
+  description = "Whether to allow unauthenticated invocation (allUsers) on the Cloud Run backend service. Default is false."
+}
+
