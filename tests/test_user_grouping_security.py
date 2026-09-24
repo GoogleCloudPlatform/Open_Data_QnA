@@ -271,6 +271,7 @@ class TestApiUserGroupingRejection(unittest.TestCase):
         mock_auth.verify_id_token.return_value = {"uid": "user_sec_test"}
         mock_opendataqna.get_results.reset_mock()
         mock_opendataqna.get_kgq.reset_mock()
+        mock_opendataqna.generate_sql.reset_mock()
 
     def test_run_query_rejects_sql_injection_in_user_grouping(self):
         payloads = [
@@ -334,6 +335,37 @@ class TestApiUserGroupingRejection(unittest.TestCase):
             resp = asyncio.run(resp)
         status_code = resp[1] if isinstance(resp, tuple) else resp.status_code
         self.assertEqual(status_code, 400)
+
+    def test_generate_sql_rejects_sql_injection_in_user_grouping(self):
+        handler = self.app.routes["/generate_sql"]
+        sys.modules["flask"].request.data = json.dumps({
+            "user_question": "What is total revenue?",
+            "user_grouping": "' UNION SELECT 'bigquery' --",
+            "session_id": "sess_123"
+        }).encode("utf-8")
+
+        resp = handler()
+        if asyncio.iscoroutine(resp):
+            resp = asyncio.run(resp)
+        status_code = resp[1] if isinstance(resp, tuple) else resp.status_code
+        self.assertEqual(status_code, 400)
+        mock_opendataqna.generate_sql.assert_not_called()
+
+    def test_generate_sql_accepts_valid_user_grouping(self):
+        handler = self.app.routes["/generate_sql"]
+        sys.modules["flask"].request.data = json.dumps({
+            "user_question": "What is total revenue?",
+            "user_grouping": "valid_dataset",
+            "session_id": "sess_123"
+        }).encode("utf-8")
+
+        resp = handler()
+        if asyncio.iscoroutine(resp):
+            resp = asyncio.run(resp)
+        data = resp.get_json()
+        self.assertEqual(data.get("ResponseCode"), 200)
+        mock_opendataqna.generate_sql.assert_called_once()
+
 
 
 class TestOpenDataQnAQueryParameterization(unittest.TestCase):

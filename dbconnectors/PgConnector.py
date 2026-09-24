@@ -275,7 +275,7 @@ class PgConnector(DBConnector, ABC):
                 qe,
                 similarity_threshold,
                 limit,
-                user_groupinguping
+                user_grouping
             )
 
             # CHECK RESULTS 
