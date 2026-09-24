@@ -115,8 +115,11 @@ class BQConnector(DBConnector, ABC):
         client = bigquery.Client(project=self.project_id)
         return client
     
-    def retrieve_df(self,query):
-        return self.client.query_and_wait(query).to_dataframe()
+    def retrieve_df(self, query, query_parameters=None):
+        job_config = None
+        if query_parameters:
+            job_config = bigquery.QueryJobConfig(query_parameters=query_parameters)
+        return self.client.query_and_wait(query, job_config=job_config).to_dataframe()
 
     def make_audit_entry(self, source_type, user_grouping, model, question, generated_sql, found_in_vector, need_rewrite, failure_step, error_msg, FULL_LOG_TEXT):
         # global FULL_LOG_TEXT
@@ -317,10 +320,12 @@ class BQConnector(DBConnector, ABC):
 
     def getExactMatches(self, query):
         """Checks if the exact question is already present in the example SQL set"""
-        check_history_sql=f"""SELECT example_user_question,example_generated_sql FROM `{self.project_id}.{self.opendataqna_dataset}.example_prompt_sql_embeddings`
-                          WHERE lower(example_user_question) = lower("{query}") LIMIT 1; """
-
-        exact_sql_history = self.client.query_and_wait(check_history_sql).to_dataframe()
+        check_history_sql = f"""SELECT example_user_question,example_generated_sql FROM `{self.project_id}.{self.opendataqna_dataset}.example_prompt_sql_embeddings`
+                          WHERE lower(example_user_question) = lower(@query) LIMIT 1; """
+        job_config = bigquery.QueryJobConfig(
+            query_parameters=[bigquery.ScalarQueryParameter("query", "STRING", str(query))]
+        )
+        exact_sql_history = self.client.query_and_wait(check_history_sql, job_config=job_config).to_dataframe()
 
 
         if exact_sql_history[exact_sql_history.columns[0]].count() != 0:

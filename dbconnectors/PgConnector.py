@@ -150,7 +150,7 @@ class PgConnector(DBConnector, ABC):
         return conn 
 
 
-    def retrieve_df(self, query):
+    def retrieve_df(self, query, params=None):
         """ 
         TODO: Description 
         """
@@ -159,7 +159,7 @@ class PgConnector(DBConnector, ABC):
         try: 
             with self.pool.connect() as db_conn:
                
-                df = pd.read_sql(text(query), con=db_conn)
+                df = pd.read_sql(text(query), con=db_conn, params=params)
                 result_df = df
             # print('\n Return from code execution: ' + str(result_df) )
             return result_df
@@ -364,11 +364,11 @@ class PgConnector(DBConnector, ABC):
         """ 
         Checks if the exact question is already present in the example SQL set 
         """
-        check_history_sql=f"""SELECT example_user_question,example_generated_sql
+        check_history_sql = """SELECT example_user_question,example_generated_sql
         FROM example_prompt_sql_embeddings
-        WHERE lower(example_user_question) = lower('{query}') LIMIT 1; """
+        WHERE lower(example_user_question) = lower(:query) LIMIT 1; """
 
-        exact_sql_history = self.retrieve_df(check_history_sql)
+        exact_sql_history = self.retrieve_df(check_history_sql, params={"query": str(query)})
 
         if exact_sql_history[exact_sql_history.columns[0]].count() != 0:
             sql_example_txt = ''

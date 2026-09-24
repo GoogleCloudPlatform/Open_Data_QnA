@@ -118,6 +118,13 @@ def is_safe_query(sql: str) -> tuple[bool, str]:
 
     return True, ""
 
+
+def is_valid_user_grouping(user_grouping: str) -> bool:
+    """Validates that a user_grouping identifier is safe and matches standard naming."""
+    if not user_grouping or not isinstance(user_grouping, str):
+        return False
+    return bool(re.match(r'^[a-zA-Z0-9_\-\.]{1,128}$', user_grouping.strip()))
+
 RUN_DEBUGGER = True
 DEBUGGING_ROUNDS = 2 
 LLM_VALIDATION = False
@@ -173,6 +180,14 @@ async def embedSql():
     user_question = envelope.get('user_question')
     session_id = envelope.get('session_id')
 
+    if not is_valid_user_grouping(user_grouping):
+        return jsonify({
+            "ResponseCode": 400,
+            "KnownDB": "",
+            "SessionID": session_id,
+            "Error": "Invalid user_grouping format. Must be an alphanumeric identifier."
+        }), 400
+
     embedded, invalid_response=await embed_sql(session_id,user_grouping,user_question,generated_sql)
 
     if not invalid_response:
@@ -206,6 +221,15 @@ def getSQLResult():
     user_grouping = envelope.get('user_grouping')
     generated_sql = envelope.get('generated_sql')
     session_id = envelope.get('session_id')
+
+    if not is_valid_user_grouping(user_grouping):
+        return jsonify({
+            "ResponseCode": 400,
+            "KnownDB": "",
+            "NaturalResponse": "",
+            "SessionID": session_id,
+            "Error": "Invalid user_grouping format. Must be an alphanumeric identifier."
+        }), 400
 
     is_safe, error_reason = is_safe_query(generated_sql)
     if not is_safe:
@@ -262,6 +286,12 @@ def getKnownSQL():
     
     user_grouping = envelope.get('user_grouping')
 
+    if not is_valid_user_grouping(user_grouping):
+        return jsonify({
+            "ResponseCode": 400,
+            "KnownSQL": "",
+            "Error": "Invalid user_grouping format. Must be an alphanumeric identifier."
+        }), 400
 
     result,invalid_response=get_kgq(user_grouping)
     
@@ -294,6 +324,15 @@ async def generateSQL():
     user_grouping = envelope.get('user_grouping')
     session_id = envelope.get('session_id')
     user_id = envelope.get('user_id')
+
+    if not is_valid_user_grouping(user_grouping):
+        return jsonify({
+            "ResponseCode": 400,
+            "GeneratedSQL": "",
+            "SessionID": session_id,
+            "Error": "Invalid user_grouping format. Must be an alphanumeric identifier."
+        }), 400
+
     generated_sql,session_id,invalid_response = await generate_sql(session_id,
                 user_question,
                 user_grouping,  
@@ -412,6 +451,13 @@ async def getNaturalResponse():
    
    user_question = envelope.get('user_question')
    user_grouping = envelope.get('user_grouping')
+
+   if not is_valid_user_grouping(user_grouping):
+       return jsonify({
+           "ResponseCode": 400,
+           "summary_response": "",
+           "Error": "Invalid user_grouping format. Must be an alphanumeric identifier."
+       }), 400
    
    generated_sql,session_id,invalid_response = await generate_sql(user_question,
                 user_grouping,  
@@ -477,6 +523,13 @@ async def getResultsResponse():
    
    user_question = envelope.get('user_question')
    user_database = envelope.get('user_database')
+
+   if not is_valid_user_grouping(user_database):
+       return jsonify({
+           "ResponseCode": 400,
+           "GeneratedResults": "",
+           "Error": "Invalid user_database format. Must be an alphanumeric identifier."
+       }), 400
    
    generated_sql,invalid_response = await generate_sql(user_question,
                 user_database,  

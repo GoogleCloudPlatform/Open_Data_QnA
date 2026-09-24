@@ -1,6 +1,9 @@
 import asyncio
 import argparse
+import re
 import uuid
+
+from google.cloud import bigquery
 
 from agents import EmbedderAgent, BuildSQLAgent, DebugSQLAgent, ValidateSQLAgent, ResponseAgent,VisualizeAgent
 from utilities import (PROJECT_ID, PG_REGION, BQ_REGION, EXAMPLES, LOGGING, VECTOR_STORE,
@@ -33,6 +36,13 @@ def generate_uuid():
              xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.
     """
     return str(uuid.uuid4())
+
+
+def is_valid_user_grouping(user_grouping: str) -> bool:
+    """Validates that a user_grouping identifier is safe and matches standard naming."""
+    if not user_grouping or not isinstance(user_grouping, str):
+        return False
+    return bool(re.match(r'^[a-zA-Z0-9_\-\.]{1,128}$', user_grouping.strip()))
 
 
 ############################
@@ -99,27 +109,33 @@ def get_source_type(user_grouping):
     Raises:
         Exception: If there is an issue connecting to or querying the vector store. The exception message will be included in the returned `result`.
     """
+    if not is_valid_user_grouping(user_grouping):
+        return "Invalid user_grouping format", True
+
+    user_grouping = user_grouping.strip()
     try: 
         if VECTOR_STORE=='bigquery-vector': 
-            sql=f'''SELECT
+            sql = f'''SELECT
         DISTINCT source_type
         FROM
         `{PROJECT_ID}.{BQ_OPENDATAQNA_DATASET_NAME}.table_details_embeddings`
-        where user_grouping='{user_grouping}' '''
+        WHERE user_grouping = @user_grouping'''
+            query_params = [bigquery.ScalarQueryParameter("user_grouping", "STRING", user_grouping)]
+            result = vector_connector.retrieve_df(sql, query_parameters=query_params)
 
         else:
-            sql=f'''SELECT
+            sql = '''SELECT
         DISTINCT source_type
         FROM
-        table_details_embeddings where user_grouping='{user_grouping}' '''
+        table_details_embeddings WHERE user_grouping = :user_grouping'''
+            result = vector_connector.retrieve_df(sql, params={"user_grouping": user_grouping})
         
-        result = vector_connector.retrieve_df(sql)
         result = (str(result.iloc[0, 0])).lower() 
-        invalid_response=False
+        invalid_response = False
     except Exception as e:
-        result="Error at finding the datasource :: "+str(e)
-        invalid_response=True
-    return result,invalid_response
+        result = "Error at finding the datasource :: " + str(e)
+        invalid_response = True
+    return result, invalid_response
 
 
 
@@ -516,30 +532,36 @@ def get_kgq(user_grouping):
         Exception: If there is an issue connecting to or querying the vector store.
                    The exception message will be included in the returned `result`.
     """  
+    if not is_valid_user_grouping(user_grouping):
+        return "Invalid user_grouping format", True
+
+    user_grouping = user_grouping.strip()
     try:
         if VECTOR_STORE=='bigquery-vector': 
-            sql=f'''SELECT distinct
+            sql = f'''SELECT distinct
         example_user_question,
         example_generated_sql 
         FROM
         `{PROJECT_ID}.{BQ_OPENDATAQNA_DATASET_NAME}.example_prompt_sql_embeddings`
-        where user_grouping='{user_grouping}'  LIMIT 5 '''
+        WHERE user_grouping = @user_grouping LIMIT 5'''
+            query_params = [bigquery.ScalarQueryParameter("user_grouping", "STRING", user_grouping)]
+            result = vector_connector.retrieve_df(sql, query_parameters=query_params)
 
         else:
-            sql="""select distinct
+            sql = """SELECT DISTINCT
         example_user_question,
         example_generated_sql 
-        from example_prompt_sql_embeddings
-        where user_grouping = '{user_grouping}' LIMIT 5""".format(user_grouping=user_grouping)
+        FROM example_prompt_sql_embeddings
+        WHERE user_grouping = :user_grouping LIMIT 5"""
+            result = vector_connector.retrieve_df(sql, params={"user_grouping": user_grouping})
 
-        result = vector_connector.retrieve_df(sql)
         result = result.to_json(orient='records')
         invalid_response = False
 
     except Exception as e:
-        result="Issue was encountered while extracting known good sqls in vector store:: "  + str(e)
-        invalid_response=True
-    return result,invalid_response
+        result = "Issue was encountered while extracting known good sqls in vector store:: " + str(e)
+        invalid_response = True
+    return result, invalid_response
 
 
 ############################
