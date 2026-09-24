@@ -4,13 +4,7 @@
 
 <h3 style="text-align:center;"> Create Endpoints </h3>
 
-   Here we are going to create publicly accessible endpoints (no authentication) .
-
-   If you're working on a managed GCP project, it is common that there would be Domain Restricted Sharing Org Policies that will not allow the creation of a public facing endpoint.
-
-   So we can allow all the domains and re-enable the same policy so that we don’t change the existing policy.
-
-   Please run the below command before proceeding ahead. You need to have Organization Policy Admin rights to run the below commands.
+   Here we are going to create secured backend API endpoints protected via Firebase JWT authentication (`@jwt_authenticated`).
 ```
 export PROJECT_ID=<PROJECT_ID>
 ```
@@ -92,18 +86,18 @@ gcloud projects add-iam-policy-binding $PROJECT_ID --member=serviceAccount:$DEFA
 ```
  cd Open_Data_QnA
 
- gcloud beta run deploy $SERVICE_NAME --region $DEPLOY_REGION --source . --service-account=opendataqna@$PROJECT_ID.iam.gserviceaccount.com --service-min-instances=1  --allow-unauthenticated --project=$PROJECT_ID 
+ gcloud beta run deploy $SERVICE_NAME --region $DEPLOY_REGION --source . --service-account=opendataqna@$PROJECT_ID.iam.gserviceaccount.com --service-min-instances=1  --no-allow-unauthenticated --project=$PROJECT_ID 
  
- #if you are deploying cloud run application for the first time in the project you will be prompted for a couple of settings. Go ahead and type Yes.
+ # Note: In production, endpoints are protected with authentication. Requests must pass an `Authorization: Bearer <FIREBASE_ID_TOKEN>` header.
 
 
 ```
 
    Once the deployment is done successfully you should be able to see the Service URL (endpoint point) link as shown below. Please keep this handy to add this in the frontend or you can get this uri from the cloud run page in the GCP Console. e.g. *https://OpenDataQnA-aeiouAEI-uc.a.run.app*
 
-   Test if the endpoints are working with below command. This should return the dataset your created in the source env setup notebook.
+   Test if the endpoints are working with below command (passing a valid Firebase Bearer token):
 ```
- curl <URI of the end point>/available_databases
+ curl -H "Authorization: Bearer <FIREBASE_ID_TOKEN>" <URI of the end point>/available_databases
 
 ```
 

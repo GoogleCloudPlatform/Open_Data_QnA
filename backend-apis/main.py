@@ -43,27 +43,80 @@ module_path = os.path.abspath(os.path.join('.'))
 sys.path.append(module_path)
 
 
+def _verify_auth_header():
+    header = request.headers.get("Authorization", None)
+    if not header:
+        return Response(status=401, response="Missing Authorization header"), None
+    parts = header.split(" ")
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        return Response(status=401, response="Invalid Authorization header format. Expected 'Bearer <token>'"), None
+    token = parts[1]
+    try:
+        decoded_token = firebase_admin.auth.verify_id_token(token)
+        return None, decoded_token.get("uid")
+    except Exception as e:
+        log.exception(e)
+        return Response(status=403, response=f"Error with authentication: {e}"), None
+
+
 def jwt_authenticated(func: Callable[..., int]) -> Callable[..., int]:
-    @wraps(func)
-    async def decorated_function(*args, **kwargs):
-        header = request.headers.get("Authorization", None)
-        if header:
-            token = header.split(" ")[1]
-            try:
-                
-                print("TOKEN::"+str(token))
-                decoded_token = firebase_admin.auth.verify_id_token(token)
-            except Exception as e:
-                log.exception(e)
-                return Response(status=403, response=f"Error with authentication: {e}")
-        else:
-            return Response(status=401)
-        
-        request.uid = decoded_token["uid"]
-        print("USER:: "+str(request.uid))
-        return await func(*args, **kwargs) if asyncio.iscoroutinefunction(func) else func(*args, **kwargs)
-    
-    return decorated_function
+    if asyncio.iscoroutinefunction(func):
+        @wraps(func)
+        async def async_decorated_function(*args, **kwargs):
+            auth_response, uid = _verify_auth_header()
+            if auth_response is not None:
+                return auth_response
+            request.uid = uid
+            return await func(*args, **kwargs)
+        return async_decorated_function
+    else:
+        @wraps(func)
+        def sync_decorated_function(*args, **kwargs):
+            auth_response, uid = _verify_auth_header()
+            if auth_response is not None:
+                return auth_response
+            request.uid = uid
+            return func(*args, **kwargs)
+        return sync_decorated_function
+
+
+FORBIDDEN_SQL_PATTERNS = [
+    r"\bDROP\b",
+    r"\bDELETE\b",
+    r"\bUPDATE\b",
+    r"\bINSERT\b",
+    r"\bALTER\b",
+    r"\bTRUNCATE\b",
+    r"\bCREATE\b",
+    r"\bGRANT\b",
+    r"\bREVOKE\b",
+    r"\bEXEC\b",
+    r"\bEXECUTE\b",
+    r"\bCALL\b",
+]
+
+
+def is_safe_query(sql: str) -> tuple[bool, str]:
+    """Validates that a SQL query is read-only and free of destructive statements."""
+    if not sql or not isinstance(sql, str):
+        return False, "Query must be a non-empty string"
+    # Strip comments and surrounding whitespace
+    cleaned = re.sub(r"--.*$", "", sql, flags=re.MULTILINE)
+    cleaned = re.sub(r"/\*.*?\*/", "", cleaned, flags=re.DOTALL).strip()
+    # Remove markdown code fences if present
+    cleaned = cleaned.replace("```sql", "").replace("```", "").strip()
+
+    # Check for forbidden DDL / DML keywords
+    for pattern in FORBIDDEN_SQL_PATTERNS:
+        match = re.search(pattern, cleaned, re.IGNORECASE)
+        if match:
+            return False, f"Prohibited SQL operation detected: {match.group(0)}"
+
+    # Check that it starts with allowed read-only keywords (SELECT, WITH, EXPLAIN)
+    if not re.match(r"^(SELECT|WITH|EXPLAIN)\b", cleaned, re.IGNORECASE):
+        return False, "Only read-only SELECT, WITH, or EXPLAIN queries are permitted"
+
+    return True, ""
 
 RUN_DEBUGGER = True
 DEBUGGING_ROUNDS = 2 
@@ -86,7 +139,7 @@ cors = CORS(app, resources={r"/*": {"origins": "*"}})
 
 
 @app.route("/available_databases", methods=["GET"])
-# @jwt_authenticated
+@jwt_authenticated
 def getBDList():
 
     result,invalid_response=get_all_databases()
@@ -110,7 +163,7 @@ def getBDList():
 
 
 @app.route("/embed_sql", methods=["POST"])
-# @jwt_authenticated
+@jwt_authenticated
 async def embedSql():
 
     envelope = str(request.data.decode('utf-8'))
@@ -143,7 +196,7 @@ async def embedSql():
 
 
 @app.route("/run_query", methods=["POST"])
-# @jwt_authenticated
+@jwt_authenticated
 def getSQLResult():
     
     envelope = str(request.data.decode('utf-8'))
@@ -153,6 +206,16 @@ def getSQLResult():
     user_grouping = envelope.get('user_grouping')
     generated_sql = envelope.get('generated_sql')
     session_id = envelope.get('session_id')
+
+    is_safe, error_reason = is_safe_query(generated_sql)
+    if not is_safe:
+        return jsonify({
+            "ResponseCode": 400,
+            "KnownDB": "",
+            "NaturalResponse": "",
+            "SessionID": session_id,
+            "Error": f"Query rejected: {error_reason}"
+        }), 400
 
     result_df,invalid_response=get_results(user_grouping,generated_sql)
 
@@ -191,7 +254,7 @@ def getSQLResult():
 
 
 @app.route("/get_known_sql", methods=["POST"])
-# @jwt_authenticated
+@jwt_authenticated
 def getKnownSQL():
     print("Extracting the known SQLs from the example embeddings.")
     envelope = str(request.data.decode('utf-8'))
@@ -220,7 +283,7 @@ def getKnownSQL():
 
 
 @app.route("/generate_sql", methods=["POST"])
-# @jwt_authenticated
+@jwt_authenticated
 async def generateSQL():
     print("Here is the request payload ")
     envelope = str(request.data.decode('utf-8'))
@@ -268,7 +331,7 @@ async def generateSQL():
 
 
 @app.route("/generate_viz", methods=["POST"])
-# @jwt_authenticated
+@jwt_authenticated
 async def generateViz():
     envelope = str(request.data.decode('utf-8'))
     # print("Here is the request payload " + envelope)
@@ -312,7 +375,7 @@ async def generateViz():
         return jsonify(responseDict)
 
 @app.route("/summarize_results", methods=["POST"])
-# @jwt_authenticated
+@jwt_authenticated
 async def getSummary():
     envelope = str(request.data.decode('utf-8'))
     envelope=json.loads(envelope)
@@ -341,7 +404,7 @@ async def getSummary():
 
 
 @app.route("/natural_response", methods=["POST"])
-# @jwt_authenticated
+@jwt_authenticated
 async def getNaturalResponse():
    envelope = str(request.data.decode('utf-8'))
    #print("Here is the request payload " + envelope)
@@ -406,6 +469,7 @@ async def getNaturalResponse():
 
 
 @app.route("/get_results", methods=["POST"])
+@jwt_authenticated
 async def getResultsResponse():
    envelope = str(request.data.decode('utf-8'))
    #print("Here is the request payload " + envelope)
