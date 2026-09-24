@@ -84,6 +84,9 @@ for mod in [
     "google.auth",
     "sqlalchemy",
     "sqlalchemy.sql",
+    "numpy",
+    "langchain_community",
+    "langchain_community.embeddings",
 ]:
     if mod not in sys.modules:
         sys.modules[mod] = mock.MagicMock()
@@ -101,6 +104,15 @@ class MockScalarQueryParameter:
         self.value = value
 
 
+class MockArrayQueryParameter:
+    """Mock implementation of bigquery.ArrayQueryParameter."""
+
+    def __init__(self, name, array_type, values):
+        self.name = name
+        self.array_type = array_type
+        self.values = values
+
+
 class MockQueryJobConfig:
     """Mock implementation of bigquery.QueryJobConfig."""
 
@@ -111,6 +123,7 @@ class MockQueryJobConfig:
 
 
 mock_bigquery.ScalarQueryParameter = MockScalarQueryParameter
+mock_bigquery.ArrayQueryParameter = MockArrayQueryParameter
 mock_bigquery.QueryJobConfig = MockQueryJobConfig
 
 mock_google = types.ModuleType("google")
@@ -169,7 +182,7 @@ sys.modules["dbconnectors.PgConnector"] = pg_mod
 pg_spec.loader.exec_module(pg_mod)
 PgConnector = pg_mod.PgConnector
 
-# Mock utilities, agents, and embeddings to load real opendataqna.py
+# Mock utilities, agents, and embeddings to load real opendataqna.py and store_embeddings.py
 mock_utilities = types.ModuleType("utilities")
 mock_utilities.PROJECT_ID = "test-project"
 mock_utilities.PG_REGION = "us-central1"
@@ -180,12 +193,27 @@ mock_utilities.VECTOR_STORE = "bigquery-vector"
 mock_utilities.BQ_OPENDATAQNA_DATASET_NAME = "opendataqna_ds"
 mock_utilities.USE_SESSION_HISTORY = False
 mock_utilities.root_dir = "/tmp"
+mock_utilities.EMBEDDING_MODEL = "text-embedding-004"
+mock_utilities.PG_INSTANCE = "inst"
+mock_utilities.PG_DATABASE = "db"
+mock_utilities.PG_USER = "user"
+mock_utilities.PG_PASSWORD = "pass"
 sys.modules["utilities"] = mock_utilities
 
+mock_embedder_instance = mock.MagicMock()
+mock_embedder_instance.create.return_value = [0.1, 0.2, 0.3]
 mock_agents = types.ModuleType("agents")
-for agent_name in ["EmbedderAgent", "BuildSQLAgent", "DebugSQLAgent", "ValidateSQLAgent", "ResponseAgent", "VisualizeAgent"]:
+for agent_name in ["BuildSQLAgent", "DebugSQLAgent", "ValidateSQLAgent", "ResponseAgent", "VisualizeAgent"]:
     setattr(mock_agents, agent_name, mock.MagicMock())
+mock_agents.EmbedderAgent = mock.MagicMock(return_value=mock_embedder_instance)
 sys.modules["agents"] = mock_agents
+
+# Load real store_embeddings module
+store_emb_spec = importlib.util.spec_from_file_location(
+    "real_store_embeddings", os.path.join(REPO_ROOT, "embeddings", "store_embeddings.py")
+)
+real_store_embeddings = importlib.util.module_from_spec(store_emb_spec)
+store_emb_spec.loader.exec_module(real_store_embeddings)
 
 mock_emb = types.ModuleType("embeddings")
 mock_store_emb = types.ModuleType("embeddings.store_embeddings")
@@ -272,6 +300,7 @@ class TestApiUserGroupingRejection(unittest.TestCase):
         mock_opendataqna.get_results.reset_mock()
         mock_opendataqna.get_kgq.reset_mock()
         mock_opendataqna.generate_sql.reset_mock()
+        mock_opendataqna.embed_sql.reset_mock()
 
     def test_run_query_rejects_sql_injection_in_user_grouping(self):
         payloads = [
@@ -365,6 +394,86 @@ class TestApiUserGroupingRejection(unittest.TestCase):
         data = resp.get_json()
         self.assertEqual(data.get("ResponseCode"), 200)
         mock_opendataqna.generate_sql.assert_called_once()
+
+    def test_embed_sql_rejects_sql_injection_in_user_grouping(self):
+        handler = self.app.routes["/embed_sql"]
+        sys.modules["flask"].request.data = json.dumps({
+            "user_grouping": "' UNION SELECT * FROM example_prompt_sql_embeddings --",
+            "user_question": "What is the total sales?",
+            "generated_sql": "SELECT sum(sales) FROM sales_table",
+            "session_id": "sess_embed",
+        }).encode("utf-8")
+
+        resp = handler()
+        if asyncio.iscoroutine(resp):
+            resp = asyncio.run(resp)
+        status_code = resp[1] if isinstance(resp, tuple) else resp.status_code
+        self.assertEqual(status_code, 400)
+        mock_opendataqna.embed_sql.assert_not_called()
+
+    def test_embed_sql_rejects_invalid_user_question(self):
+        handler = self.app.routes["/embed_sql"]
+        sys.modules["flask"].request.data = json.dumps({
+            "user_grouping": "valid_ds",
+            "user_question": "   ",
+            "generated_sql": "SELECT sum(sales) FROM sales_table",
+            "session_id": "sess_embed",
+        }).encode("utf-8")
+
+        resp = handler()
+        if asyncio.iscoroutine(resp):
+            resp = asyncio.run(resp)
+        status_code = resp[1] if isinstance(resp, tuple) else resp.status_code
+        self.assertEqual(status_code, 400)
+        mock_opendataqna.embed_sql.assert_not_called()
+
+    def test_embed_sql_rejects_invalid_generated_sql(self):
+        handler = self.app.routes["/embed_sql"]
+        sys.modules["flask"].request.data = json.dumps({
+            "user_grouping": "valid_ds",
+            "user_question": "What is the revenue?",
+            "generated_sql": "   ",
+            "session_id": "sess_embed",
+        }).encode("utf-8")
+
+        resp = handler()
+        if asyncio.iscoroutine(resp):
+            resp = asyncio.run(resp)
+        status_code = resp[1] if isinstance(resp, tuple) else resp.status_code
+        self.assertEqual(status_code, 400)
+        mock_opendataqna.embed_sql.assert_not_called()
+
+    def test_embed_sql_rejects_prohibited_generated_sql(self):
+        handler = self.app.routes["/embed_sql"]
+        sys.modules["flask"].request.data = json.dumps({
+            "user_grouping": "valid_ds",
+            "user_question": "What is the revenue?",
+            "generated_sql": "DROP TABLE example_prompt_sql_embeddings;",
+            "session_id": "sess_embed",
+        }).encode("utf-8")
+
+        resp = handler()
+        if asyncio.iscoroutine(resp):
+            resp = asyncio.run(resp)
+        status_code = resp[1] if isinstance(resp, tuple) else resp.status_code
+        self.assertEqual(status_code, 400)
+        mock_opendataqna.embed_sql.assert_not_called()
+
+    def test_embed_sql_accepts_valid_payload(self):
+        handler = self.app.routes["/embed_sql"]
+        sys.modules["flask"].request.data = json.dumps({
+            "user_grouping": "valid_ds",
+            "user_question": "What is total revenue?",
+            "generated_sql": "SELECT sum(revenue) FROM orders",
+            "session_id": "sess_embed",
+        }).encode("utf-8")
+
+        resp = handler()
+        if asyncio.iscoroutine(resp):
+            resp = asyncio.run(resp)
+        data = resp.get_json()
+        self.assertEqual(data.get("ResponseCode"), 201)
+        mock_opendataqna.embed_sql.assert_called_once()
 
 
 
@@ -468,6 +577,79 @@ class TestConnectorParameterizedMethods(unittest.TestCase):
                 mock_read_sql.assert_called_once()
                 call_kwargs = mock_read_sql.call_args[1]
                 self.assertEqual(call_kwargs.get("params"), {"user_grouping": "ds1"})
+
+
+class TestBigQueryAddSqlEmbeddingSecurity(unittest.TestCase):
+    """Tests parameterization and security of add_sql_embedding when using BigQuery."""
+
+    def test_add_sql_embedding_bigquery_uses_parameterized_queries(self):
+        mock_client = mock.MagicMock()
+        with mock.patch.object(real_store_embeddings.bigquery, "Client", return_value=mock_client):
+            malicious_database = "sales_db' OR '1'='1"
+            malicious_question = 'What is total sales?" OR ""="" --'
+            malicious_sql = 'SELECT * FROM sales; DROP TABLE example_prompt_sql_embeddings; --'
+
+            result = asyncio.run(
+                real_store_embeddings.add_sql_embedding(
+                    malicious_question, malicious_sql, malicious_database
+                )
+            )
+            self.assertEqual(result, 1)
+
+            calls = mock_client.query_and_wait.call_args_list
+            self.assertEqual(len(calls), 3)
+
+            # Call 1: CREATE TABLE IF NOT EXISTS
+            # Call 2: DELETE query
+            delete_sql, delete_kwargs = calls[1][0][0], calls[1][1]
+            self.assertIn("@database", delete_sql)
+            self.assertIn("@user_question", delete_sql)
+            self.assertNotIn(malicious_database, delete_sql)
+            self.assertNotIn(malicious_question, delete_sql)
+
+            delete_job_config = delete_kwargs.get("job_config")
+            self.assertIsNotNone(delete_job_config)
+            delete_params = {p.name: p.value for p in delete_job_config.query_parameters}
+            self.assertEqual(delete_params.get("database"), malicious_database)
+            self.assertEqual(delete_params.get("user_question"), malicious_question)
+
+            # Call 3: INSERT query
+            insert_sql, insert_kwargs = calls[2][0][0], calls[2][1]
+            self.assertIn("@database", insert_sql)
+            self.assertIn("@user_question", insert_sql)
+            self.assertIn("@generated_sql", insert_sql)
+            self.assertIn("@embedding", insert_sql)
+            self.assertNotIn(malicious_database, insert_sql)
+            self.assertNotIn(malicious_question, insert_sql)
+            self.assertNotIn(malicious_sql, insert_sql)
+
+            insert_job_config = insert_kwargs.get("job_config")
+            self.assertIsNotNone(insert_job_config)
+            insert_params = {p.name: getattr(p, "value", getattr(p, "values", None)) for p in insert_job_config.query_parameters}
+            self.assertEqual(insert_params.get("database"), malicious_database)
+            self.assertEqual(insert_params.get("user_question"), malicious_question)
+            self.assertEqual(insert_params.get("generated_sql"), malicious_sql)
+            self.assertEqual(insert_params.get("embedding"), [0.1, 0.2, 0.3])
+
+
+class TestOpenDataQnAEmbedSqlGuards(unittest.TestCase):
+    """Tests defensive input validation in real_opendataqna.embed_sql."""
+
+    def test_embed_sql_rejects_invalid_inputs(self):
+        # Invalid user_grouping
+        res, is_err = asyncio.run(real_opendataqna.embed_sql("sess", "invalid grouping' --", "question", "SELECT 1"))
+        self.assertTrue(is_err)
+        self.assertIn("Invalid user_grouping", res)
+
+        # Invalid user_question
+        res, is_err = asyncio.run(real_opendataqna.embed_sql("sess", "valid_grouping", "   ", "SELECT 1"))
+        self.assertTrue(is_err)
+        self.assertIn("Invalid user_question", res)
+
+        # Invalid generate_sql
+        res, is_err = asyncio.run(real_opendataqna.embed_sql("sess", "valid_grouping", "question", ""))
+        self.assertTrue(is_err)
+        self.assertIn("Invalid generate_sql", res)
 
 
 if __name__ == "__main__":

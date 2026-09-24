@@ -589,6 +589,13 @@ async def embed_sql(session_id,user_grouping,user_question,generate_sql):
         Exception: If there is an issue with the embedding process.
                    The exception message will be included in the returned `embedded` value.
     """ 
+    if not is_valid_user_grouping(user_grouping):
+        return "Invalid user_grouping format", True
+    if not user_question or not isinstance(user_question, str) or not user_question.strip():
+        return "Invalid user_question", True
+    if not generate_sql or not isinstance(generate_sql, str) or not generate_sql.strip():
+        return "Invalid generate_sql", True
+
     try:
         Rewriter=ResponseAgent('gemini-1.5-pro')
 

@@ -188,6 +188,31 @@ async def embedSql():
             "Error": "Invalid user_grouping format. Must be an alphanumeric identifier."
         }), 400
 
+    if not user_question or not isinstance(user_question, str) or not user_question.strip():
+        return jsonify({
+            "ResponseCode": 400,
+            "KnownDB": "",
+            "SessionID": session_id,
+            "Error": "Invalid or missing user_question."
+        }), 400
+
+    if not generated_sql or not isinstance(generated_sql, str) or not generated_sql.strip():
+        return jsonify({
+            "ResponseCode": 400,
+            "KnownDB": "",
+            "SessionID": session_id,
+            "Error": "Invalid or missing generated_sql."
+        }), 400
+
+    is_safe, error_reason = is_safe_query(generated_sql)
+    if not is_safe:
+        return jsonify({
+            "ResponseCode": 400,
+            "KnownDB": "",
+            "SessionID": session_id,
+            "Error": f"Query rejected: {error_reason}"
+        }), 400
+
     embedded, invalid_response=await embed_sql(session_id,user_grouping,user_question,generated_sql)
 
     if not invalid_response:
