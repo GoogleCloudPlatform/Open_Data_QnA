@@ -31,7 +31,7 @@
     "express": "^4.21.1",
     "firebase": "^10.12.2",
     "ng2-charts": "^5.0.4",
-    "prismjs": "^1.29.0",
+    "prismjs": "^1.30.0",
     "rxjs": "~7.8.0",
     "sql-formatter": "^15.2.0",
     "tslib": "^2.3.0",
