@@ -36,6 +36,7 @@ echo "Current working directory: $original_dir"
 echo "-------------------------------------------------------------------------------------"
 echo "                        DEPLOYING FRONTEND SERVICE                                   "
 echo "-------------------------------------------------------------------------------------"
+sh scripts/copy-firebase-json.sh
 sh scripts/frontend-deployment.sh --project $project_id --region $deploy_region || exit 1
 echo "-------------------------------------------------------------------------------------"
 echo "                      FRONTEND DEPLOYMENT SUCCESSFUL                                 "
