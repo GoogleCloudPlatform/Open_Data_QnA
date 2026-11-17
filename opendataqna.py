@@ -633,7 +633,7 @@ def visualize(session_id,user_question,generated_sql,sql_results):
                 user_question=re_written_qe
         
         _viz=VisualizeAgent()
-        js_chart = _viz.generate_charts(user_question, generate_sql,sql_results)
+        js_chart = _viz.generate_charts(user_question, generated_sql, sql_results)
         invalid_response=False
 
     except Exception as e: 

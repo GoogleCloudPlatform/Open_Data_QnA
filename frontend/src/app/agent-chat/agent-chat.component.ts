@@ -6,6 +6,25 @@ import { FormBuilder, FormGroup } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { ChatService } from '../shared/services/chat.service';
 
+declare const google: any;
+
+const ALLOWED_CHART_PACKAGES: Readonly<Record<string, string>> = {
+  BarChart: 'corechart',
+  ColumnChart: 'corechart',
+  LineChart: 'corechart',
+  AreaChart: 'corechart',
+  PieChart: 'corechart',
+  ScatterChart: 'corechart',
+  BubbleChart: 'corechart',
+  Histogram: 'corechart',
+  ComboChart: 'corechart',
+  SteppedAreaChart: 'corechart',
+  Table: 'table',
+  GeoChart: 'geochart',
+};
+
+const ALLOWED_CHART_KEYS = new Set<string>(['chart_div', 'chart_div_1']);
+
 @Component({
   selector: 'app-agent-chat',
   templateUrl: './agent-chat.component.html',
@@ -108,22 +127,134 @@ export class AgentChatComponent implements AfterViewInit {
   visualizeBtn(msg: any, ind: any) {
     this.showLoader = true;
     let sql = format(msg.generate_sql.GeneratedSQL, { language: 'mysql' })
-    this.homeService.generateViz(this.msg.user_question, sql, msg.dataSource, this.homeService.getSessionId()).subscribe((res: any) => {
-      const object = res.GeneratedChartjs;
-      this.msg = {
-        ...this.msg, "visualize": res
+    this.homeService.generateViz(this.msg.user_question, sql, msg.dataSource, this.homeService.getSessionId()).subscribe({
+      next: (res: any) => {
+        const chartSpecs = res?.GeneratedChartjs;
+        this.msg = {
+          ...this.msg, "visualize": res
+        };
+        if (chartSpecs && typeof chartSpecs === 'object' && !Array.isArray(chartSpecs)) {
+          for (const [key, spec] of Object.entries(chartSpecs)) {
+            if (ALLOWED_CHART_KEYS.has(key)) {
+              this.onChange(spec, ind, key);
+            }
+          }
+        } else {
+          this.showLoader = false;
+        }
+      },
+      error: () => {
+        this.showLoader = false;
       }
-      for (const [key, value] of Object.entries(object)) {
-        let newvalue: string = (value as string).replace('chart_div', ind + '-chart_div');
-        this.onChange(newvalue, ind, key);
-      }
-    })
+    });
   }
 
-  onChange(value: any, ind: any, key: any) {
-    this.showChart = true;
+  private isSafeCellValue(cell: unknown): boolean {
+    if (cell === null || typeof cell === 'string' || typeof cell === 'boolean') {
+      return true;
+    }
+    if (typeof cell === 'number') {
+      return Number.isFinite(cell);
+    }
+    return false;
+  }
+
+  private buildSafeChartOptions(rawOptions: any): Record<string, any> {
+    const safeOptions: Record<string, any> = {
+      width: 600,
+      height: 300,
+      allowHtml: false,
+    };
+    if (!rawOptions || typeof rawOptions !== 'object' || Array.isArray(rawOptions)) {
+      return safeOptions;
+    }
+    if (typeof rawOptions.title === 'string') {
+      safeOptions['title'] = rawOptions.title.slice(0, 300);
+    }
+    if (typeof rawOptions.width === 'number' && Number.isFinite(rawOptions.width) && rawOptions.width >= 100 && rawOptions.width <= 4000) {
+      safeOptions['width'] = Math.trunc(rawOptions.width);
+    }
+    if (typeof rawOptions.height === 'number' && Number.isFinite(rawOptions.height) && rawOptions.height >= 100 && rawOptions.height <= 4000) {
+      safeOptions['height'] = Math.trunc(rawOptions.height);
+    }
+    if (typeof rawOptions.isStacked === 'boolean') {
+      safeOptions['isStacked'] = rawOptions.isStacked;
+    }
+    if (typeof rawOptions.pieHole === 'number' && Number.isFinite(rawOptions.pieHole) && rawOptions.pieHole >= 0 && rawOptions.pieHole <= 1) {
+      safeOptions['pieHole'] = rawOptions.pieHole;
+    }
+    for (const axisKey of ['hAxis', 'vAxis', 'legend']) {
+      const axisVal = rawOptions[axisKey];
+      if (axisVal && typeof axisVal === 'object' && !Array.isArray(axisVal)) {
+        const safeAxis: Record<string, any> = {};
+        if ((axisKey === 'hAxis' || axisKey === 'vAxis') && typeof axisVal.title === 'string') {
+          safeAxis['title'] = axisVal.title.slice(0, 200);
+        }
+        const fontSize = axisVal?.textStyle?.fontSize;
+        if (typeof fontSize === 'number' && Number.isFinite(fontSize) && fontSize >= 4 && fontSize <= 48) {
+          safeAxis['textStyle'] = { fontSize: Math.trunc(fontSize) };
+        }
+        if (Object.keys(safeAxis).length > 0) {
+          safeOptions[axisKey] = safeAxis;
+        }
+      }
+    }
+    if (rawOptions.bar && typeof rawOptions.bar.groupWidth === 'string' && /^\d{1,3}%$/.test(rawOptions.bar.groupWidth.trim())) {
+      safeOptions['bar'] = { groupWidth: rawOptions.bar.groupWidth.trim() };
+    }
+    safeOptions['allowHtml'] = false;
+    return safeOptions;
+  }
+
+  onChange(spec: any, ind: any, key: string) {
     this.showLoader = false;
-    this.result = eval(value)
+    if (!ALLOWED_CHART_KEYS.has(key)) {
+      return;
+    }
+    if (!spec || typeof spec !== 'object' || Array.isArray(spec)) {
+      return;
+    }
+    const chartType = spec.chartType;
+    if (typeof chartType !== 'string' || !Object.prototype.hasOwnProperty.call(ALLOWED_CHART_PACKAGES, chartType)) {
+      return;
+    }
+    if (!Array.isArray(spec.columns) || spec.columns.length === 0 || !spec.columns.every((c: unknown) => typeof c === 'string' && c.trim().length > 0)) {
+      return;
+    }
+    if (!Array.isArray(spec.rows)) {
+      return;
+    }
+    const colCount = spec.columns.length;
+    for (const row of spec.rows) {
+      if (!Array.isArray(row) || row.length !== colCount || !row.every((cell: unknown) => this.isSafeCellValue(cell))) {
+        return;
+      }
+    }
+    if (typeof google === 'undefined' || !google?.charts) {
+      return;
+    }
+
+    this.showChart = true;
+    const containerId = `${ind}-${key}`;
+    const pkg = ALLOWED_CHART_PACKAGES[chartType];
+    const safeOptions = this.buildSafeChartOptions(spec.options);
+    const tableArray = [spec.columns, ...spec.rows];
+
+    google.charts.load('current', { packages: [pkg] });
+    google.charts.setOnLoadCallback(() => {
+      const container = document.getElementById(containerId);
+      if (!container || !google?.visualization) {
+        return;
+      }
+      const ChartCtor = google.visualization[chartType];
+      if (typeof ChartCtor !== 'function') {
+        return;
+      }
+      const dataTable = google.visualization.arrayToDataTable(tableArray);
+      const chart = new ChartCtor(container);
+      chart.draw(dataTable, safeOptions);
+      this.result = true;
+    });
   }
 
   thumbsUp(sql: any, ind: any) {

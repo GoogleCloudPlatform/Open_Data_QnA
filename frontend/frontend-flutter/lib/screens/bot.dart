@@ -1004,86 +1004,189 @@ class BotState extends State<Bot> with SingleTickerProviderStateMixin {
     ));
   }
 
+  static const Map<String, String> _allowedChartPackages = {
+    'BarChart': 'corechart',
+    'ColumnChart': 'corechart',
+    'LineChart': 'corechart',
+    'AreaChart': 'corechart',
+    'PieChart': 'corechart',
+    'ScatterChart': 'corechart',
+    'BubbleChart': 'corechart',
+    'Histogram': 'corechart',
+    'ComboChart': 'corechart',
+    'SteppedAreaChart': 'corechart',
+    'Table': 'table',
+    'GeoChart': 'geochart',
+  };
+
+  bool _isSafeChartCellValue(dynamic cell) {
+    if (cell == null || cell is String || cell is bool || cell is int) {
+      return true;
+    }
+    if (cell is double) {
+      return cell.isFinite;
+    }
+    return false;
+  }
+
+  String? _buildSafeChartHtml(dynamic rawSpec, String containerId) {
+    if (rawSpec is! Map) {
+      return null;
+    }
+    final dynamic rawChartType = rawSpec['chartType'];
+    if (rawChartType is! String ||
+        !_allowedChartPackages.containsKey(rawChartType)) {
+      return null;
+    }
+    final String chartType = rawChartType;
+    final String chartPackage = _allowedChartPackages[chartType]!;
+
+    final dynamic rawColumns = rawSpec['columns'];
+    final dynamic rawRows = rawSpec['rows'];
+    if (rawColumns is! List || rawColumns.isEmpty || rawRows is! List) {
+      return null;
+    }
+
+    final List<String> safeColumns = <String>[];
+    for (final col in rawColumns) {
+      if (col is! String || col.trim().isEmpty) {
+        return null;
+      }
+      safeColumns.add(col.trim());
+    }
+
+    final List<List<dynamic>> safeRows = <List<dynamic>>[];
+    for (final row in rawRows) {
+      if (row is! List || row.length != safeColumns.length) {
+        return null;
+      }
+      for (final cell in row) {
+        if (!_isSafeChartCellValue(cell)) {
+          return null;
+        }
+      }
+      safeRows.add(List<dynamic>.from(row));
+    }
+
+    final Map<String, dynamic> safeOptions = <String, dynamic>{
+      'width': 1200,
+      'height': 600,
+      'allowHtml': false,
+    };
+    final dynamic rawOptions = rawSpec['options'];
+    if (rawOptions is Map && rawOptions['title'] is String) {
+      safeOptions['title'] = rawOptions['title'];
+    }
+
+    final Map<String, dynamic> payload = <String, dynamic>{
+      'chartType': chartType,
+      'package': chartPackage,
+      'containerId': containerId,
+      'data': <dynamic>[safeColumns, ...safeRows],
+      'options': safeOptions,
+    };
+
+    // Escape HTML-sensitive characters so JSON inside <script type="application/json">
+    // can never break out of the tag.
+    final String encodedSpec = jsonEncode(payload)
+        .replaceAll('&', r'\u0026')
+        .replaceAll('<', r'\u003c')
+        .replaceAll('>', r'\u003e')
+        .replaceAll('\u2028', r'\u2028')
+        .replaceAll('\u2029', r'\u2029');
+
+    return '''<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-opendataqna-chart' https://www.gstatic.com; style-src 'unsafe-inline' https://www.gstatic.com; img-src data: https://www.gstatic.com; font-src https://fonts.gstatic.com; connect-src 'none'; frame-src 'none'; object-src 'none';">
+    <script nonce="opendataqna-chart" type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script id="chart-spec" type="application/json">$encodedSpec</script>
+    <script nonce="opendataqna-chart" type="text/javascript">
+      (function() {
+        var allowed = {
+          BarChart: true, ColumnChart: true, LineChart: true, AreaChart: true,
+          PieChart: true, ScatterChart: true, BubbleChart: true, Histogram: true,
+          ComboChart: true, SteppedAreaChart: true, Table: true, GeoChart: true
+        };
+        var specEl = document.getElementById('chart-spec');
+        if (!specEl) return;
+        var spec = JSON.parse(specEl.textContent || '{}');
+        if (!Object.prototype.hasOwnProperty.call(allowed, spec.chartType)) return;
+        google.charts.load('current', { packages: [spec.package] });
+        google.charts.setOnLoadCallback(function() {
+          var target = document.getElementById(spec.containerId);
+          if (!target) return;
+          var dataTable = google.visualization.arrayToDataTable(spec.data);
+          var opts = spec.options || {};
+          opts.allowHtml = false;
+          var ChartCtor = google.visualization[spec.chartType];
+          if (typeof ChartCtor === 'function') {
+            var chart = new ChartCtor(target);
+            chart.draw(dataTable, opts);
+          }
+        });
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="$containerId"></div>
+  </body>
+</html>''';
+  }
+
+  Widget _buildChartWebViewContainer(String safeHtml) {
+    return Container(
+      child: InAppWebView(
+        initialSettings: InAppWebViewSettings(
+          javaScriptCanOpenWindowsAutomatically: false,
+          allowFileAccessFromFileURLs: false,
+          allowUniversalAccessFromFileURLs: false,
+        ),
+        initialData: InAppWebViewInitialData(data: safeHtml),
+        shouldOverrideUrlLoading: (controller, navigationAction) async {
+          return NavigationActionPolicy.CANCEL;
+        },
+        onWebViewCreated: (controller) {
+          webViewController = controller;
+        },
+      ),
+    );
+  }
+
   Widget getGoogleGraph(dynamic dataViz) {
     print(" bot: getGoogleGraph() : START");
-    Container container;
-
-    if (dataViz!["chart_div"]! != null) {
-      print(
-          'bot: getGoogleGraph() : dataViz!["chart_div"]! = ${dataViz!["chart_div"]!}');
-
-      String htmlPre = """<html>
-                          <head>
-                            <!--Load the AJAX API-->
-                            <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-                            <script type="text/javascript"> """;
-      String htmlPost = """</script>
-                          </head>
-                        
-                          <body>
-                            <!--Div that will hold the pie chart-->
-                            <div id="chart_div"></div>
-                          </body>
-                        </html>""";
-
-      container =  Container(
-        child: InAppWebView(
-          initialData: InAppWebViewInitialData(
-              data: htmlPre + "\n" + dataViz!["chart_div"]!.replaceAll('width: 600,','width: 1200,').replaceAll('height: 300,', 'height: 600,') + htmlPost + "\n"),
-          onWebViewCreated: (controller) {
-            webViewController = controller;
-          },
-        ),
-      );
-
-      isGraphKeyAdded = true;
-      graphContainer = container;
-
-      return container;
-    } else {
-      return Text("No Chart",
-          style: TextStyle(
-              fontSize: 16,
-              color: Colors.indigoAccent,
-              fontWeight: FontWeight.bold));
+    if (dataViz is Map && dataViz["chart_div"] != null) {
+      final String? safeHtml =
+          _buildSafeChartHtml(dataViz["chart_div"], "chart_div");
+      if (safeHtml != null) {
+        final Widget container = _buildChartWebViewContainer(safeHtml);
+        isGraphKeyAdded = true;
+        graphContainer = container;
+        return container;
+      }
     }
+    return Text("No Chart",
+        style: TextStyle(
+            fontSize: 16,
+            color: Colors.indigoAccent,
+            fontWeight: FontWeight.bold));
   }
 
   Widget getGoogleTable(dynamic dataViz) {
     print("bot: getGoogleTable() : START");
-    if (dataViz!["chart_div_1"]! != null) {
-      print(
-          'bot: getGoogleTable() : dataViz!["chart_div_1"]! = ${dataViz!["chart_div_1"]!}');
-      String htmlPre = """<html>
-                          <head>
-                            <!--Load the AJAX API-->
-                            <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-                            <script type="text/javascript"> """;
-      String htmlPost = """</script>
-                          </head>
-                        
-                          <body>
-                            <!--Div that will hold the pie chart-->
-                            <div id="chart_div_1"></div>
-                          </body>
-                        </html>""";
-
-      return Container(
-        child: InAppWebView(
-          initialData: InAppWebViewInitialData(
-              data:
-                  htmlPre + "\n" + dataViz!["chart_div_1"]!.replaceAll('width: 600,','width: 1200,').replaceAll('height: 300,', 'height: 600,') + htmlPost + "\n"),
-          onWebViewCreated: (controller) {
-            webViewController = controller;
-          },
-        ),
-      );
-    } else
-      return Text("No data",
-          style: TextStyle(
-              fontSize: 16,
-              color: Colors.indigoAccent,
-              fontWeight: FontWeight.bold));
+    if (dataViz is Map && dataViz["chart_div_1"] != null) {
+      final String? safeHtml =
+          _buildSafeChartHtml(dataViz["chart_div_1"], "chart_div_1");
+      if (safeHtml != null) {
+        return _buildChartWebViewContainer(safeHtml);
+      }
+    }
+    return Text("No data",
+        style: TextStyle(
+            fontSize: 16,
+            color: Colors.indigoAccent,
+            fontWeight: FontWeight.bold));
   }
 
   Future<Uint8List> _generateImage(Widget widget) async {
@@ -1576,14 +1679,28 @@ class BotState extends State<Bot> with SingleTickerProviderStateMixin {
         print(
             'Bot: getDataVisualization() : generatedChartjsMap = $generatedChartjsMap');
 
-        if(TextToDocParameter.anonymized_data) {
-          //update generatedChartjsMap
-          mapAnonymisationGraph.forEach((key, value) {
-            print(
-                'Bot : getDataVisualization() : update jsonData : key =  $key, value = $value');
-            generatedChartjsMap['chart_div'] =
-                generatedChartjsMap['chart_div'].replaceAll(key, value);
-          });
+        if (TextToDocParameter.anonymized_data &&
+            generatedChartjsMap is Map &&
+            generatedChartjsMap['chart_div'] is Map) {
+          final Map<dynamic, dynamic> spec = generatedChartjsMap['chart_div'];
+          if (spec['rows'] is List) {
+            final List<dynamic> updatedRows = <dynamic>[];
+            for (final row in spec['rows']) {
+              if (row is List) {
+                updatedRows.add(row.map((cell) {
+                  if (cell is String) {
+                    String replaced = cell;
+                    mapAnonymisationGraph.forEach((key, value) {
+                      replaced = replaced.replaceAll(key, value);
+                    });
+                    return replaced;
+                  }
+                  return cell;
+                }).toList());
+              }
+            }
+            spec['rows'] = updatedRows;
+          }
         }
 
         //Update stepper state to get_graph_description
@@ -1617,7 +1734,7 @@ class BotState extends State<Bot> with SingleTickerProviderStateMixin {
         print('Bot: getDataVisualization() : jsonData is null');
       }
     } catch (e) {
-      generatedChartjsMap = {"chart_div": "empty", "chart_div_1": "empty"};
+      generatedChartjsMap = {"chart_div": null, "chart_div_1": null};
       print('Bot: getDataVisualization() : EXCEPTION : error = $e');
     } finally {
       return generatedChartjsMap!;
