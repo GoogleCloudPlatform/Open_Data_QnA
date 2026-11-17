@@ -283,65 +283,32 @@ visualize_chart_type: |
     {{"chart_1":suggestion-1,
       "chart_2":suggestion-2}}
 
-# Prompt for generation code for google charts. 
+# Prompt for generating a structured JSON chart specification for Google Charts.
 visualize_generate_chart_code: |
-  You are expert in generating visualizations.
-                
-    Guidelines:
-    -Do not add any explanation to the response.
-    -Do not enclose the response with js or javascript or ```
+  You are an expert in generating data visualizations.
 
-    You are asked to generate a visualization for the following question:
+    Guidelines:
+    - Do not add any explanation or markdown fences to the response.
+    - Respond ONLY with a single valid JSON object (never executable JavaScript or HTML).
+
+    You are asked to generate a visualization specification for the following question:
     {user_question}
 
     The SQL generated for the question is:
     {generated_sql}
 
-    The results of the sql which should be used to generate the visualization are in json format as follows:
+    The results of the SQL query in JSON format are:
     {sql_results}
 
-    Needed chart type is  : {chart_type}
+    Needed chart type is: {chart_type}
+    Target container ID: {chart_div}
 
     Guidelines:
+        - Output a JSON object with keys "chartType", "columns", "rows", and "options".
+        - "chartType" MUST be one of: "BarChart", "ColumnChart", "LineChart", "AreaChart", "PieChart", "ScatterChart", "BubbleChart", "Histogram", "ComboChart", "SteppedAreaChart", "Table", "GeoChart".
+        - "columns" MUST be an array of column header strings.
+        - "rows" MUST be an array of row arrays containing only primitive values (strings, numbers, booleans, or null), matching the length of "columns".
+        - "options" MUST be a JSON object with safe display settings such as "title" (string), "width" (600), and "height" (300). Never include HTML or executable scripts.
 
-        - Generate js code for {chart_type} for the visualization using google charts and its possible data column. You do not need to use all the columns if not possible.
-        - The generated js code should be able to be just evaluated as javascript so do not add any extra text to it.
-        - ONLY USE the template below and STRICTLY USE ELEMENT ID {chart_div} TO CREATE THE CHART
-
-        google.charts.load('current', <add packages>);
-        google.charts.setOnLoadCallback(drawChart);
-        drawchart function 
-            var data = <Datatable>
-            with options
-        Title=<<Give appropiate title>>
-        width=600,
-        height=300,
-        hAxis.textStyle.fontSize=5
-        vAxis.textStyle.fontSize=5
-        legend.textStyle.fontSize=10
-
-        other necessary options for the chart type
-
-            var chart = new google.charts.<chart name>(document.getElementById('{chart_div}'));
-
-            chart.draw()
-
-        Example Response: 
-
-    google.charts.load('current', {{packages: ['corechart']}});
-    google.charts.setOnLoadCallback(drawChart);
-        function drawChart() 
-    {{var data = google.visualization.arrayToDataTable([['Product SKU', 'Total Ordered Items'],
-        ['GGOEGOAQ012899', 456],   ['GGOEGDHC074099', 334], 
-        ['GGOEGOCB017499', 319],    ['GGOEGOCC077999', 290], 
-            ['GGOEGFYQ016599', 253],  ]); 
-            
-            var options =
-            {{ title: 'Top 5 Product SKUs Ordered',  
-            width: 600,   height: 300,    hAxis: {{     
-            textStyle: {{       fontSize: 12    }} }},  
-                vAxis: {{     textStyle: {{      fontSize: 12     }}    }},
-                legend: {{    textStyle: {{       fontSize: 12\n      }}   }},  
-                    bar: {{      groupWidth: '50%'    }}  }};
-                    var chart = new google.visualization.BarChart(document.getElementById('{chart_div}')); 
-                    chart.draw(data, options);}}
+        Example Response:
+    {{"chartType": "BarChart", "columns": ["Product SKU", "Total Ordered Items"], "rows": [["GGOEGOAQ012899", 456], ["GGOEGDHC074099", 334], ["GGOEGOCB017499", 319], ["GGOEGOCC077999", 290], ["GGOEGFYQ016599", 253]], "options": {{"title": "Top 5 Product SKUs Ordered", "width": 600, "height": 300}}}}

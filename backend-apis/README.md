@@ -301,9 +301,40 @@ gcloud resource-manager org-policies delete iam.allowedPolicyMemberDomains --pro
     "SessionID":"1iuu2u-k1ij2-kkkhhj12131",
     "Error": "",
     "GeneratedChartjs": {
-        "chart_div": "google.charts.load('current', {\n  packages: ['corechart']\n});\ngoogle.charts.setOnLoadCallback(drawChart);\n\nfunction drawChart() {\n  var data = google.visualization.arrayToDataTable([\n    ['Product SKU', 'Total Ordered Items'],\n    ['GGOEGOAQ012899', 456],\n    ['GGOEGDHC074099', 334],\n    ['GGOEGOCB017499', 319],\n    ['GGOEGOCC077999', 290],\n    ['GGOEGFYQ016599', 253],\n  ]);\n\n  var options = {\n    title: 'Top 5 Product SKUs Ordered',\n    width: 600,\n    height: 300,\n    hAxis: {\n      textStyle: {\n        fontSize: 12\n      }\n    },\n    vAxis: {\n      textStyle: {\n        fontSize: 12\n      }\n    },\n    legend: {\n      textStyle: {\n        fontSize: 12\n      }\n    },\n    bar: {\n      groupWidth: '50%'\n    }\n  };\n\n  var chart = new google.visualization.BarChart(document.getElementById('chart_div'));\n\n  chart.draw(data, options);\n}\n",
-        
-        "chart_div_1": "google.charts.load('current', {'packages':['corechart']});\ngoogle.charts.setOnLoadCallback(drawChart);\nfunction drawChart() {\n  var data = google.visualization.arrayToDataTable([\n    ['ProductSKUCode', 'TotalOrderedItems'],\n    ['GGOEGOAQ012899', 456],\n    ['GGOEGDHC074099', 334],\n    ['GGOEGOCB017499', 319],\n    ['GGOEGOCC077999', 290],\n    ['GGOEGFYQ016599', 253]\n  ]);\n\n  var options = {\n    title: 'Top 5 Product SKUs that are Ordered',\n    width: 600,\n    height: 300,\n    hAxis: {\n      textStyle: {\n        fontSize: 5\n      }\n    },\n    vAxis: {\n      textStyle: {\n        fontSize: 5\n      }\n    },\n    legend: {\n      textStyle: {\n        fontSize: 10\n      }\n    },\n    bar: {\n      groupWidth: \"60%\"\n    }\n  };\n\n  var chart = new google.visualization.ColumnChart(document.getElementById('chart_div_1'));\n\n  chart.draw(data, options);\n}\n"
+        "chart_div": {
+            "chartType": "BarChart",
+            "columns": ["Product SKU", "Total Ordered Items"],
+            "rows": [
+                ["GGOEGOAQ012899", 456],
+                ["GGOEGDHC074099", 334],
+                ["GGOEGOCB017499", 319],
+                ["GGOEGOCC077999", 290],
+                ["GGOEGFYQ016599", 253]
+            ],
+            "options": {
+                "title": "Top 5 Product SKUs Ordered",
+                "width": 600,
+                "height": 300,
+                "allowHtml": false
+            }
+        },
+        "chart_div_1": {
+            "chartType": "ColumnChart",
+            "columns": ["ProductSKUCode", "TotalOrderedItems"],
+            "rows": [
+                ["GGOEGOAQ012899", 456],
+                ["GGOEGDHC074099", 334],
+                ["GGOEGOCB017499", 319],
+                ["GGOEGOCC077999", 290],
+                ["GGOEGFYQ016599", 253]
+            ],
+            "options": {
+                "title": "Top 5 Product SKUs that are Ordered",
+                "width": 600,
+                "height": 300,
+                "allowHtml": false
+            }
+        }
     },
     "ResponseCode": 200
     }
