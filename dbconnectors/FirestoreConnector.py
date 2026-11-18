@@ -22,14 +22,17 @@ class FirestoreConnector(DBConnector, ABC):
         """Initializes the Firestore connection and authentication."""
         self.db = firestore.Client(project=project_id,database=firestore_database)
 
-    def log_chat(self,session_id, user_question, bot_response,user_id="TEST",):
+    def log_chat(self, session_id, user_question, bot_response, user_id):
         """Logs a chat message to Firestore.
         Args:
             session_id (str): The ID of the chat session.
-            user_id (str): The ID of the user who sent the message.
             user_question (str): The question the user asked.
             bot_response (str): The response from the bot.
+            user_id (str): The owner of the message. API callers must pass the verified
+                identity of the caller, never a value taken from the request body.
         """
+        if not user_id:
+            raise ValueError("user_id is required to log a chat message.")
 
         log_chat = {
             "session_id": session_id,
@@ -41,16 +44,25 @@ class FirestoreConnector(DBConnector, ABC):
 
         self.db.collection("session_logs").document().set(log_chat)  
         
-    def get_chat_logs_for_session(self,session_id):
-        """Gets all chat logs for a given session.
+    def get_chat_logs_for_session(self, session_id, user_id):
+        """Gets the chat logs of a session that belong to the given user.
+
+        A session ID alone is not proof of ownership: it arrives in the request body, so
+        another user can send it. Only records owned by user_id are returned.
+
         Args:
             session_id (str): The ID of the chat session.
+            user_id (str): The owner whose records may be read.
         """
+        if not session_id or not user_id:
+            return []
 
         sessions_log_ref = self.db.collection("session_logs")
 
         # sessions_log_ref=sessions_log_ref.order_by("timestamp")
-        query= sessions_log_ref.where(filter=firestore.FieldFilter("session_id","==",session_id))
+        query = (sessions_log_ref
+                 .where(filter=firestore.FieldFilter("session_id", "==", session_id))
+                 .where(filter=firestore.FieldFilter("user_id", "==", user_id)))
         
         # query = sessions_log_ref.where("session_id", "==", session_id).order_by("timestamp")  
 

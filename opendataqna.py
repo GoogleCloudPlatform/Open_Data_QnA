@@ -13,6 +13,10 @@ from embeddings.store_embeddings import add_sql_embedding
 
 
 
+# Owner of session history for local, single-user entry points (CLI, Streamlit, notebooks).
+# The backend API never relies on this default: it passes the caller's verified identity.
+DEFAULT_USER_ID = "opendataqna-user@google.com"
+
 #Based on VECTOR STORE in config.ini initialize vector connector and region
 if VECTOR_STORE=='bigquery-vector':
     region=BQ_REGION
@@ -232,7 +236,7 @@ async def generate_sql(session_id,
                 column_similarity_threshold,
                 example_similarity_threshold,
                 num_sql_matches,
-                user_id="opendataqna-user@google.com"):
+                user_id=DEFAULT_USER_ID):
     """Generates an SQL query based on a user's question and database.
 
     This asynchronous function orchestrates a pipeline to generate an SQL query from a natural language question.
@@ -279,8 +283,8 @@ async def generate_sql(session_id,
         re_written_qe=user_question
 
         print("Getting the history for the session.......\n")
-        session_history = firestoreconnector.get_chat_logs_for_session(session_id) if USE_SESSION_HISTORY else None
-        print("Grabbed history for the session:: "+ str(session_history))
+        session_history = firestoreconnector.get_chat_logs_for_session(session_id, user_id) if USE_SESSION_HISTORY else None
+        print("Grabbed history for the session:: " + str(len(session_history or [])) + " record(s)")
 
         if session_history is None or not session_history:
             print("No records for the session. Not rewriting the question\n")
@@ -495,14 +499,14 @@ def get_results(user_grouping, final_sql, invalid_response=False, EXECUTE_FINAL_
 
     return result_df,invalid_response
 
-def get_response(session_id,user_question,result_df,Responder_model='gemini-1.0-pro'):
+def get_response(session_id,user_question,result_df,Responder_model='gemini-1.0-pro',user_id=DEFAULT_USER_ID):
     try:
         Responder = ResponseAgent(Responder_model)
 
         if session_id is None or session_id=="":
             print("This is a new session")
         else:
-            session_history =firestoreconnector.get_chat_logs_for_session(session_id) if USE_SESSION_HISTORY else None
+            session_history =firestoreconnector.get_chat_logs_for_session(session_id, user_id) if USE_SESSION_HISTORY else None
             if session_history is None or not session_history:
                 print("No records for the session. Not rewriting the question\n")
             else:
@@ -538,7 +542,8 @@ async def run_pipeline(session_id,
                 table_similarity_threshold = 0.3,
                 column_similarity_threshold = 0.3, 
                 example_similarity_threshold = 0.3, 
-                num_sql_matches=3): 
+                num_sql_matches=3,
+                user_id=DEFAULT_USER_ID): 
     """Orchestrates the end-to-end SQL generation and response pipeline.
 
     This asynchronous function manages the entire process of generating an SQL query from a user's question,
@@ -586,7 +591,8 @@ async def run_pipeline(session_id,
                 table_similarity_threshold,
                 column_similarity_threshold,
                 example_similarity_threshold,
-                num_sql_matches)
+                num_sql_matches,
+                user_id=user_id)
 
     if not invalid_response:
         
@@ -596,7 +602,7 @@ async def run_pipeline(session_id,
                                     EXECUTE_FINAL_SQL=EXECUTE_FINAL_SQL)
 
         if not invalid_response:
-            _resp,invalid_response=get_response(session_id,user_question,results_df.to_json(orient='records'),Responder_model=Responder_model)
+            _resp,invalid_response=get_response(session_id,user_question,results_df.to_json(orient='records'),Responder_model=Responder_model,user_id=user_id)
         else:
             _resp=results_df
     else:
@@ -665,7 +671,7 @@ def get_kgq(user_grouping):
 ############################
 ####_____EMBED SQL_____#####
 ############################
-async def embed_sql(session_id,user_grouping,user_question,generate_sql):
+async def embed_sql(session_id,user_grouping,user_question,generate_sql,user_id=DEFAULT_USER_ID):
     """Embeds a generated SQL query into the vector store as an example.
 
     This asynchronous function takes a user's question, a generated SQL query, and a database name as input.
@@ -700,7 +706,7 @@ async def embed_sql(session_id,user_grouping,user_question,generate_sql):
         if session_id is None or session_id=="":
             print("This is a new session")
         else:
-            session_history =firestoreconnector.get_chat_logs_for_session(session_id) if USE_SESSION_HISTORY else None
+            session_history =firestoreconnector.get_chat_logs_for_session(session_id, user_id) if USE_SESSION_HISTORY else None
             if session_history is None or not session_history:
                 print("No records for the session. Not rewriting the question\n")
             else:
@@ -716,14 +722,14 @@ async def embed_sql(session_id,user_grouping,user_question,generate_sql):
 
     return embedded,invalid_response
 
-def visualize(session_id,user_question,generated_sql,sql_results):
+def visualize(session_id,user_question,generated_sql,sql_results,user_id=DEFAULT_USER_ID):
     try:
         Rewriter=ResponseAgent('gemini-1.5-pro')
         
         if session_id is None or session_id=="":
             print("This is a new session")
         else:
-            session_history =firestoreconnector.get_chat_logs_for_session(session_id) if USE_SESSION_HISTORY else None
+            session_history =firestoreconnector.get_chat_logs_for_session(session_id, user_id) if USE_SESSION_HISTORY else None
             if session_history is None or not session_history:
                 print("No records for the session. Not rewriting the question\n")
             else:

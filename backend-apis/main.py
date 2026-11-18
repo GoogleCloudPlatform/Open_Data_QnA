@@ -53,7 +53,11 @@ def _verify_auth_header():
     token = parts[1]
     try:
         decoded_token = firebase_admin.auth.verify_id_token(token)
-        return None, decoded_token.get("uid")
+        uid = decoded_token.get("uid")
+        if not uid:
+            # Session history is keyed on the uid, so a token without one cannot be served.
+            return Response(status=403, response="Error with authentication: token has no uid"), None
+        return None, uid
     except Exception as e:
         log.exception(e)
         return Response(status=403, response=f"Error with authentication: {e}"), None
@@ -213,7 +217,7 @@ async def embedSql():
             "Error": f"Query rejected: {error_reason}"
         }), 400
 
-    embedded, invalid_response=await embed_sql(session_id,user_grouping,user_question,generated_sql)
+    embedded, invalid_response=await embed_sql(session_id,user_grouping,user_question,generated_sql,user_id=request.uid)
 
     if not invalid_response:
         responseDict = { 
@@ -270,7 +274,7 @@ def getSQLResult():
 
 
     if not invalid_response:
-        _resp,invalid_response=get_response(session_id,user_question,result_df.to_json(orient='records'))
+        _resp,invalid_response=get_response(session_id,user_question,result_df.to_json(orient='records'),user_id=request.uid)
         if not invalid_response:
             responseDict = { 
                     "ResponseCode" : 200, 
@@ -348,7 +352,9 @@ async def generateSQL():
     user_question = envelope.get('user_question')
     user_grouping = envelope.get('user_grouping')
     session_id = envelope.get('session_id')
-    user_id = envelope.get('user_id')
+    # Session history is owned by the authenticated caller. A user_id in the request body
+    # is ignored: trusting it would let one user read or write another user's history.
+    user_id = request.uid
 
     if not is_valid_user_grouping(user_grouping):
         return jsonify({
@@ -463,7 +469,7 @@ async def generateViz():
     session_id = envelope.get('session_id')
 
     try:
-        chart_specs, invalid_response = visualize(session_id, user_question, generated_sql, sql_results)
+        chart_specs, invalid_response = visualize(session_id, user_question, generated_sql, sql_results, user_id=request.uid)
 
         if not invalid_response:
             if not is_valid_chart_spec_map(chart_specs):
