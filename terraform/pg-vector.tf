@@ -1,10 +1,32 @@
+# Generated credentials. The character set is limited so the values are safe inside
+# config.ini and on a command line, while still meeting the instance password policy.
+resource "random_password" "pg_root" {
+  length           = 32
+  special          = true
+  override_special = "_."
+  min_lower        = 2
+  min_upper        = 2
+  min_numeric      = 2
+  min_special      = 2
+}
+
+resource "random_password" "pg_user" {
+  length           = 32
+  special          = true
+  override_special = "_."
+  min_lower        = 2
+  min_upper        = 2
+  min_numeric      = 2
+  min_special      = 2
+}
+
 resource "google_sql_database_instance" "pg15_opendataqna" {
   count = var.vector_store=="cloudsql-pgvector" && var.use_existing_cloudsql_instance=="no"? 1:0
   name                = var.pg_instance
   project             = var.project_id
   region              = var.pg_region
   database_version = "POSTGRES_15"
-  root_password    = "abcABC123!"
+  root_password    = random_password.pg_root.result
   settings {
     tier = "db-custom-2-7680"
     password_validation_policy {
@@ -33,7 +55,7 @@ resource "google_sql_user" "pguser" {
   name     = var.pg_user
   project  = var.project_id
   instance = google_sql_database_instance.pg15_opendataqna[count.index].name
-  password = var.pg_password
+  password = local.pg_password
   depends_on = [
     google_sql_database_instance.pg15_opendataqna,
   ]

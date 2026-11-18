@@ -46,29 +46,31 @@ class DefaultFirebaseOptions {
     }
   }
 
+  // Placeholders. Run `flutterfire configure` to generate this file for your own Firebase
+  // project. Do not commit the configuration of a live project.
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDQJNMaGcmhjuqsyXDpsXtLj4YSvMr8jkI',
-    appId: '1:603067936438:web:2d6b41a3c67c155651c017',
-    messagingSenderId: '603067936438',
-    projectId: 'odqna-ai-seminar',
-    authDomain: 'odqna-ai-seminar.firebaseapp.com',
-    storageBucket: 'odqna-ai-seminar.appspot.com',
+    apiKey: 'YOUR_FIREBASE_API_KEY',
+    appId: 'YOUR_FIREBASE_APP_ID',
+    messagingSenderId: 'YOUR_SENDER_ID',
+    projectId: 'YOUR_PROJECT_ID',
+    authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
+    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCytznMTfW7u99AuEQRbdiqmfaCAoMh0Bc',
-    appId: '1:7413174684:android:f4ed287d5da149fce5f859',
-    messagingSenderId: '7413174684',
-    projectId: 'dic-caa-ra1',
-    storageBucket: 'dic-caa-ra1.appspot.com',
+    apiKey: 'YOUR_FIREBASE_API_KEY',
+    appId: 'YOUR_FIREBASE_APP_ID',
+    messagingSenderId: 'YOUR_SENDER_ID',
+    projectId: 'YOUR_PROJECT_ID',
+    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyB5RZFwdDakT3zrJ7-DMum0IHCSfyLqtBQ',
-    appId: '1:7413174684:ios:9a2317f461e3a05ce5f859',
-    messagingSenderId: '7413174684',
-    projectId: 'dic-caa-ra1',
-    storageBucket: 'dic-caa-ra1.appspot.com',
+    apiKey: 'YOUR_FIREBASE_API_KEY',
+    appId: 'YOUR_FIREBASE_APP_ID',
+    messagingSenderId: 'YOUR_SENDER_ID',
+    projectId: 'YOUR_PROJECT_ID',
+    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
     iosBundleId: 'com.pilotcap.ttmd',
   );
 }

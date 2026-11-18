@@ -33,4 +33,7 @@ locals {
     "firestore.googleapis.com"
   ]
 
+  # Never fall back to a fixed password: use the caller's, or a generated one.
+  pg_password = var.pg_password != "" ? var.pg_password : random_password.pg_user.result
+
 }

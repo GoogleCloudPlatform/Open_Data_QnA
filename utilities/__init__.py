@@ -71,7 +71,9 @@ PG_REGION = config['PGCLOUDSQL']['PG_REGION']
 PG_INSTANCE = config['PGCLOUDSQL']['PG_INSTANCE']
 PG_DATABASE = config['PGCLOUDSQL']['PG_DATABASE'] 
 PG_USER = config['PGCLOUDSQL']['PG_USER'] 
-PG_PASSWORD = config['PGCLOUDSQL']['PG_PASSWORD']
+# The PG_PASSWORD environment variable wins over config.ini, so that the password can come
+# from a secret manager at run time instead of being written to a file.
+PG_PASSWORD = os.environ.get('PG_PASSWORD') or config['PGCLOUDSQL'].get('PG_PASSWORD', '')
 
 #[BIGQUERY]
 BQ_REGION = config['BIGQUERY']['BQ_DATASET_REGION']

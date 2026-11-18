@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>AIzaSyB5RZFwdDakT3zrJ7-DMum0IHCSfyLqtBQ</string>
+	<string>YOUR_FIREBASE_API_KEY</string>
 	<key>GCM_SENDER_ID</key>
-	<string>7413174684</string>
+	<string>000000000000</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
 	<string>com.pilotcap.ttmd</string>
 	<key>PROJECT_ID</key>
-	<string>dic-caa-ra1</string>
+	<string>YOUR_PROJECT_ID</string>
 	<key>STORAGE_BUCKET</key>
-	<string>dic-caa-ra1.appspot.com</string>
+	<string>YOUR_PROJECT_ID.appspot.com</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:7413174684:ios:9a2317f461e3a05ce5f859</string>
+	<string>1:000000000000:ios:0000000000000000000000</string>
 </dict>
 </plist>

@@ -126,7 +126,10 @@ def create_vector_store():
         pg_instance = "pg15-opendataqna"
         pg_database = "opendataqna-db"
         pg_user = "pguser"
-        pg_password = "pg123"
+        pg_password = PG_PASSWORD
+        if not pg_password:
+            raise ValueError("No PostgreSQL password is configured. Set the PG_PASSWORD environment "
+                             "variable (preferred) or pg_password in config.ini before running the setup.")
         pg_schema = 'pg-vector-store' 
 
         setup_postgresql(pg_instance, pg_region, pg_database, pg_user, pg_password)
