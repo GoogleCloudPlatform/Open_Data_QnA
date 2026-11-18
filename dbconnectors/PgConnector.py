@@ -8,6 +8,7 @@ import pandas as pd
 from sqlalchemy.sql import text
 from pgvector.asyncpg import register_vector
 import asyncio
+import re
 from pg8000.exceptions import DatabaseError 
 
 from utilities import root_dir
@@ -16,6 +17,30 @@ from google.cloud.sql.connector import Connector
 from dbconnectors import DBConnector
 from abc import ABC
 
+
+
+# Dry runs must only *plan* a statement. Spelling the option out pins ANALYZE off, so
+# candidate SQL that itself begins with "ANALYZE" or "(ANALYZE)" cannot turn it back on.
+_EXPLAIN_PLAN_ONLY_PREFIX = "EXPLAIN (ANALYZE FALSE) "
+
+
+def _single_statement_for_dry_run(generated_sql):
+    """Returns (statement, error) for candidate SQL that is about to be dry-run.
+
+    PostgreSQL only separates statements on ';'. Rejecting every ';' other than
+    trailing terminators therefore guarantees a single statement without needing a SQL
+    parser. A ';' inside a string literal is rejected too, which is deliberately
+    conservative: the caller reports the error and the query gets rewritten.
+    """
+    if not isinstance(generated_sql, str) or not generated_sql.strip():
+        return None, "Generated SQL is empty."
+    statement = re.sub(r"[;\s]+$", "", generated_sql.strip())
+    if not statement:
+        return None, "Generated SQL is empty."
+    if ";" in statement:
+        return None, ("Only a single SQL statement can be validated. "
+                      "Remove every ';' from the query.")
+    return statement, None
 
 
 def pg_specific_data_types(): 
@@ -99,7 +124,7 @@ class PgConnector(DBConnector, ABC):
             Gets similar matches for tables, columns, or examples asynchronously, formatting the results into a string.
 
         test_sql_plan_execution(generated_sql) -> Tuple[bool, pd.DataFrame]:
-            Tests the execution plan of a generated SQL query in PostgreSQL. Returns a tuple indicating success and the result DataFrame.
+            Plans (never executes) a generated SQL query in PostgreSQL. Returns a tuple indicating success and the result DataFrame.
 
         getExactMatches(query) -> str or None:
             Checks if the exact question is present in the example SQL set and returns the corresponding SQL query if found.
@@ -335,28 +360,55 @@ class PgConnector(DBConnector, ABC):
         return match_result
 
 
-    def test_sql_plan_execution(self, generated_sql):
+    def _retrieve_df_read_only(self, query):
+        """Runs a query in a READ ONLY transaction that is always rolled back."""
         try:
+            with self.pool.connect() as db_conn:
+                try:
+                    # Must be the first statement of the transaction.
+                    db_conn.execute(text("SET TRANSACTION READ ONLY"))
+                    return pd.read_sql(text(query), con=db_conn)
+                finally:
+                    db_conn.rollback()
+
+        except Exception as e:
+            print(f"Database Error: {e}")
+            return pd.DataFrame({'Error. Message': e}, index=[0])
+
+
+    def test_sql_plan_execution(self, generated_sql):
+        """Checks that generated SQL plans on PostgreSQL without ever executing it.
+
+        The candidate comes straight from the LLM, so it is untrusted. Plain EXPLAIN only
+        plans the statement. EXPLAIN ANALYZE must not be used here: it runs the statement
+        to completion, including the side effects of INSERT/UPDATE/DELETE and of volatile
+        functions such as nextval().
+        """
+        try:
+            statement, error = _single_statement_for_dry_run(generated_sql)
+            if error:
+                print(f'\n Dry run rejected the query: {error}')
+                return False, pd.DataFrame({'Error. Message': error}, index=[0])
+
             exec_result_df = pd.DataFrame()
-            sql = f"""EXPLAIN ANALYZE {generated_sql}"""
-            exec_result_df = self.retrieve_df(sql)
+            sql = f"{_EXPLAIN_PLAN_ONLY_PREFIX}{statement}"
+            exec_result_df = self._retrieve_df_read_only(sql)
 
             if not exec_result_df.empty:
                 if str(exec_result_df.iloc[0]).startswith('Error. Message'):
-                    correct_sql = False 
-                    
+                    correct_sql = False
+
                 else:
-                    print('\n No need to rewrite the query. This seems to work fine and returned rows...')
+                    print('\n No need to rewrite the query. The query plans fine...')
                     correct_sql = True
             else:
-                print('\n No need to rewrite the query. This seems to work fine but no rows returned...')
+                print('\n No need to rewrite the query. The query plans fine but no plan rows returned...')
                 correct_sql = True
-        
+
             return correct_sql, exec_result_df
 
         except Exception as e:
             return False,str(e)
-        
 
 
 
