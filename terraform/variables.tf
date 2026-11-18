@@ -99,8 +99,9 @@ variable "pg_user" {
 
 variable "pg_password" {
   type        = string
-  default     = "pg123"
-  description = "password for pg_user"
+  default     = ""
+  sensitive   = true
+  description = "Password for pg_user. Leave empty to have Terraform generate a random one. Read it with: terraform output -raw sql_user_password"
 }
 
 variable "bq_opendataqna_dataset" {

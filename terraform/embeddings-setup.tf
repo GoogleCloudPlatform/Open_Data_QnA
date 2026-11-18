@@ -30,7 +30,7 @@ resource "local_file" "config_ini" {
     pg_instance            = var.pg_instance,
     pg_database            = var.pg_database,
     pg_user                = var.pg_user
-    pg_password            = var.pg_password
+    pg_password            = local.pg_password
     bq_dataset_region      = var.bq_dataset_region
     bq_opendataqna_dataset = var.bq_opendataqna_dataset
     bq_log_table           = var.bq_log_table

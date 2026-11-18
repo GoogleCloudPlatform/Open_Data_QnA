@@ -37,7 +37,9 @@ ______________
 
 **pg_user = pguser**
 
-**pg_password = pg123**
+**pg_password =**
+
+*; leave pg_password empty and provide the password through the `PG_PASSWORD` environment variable. Do not commit a real password to config.ini.*
 
 
 *; fill out the values below if you want to use BQ as your vector database:* 
