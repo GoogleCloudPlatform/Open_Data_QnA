@@ -1,9 +1,16 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read: if true;
+    // Chat history. Only the backend writes it, through the Admin SDK, which bypasses
+    // these rules. A signed-in user may read their own records and nobody else's.
+    match /session_logs/{logId} {
+      allow read: if request.auth != null && resource.data.user_id == request.auth.uid;
       allow write: if false;
+    }
+
+    // Everything else is closed unless a rule above opens it.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
