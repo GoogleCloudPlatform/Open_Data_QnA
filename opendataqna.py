@@ -138,6 +138,80 @@ def get_source_type(user_grouping):
     return result, invalid_response
 
 
+def _strip_sql_wrapping(sql):
+    """Removes the markdown fence and EXPLAIN ANALYZE prefix the model sometimes adds."""
+    return str(sql).replace("```sql","").replace("```","").replace("EXPLAIN ANALYZE ","")
+
+
+def get_authorized_tables(user_grouping):
+    """Retrieves the tables registered in the vector store for a user_grouping.
+
+    These are the only tables a query for that user_grouping is allowed to read.
+
+    Args:
+        user_grouping (str): The name of the database to look up.
+
+    Returns:
+        tuple: A tuple containing two elements:
+            - tables (set): (table_schema, table_name) pairs. Empty if none are found or an error occurs.
+            - invalid_response (bool): True if the tables could not be determined.
+    """
+    if not is_valid_user_grouping(user_grouping):
+        return set(), True
+
+    user_grouping = user_grouping.strip()
+    try:
+        if VECTOR_STORE=='bigquery-vector':
+            sql = f'''SELECT
+        DISTINCT table_schema, table_name
+        FROM
+        `{PROJECT_ID}.{BQ_OPENDATAQNA_DATASET_NAME}.table_details_embeddings`
+        WHERE user_grouping = @user_grouping'''
+            query_params = [bigquery.ScalarQueryParameter("user_grouping", "STRING", user_grouping)]
+            result = vector_connector.retrieve_df(sql, query_parameters=query_params)
+
+        else:
+            sql = '''SELECT
+        DISTINCT table_schema, table_name
+        FROM
+        table_details_embeddings WHERE user_grouping = :user_grouping'''
+            result = vector_connector.retrieve_df(sql, params={"user_grouping": user_grouping})
+
+        tables = {(str(table_schema), str(table_name))
+                  for table_schema, table_name in zip(result['table_schema'], result['table_name'])}
+        invalid_response = not tables
+    except Exception as e:
+        print("Error at finding the authorized tables :: " + str(e))
+        tables = set()
+        invalid_response = True
+    return tables, invalid_response
+
+
+def check_generated_sql(sql, source_type, authorized_tables):
+    """Applies the deterministic SQL policy to a statement before it reaches a database.
+
+    The SQL is written by an LLM or supplied by a client, so it is untrusted. This check
+    does not involve a model: it accepts a single read-only SELECT that reads only the
+    authorized tables, and refuses everything else, including when the check itself
+    cannot run.
+
+    Args:
+        sql (str): The exact statement that would be executed.
+        source_type (str): 'bigquery' or the PostgreSQL source type.
+        authorized_tables (set): (table_schema, table_name) pairs from get_authorized_tables.
+
+    Returns:
+        tuple: (is_allowed (bool), reason (str)). The reason is empty when allowed.
+    """
+    try:
+        # Imported here so this module can be imported without the SQL parser installed.
+        from utilities.sql_guard import check_read_only_query
+        return check_read_only_query(sql, source_type, authorized_tables)
+    except Exception as e:
+        print("SQL safety check could not be run :: " + str(e))
+        return False, "The SQL safety check could not be run."
+
+
 
 ############################
 ###_____GENERATE SQL_____###
@@ -226,6 +300,13 @@ async def generate_sql(session_id,
         if src_invalid:
             raise ValueError(DATA_SOURCE)
 
+        # Tables this data source may read, for the deterministic SQL policy check below.
+        # The check holds even if the model is talked out of its prompt instructions.
+        authorized_tables, _ = get_authorized_tables(user_grouping)
+
+        def sql_guard(candidate_sql):
+            return check_generated_sql(candidate_sql, DATA_SOURCE, authorized_tables)
+
         #vertexai.init(project=PROJECT_ID, location=region)
         #aiplatform.init(project=PROJECT_ID, location=region)
 
@@ -298,7 +379,7 @@ async def generate_sql(session_id,
                     invalid_response=False
 
                     if RUN_DEBUGGER: 
-                        generated_sql, invalid_response, AUDIT_TEXT = SQLDebugger.start_debugger(DATA_SOURCE,user_grouping, generated_sql, user_question, SQLChecker, table_matches, column_matches, AUDIT_TEXT, similar_sql, DEBUGGING_ROUNDS, LLM_VALIDATION) 
+                        generated_sql, invalid_response, AUDIT_TEXT = SQLDebugger.start_debugger(DATA_SOURCE,user_grouping, generated_sql, user_question, SQLChecker, table_matches, column_matches, AUDIT_TEXT, similar_sql, DEBUGGING_ROUNDS, LLM_VALIDATION, sql_guard=sql_guard) 
                         # AUDIT_TEXT = AUDIT_TEXT + '\n Feedback from Debugger: \n' + feedback_text
 
                     final_sql=generated_sql
@@ -312,6 +393,15 @@ async def generate_sql(session_id,
                 AUDIT_TEXT = AUDIT_TEXT + "\nNo tables have been found in the Vector DB. The question cannot be answered with the provide data source!"
 
         # print(f'\n\n AUDIT_TEXT: \n {AUDIT_TEXT}')
+
+        # Never hand back SQL that the policy refuses, whether it came from the model,
+        # from the debugger, or from the known good SQL cache.
+        if not invalid_response:
+            is_allowed, guard_reason = sql_guard(_strip_sql_wrapping(final_sql))
+            if not is_allowed:
+                invalid_response = True
+                AUDIT_TEXT = AUDIT_TEXT + "\nFinal SQL rejected by the SQL safety policy: " + guard_reason
+                final_sql = "The generated SQL was rejected by the SQL safety policy: " + guard_reason
 
         if LOGGING: 
             bqconnector.make_audit_entry(DATA_SOURCE, user_grouping, SQLBuilder_model, user_question, final_sql, found_in_vector, "", process_step, error_msg,AUDIT_TEXT)  
@@ -375,8 +465,16 @@ def get_results(user_grouping, final_sql, invalid_response=False, EXECUTE_FINAL_
         if not invalid_response:
             try: 
                 if EXECUTE_FINAL_SQL is True:
-                        final_exec_result_df=src_connector.retrieve_df(final_sql.replace("```sql","").replace("```","").replace("EXPLAIN ANALYZE ",""))
-                        result_df = final_exec_result_df
+                        sql_to_run = _strip_sql_wrapping(final_sql)
+                        authorized_tables, _ = get_authorized_tables(user_grouping)
+                        is_allowed, guard_reason = check_generated_sql(sql_to_run, DATA_SOURCE, authorized_tables)
+                        if is_allowed:
+                            final_exec_result_df=src_connector.retrieve_df(sql_to_run)
+                            result_df = final_exec_result_df
+                        else:
+                            print("Not executing final SQL since the SQL safety policy rejected it\n ")
+                            result_df = "Query rejected: " + guard_reason
+                            invalid_response = True
 
                 else:  # Do not execute final SQL
                         print("Not executing final SQL since EXECUTE_FINAL_SQL variable is False\n ")
