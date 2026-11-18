@@ -159,7 +159,8 @@ class DebugSQLAgent(Agent, ABC):
                         AUDIT_TEXT, 
                         similar_sql="-No examples provided..-", 
                         DEBUGGING_ROUNDS = 2,
-                        LLM_VALIDATION=False):
+                        LLM_VALIDATION=False,
+                        sql_guard=None):
         i = 0  
         STOP = False 
         invalid_response = False 
@@ -189,7 +190,14 @@ class DebugSQLAgent(Agent, ABC):
                 else:
                     connector=pgconnector
                     
-                correct_sql, exec_result_df = connector.test_sql_plan_execution(sql)
+                # sql_guard is a deterministic policy check: callable(sql) -> (is_allowed, reason).
+                # A candidate it refuses is never sent to the database, not even for a dry
+                # run. The reason goes back to the model so that it rewrites the query.
+                is_allowed, guard_reason = sql_guard(sql) if sql_guard is not None else (True, "")
+                if is_allowed:
+                    correct_sql, exec_result_df = connector.test_sql_plan_execution(sql)
+                else:
+                    correct_sql, exec_result_df = False, "Query rejected by the SQL safety policy: " + str(guard_reason)
                 
                 if not correct_sql:
                         AUDIT_TEXT=AUDIT_TEXT+"\nGenerated SQL failed on execution! Here is the feedback from bigquery dryrun/ explain plan:  \n" + str(exec_result_df)

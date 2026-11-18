@@ -22,6 +22,8 @@ Open Data QnA operates in a sequence of well-defined steps, orchestrating variou
 
 * **Optional Debugging (DebugSQLAgent):** If the initial SQL is invalid and debugging is enabled, the DebugSQLAgent iteratively refines the query based on error feedback.
 
+* **SQL Policy Check:** Generated SQL is untrusted. Before a query is dry run, returned, or executed, a deterministic check that does not involve a model (`utilities/sql_guard.py`) accepts it only if it is a single read-only `SELECT` that reads tables registered for the selected data source. A rejected query is sent back to the DebugSQLAgent to be rewritten and is never sent to the database.
+
 * **SQL Execution (Dry Run/Explain):** The refined SQL query is tested with a dry run (BigQuery) or explain plan (PostgreSQL) to estimate resource usage and identify potential errors.
 
 * **SQL Execution (Full Run):** If the query is deemed valid, it's executed against the database to fetch the results.
