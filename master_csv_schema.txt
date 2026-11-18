@@ -1,0 +1,15 @@
+This document describes the schema for the 'master_patient_json_links.csv' file.
+This CSV file acts as a master index to locate individual patient JSON data files.
+
+Columns:
+- "Patient First Name": The first name of the patient.
+- "Patient Last Name": The last name of thepatient.
+- "Patient Email": The primary email address of the patient. This is a key identifier.
+- "JSON File Path (Relative to Output Root)": The relative file path to the patient's detailed JSON data file. The filename itself is typically a transformed version of the patient's email address (e.g., 'patient_email_original.json' or 'batch_XXX_patient_email_mangled.json'). This path allows programmatic access to the specific JSON file.
+- "Total Unique Emails": The total number of unique email addresses found associated with this patient (e.g., including aliases or secondary emails if tracked in the source system, though the primary link is 'Patient Email').
+- "Total Conversations": The total number of distinct conversation threads recorded for this patient in their JSON file.
+- "Attachment Count": The total number of attachments found across all messages for this patient.
+- "Attachment Saved Paths": Potentially a list or summary of paths where attachments for this patient are stored, if not detailed directly in the main JSON.
+
+This master CSV is crucial for mapping a patient (identified by their email) to their corresponding detailed JSON data file. The 'JSON File Path' is used to dynamically construct the full path to the JSON.
+The transformation of the email in "Patient Email" to the filename in "JSON File Path (Relative to Output Root)" often involves replacing characters like '@' with '_at_' and '.' with '_dot_', and potentially prefixing with batch identifiers. For example, 'aaronmeers73@gmail.com' might become something like 'batch_001_aaronmeers73_at_gmail_com.json'. Code using this file should be aware of this naming convention to correctly locate and load the patient's JSON data.
