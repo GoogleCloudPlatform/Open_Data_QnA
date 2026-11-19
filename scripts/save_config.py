@@ -51,7 +51,10 @@ def save_config(embedding_model,
 
     if not 'root_dir' in locals():  # If not found in any parent dir
         raise FileNotFoundError("config.ini not found in current or parent directories.")
-
+    
+    for key in ['GCP', 'CONFIG', 'BIGQUERY', 'PGCLOUDSQL']:
+        if key not in config:
+            config[key] = {}
 
     config['GCP']['PROJECT_ID'] = PROJECT_ID
     # config['CONFIG']['DATA_SOURCE'] = data_source
